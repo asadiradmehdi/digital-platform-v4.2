@@ -3,6 +3,8 @@ import { correlationId, handleRouteError, json } from '../../../../../server/cor
 import { requireRequestUser } from '../../../../../server/identity/request-user';
 import { listContentEntities, upsertContentEntity, auditOrphanContent, findStaleContent } from '../../../../../server/content/entities';
 import { query } from '../../../../../server/core/db';
+import { assertSameOrigin } from '../../../../../server/core/security-boundary';
+import { requirePlatformAdmin } from '../../../../../server/identity/platform-admin';
 
 export async function GET(request: NextRequest) {
   const id = correlationId(request);
@@ -14,13 +16,15 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') ?? '0', 10);
 
     if (action === 'audit') {
-      await requireRequestUser(request);
+      const adminId = await requireRequestUser(request);
+      await requirePlatformAdmin(adminId);
       const orphans = await auditOrphanContent();
       return json({ orphans }, { correlationId: id });
     }
 
     if (action === 'stale') {
-      await requireRequestUser(request);
+      const adminId = await requireRequestUser(request);
+      await requirePlatformAdmin(adminId);
       const staleDays = parseInt(searchParams.get('days') ?? '90', 10);
       const stale = await findStaleContent(staleDays);
       return json({ stale }, { correlationId: id });
@@ -48,7 +52,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const id = correlationId(request);
   try {
-    await requireRequestUser(request);
+    assertSameOrigin(request);
+    const userId = await requireRequestUser(request);
+    await requirePlatformAdmin(userId);
     const body = await request.json() as {
       entityType: string;
       slug: string;

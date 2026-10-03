@@ -1,14 +1,16 @@
 import { NextRequest } from 'next/server';
 import { correlationId, handleRouteError, json } from '../../../../../server/core/http';
 import { requireRequestUser } from '../../../../../server/identity/request-user';
-import { query } from '../../../../../server/core/db';
+import { requirePlatformAdmin } from '../../../../../server/identity/platform-admin';
+import { assertSameOrigin } from '../../../../../server/core/security-boundary';
 import { upsertPricingRule, listPricingRules } from '../../../../../server/pricing/rules';
 import type { MarginMode, StaleRatePolicy, PricingTargetType } from '../../../../../server/pricing/contracts';
 
 export async function GET(request: NextRequest) {
   const id = correlationId(request);
   try {
-    await requireRequestUser(request);
+    const userId = await requireRequestUser(request);
+    await requirePlatformAdmin(userId);
     const rules = await listPricingRules();
     return json({ items: rules }, { correlationId: id });
   } catch (e) {
@@ -19,7 +21,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const id = correlationId(request);
   try {
+    assertSameOrigin(request);
     const userId = await requireRequestUser(request);
+    await requirePlatformAdmin(userId);
     const body = await request.json() as {
       targetType: PricingTargetType;
       targetId: string;
@@ -36,14 +40,6 @@ export async function POST(request: NextRequest) {
 
     if (!body.targetType || !body.targetId || !body.baseAmountMinor || !body.baseCurrency) {
       return json({ error: 'targetType, targetId, baseAmountMinor, and baseCurrency are required.' }, { status: 400, correlationId: id });
-    }
-
-    const r = await query<{ is_admin: boolean }>(
-      `SELECT EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=$1 AND r.name='platform_admin') AS is_admin`,
-      [userId]
-    );
-    if (!r.rows[0]?.is_admin) {
-      return json({ error: 'Platform admin required.' }, { status: 403, correlationId: id });
     }
 
     const rule = await upsertPricingRule({

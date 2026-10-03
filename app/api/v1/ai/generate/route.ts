@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { correlationId, handleRouteError, json } from '../../../../../server/core/http';
 import { requireRequestUser } from '../../../../../server/identity/request-user';
 import { requireWorkspacePermission } from '../../../../../server/identity/rbac';
+import { assertSameOrigin } from '../../../../../server/core/security-boundary';
 import { anthropicAdapter } from '../../../../../server/ai/providers/anthropic';
 import { openaiAdapter } from '../../../../../server/ai/providers/openai';
 import { AIGateway } from '../../../../../server/ai/gateway';
@@ -23,6 +24,7 @@ const gateway = new AIGateway([
 export async function POST(request: NextRequest) {
   const id = correlationId(request);
   try {
+    assertSameOrigin(request);
     const userId = await requireRequestUser(request);
     const body = await request.json() as {
       workspaceId: string;
