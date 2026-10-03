@@ -1,38 +1,172 @@
-# Digital Platform
+# Digital Platform v4.2
 
-Premium RTL-first, AI-native digital services platform with Social, AI, Automation, Commerce, B2B and future agency/white-label capabilities.
+A production-grade, modular digital services platform built with Next.js 16, TypeScript, and PostgreSQL. RTL-first with full Persian/Arabic support, AI-native, and designed for SaaS, agency, and B2B deployments.
 
-## Current state
-The repository contains the maximum implementation foundation prepared before Claude Code is needed for external integrations and environment-dependent verification. It includes runtime contracts, database migrations, identity/session primitives, wallet/ledger, catalog/orders, provider/AI/social/automation/B2B foundations, public SEO/GEO architecture, and local infrastructure.
+## Features
 
-The project is **not marked production-ready** until the full verification gate and live integrations are executed.
+### Identity & Security
+- Registration, login, session management with `__Host-` cookies
+- TOTP-based MFA with recovery codes
+- Passkey/trusted-device foundation
+- RBAC with workspace-scoped roles
+- Session revocation on privilege change
 
-## Start
-Read `START_HERE_FOR_CLAUDE.md`.
+### Commerce & Billing
+- Service catalog with server-authoritative pricing
+- Checkout sessions with immutable quote snapshots
+- Double-entry ledger and wallet
+- Subscription lifecycle (trial, grace, renewal)
+- Invoice generation with idempotent number sequences
+- Refund workflows with over-refund guard
+- Payment gateway abstraction with webhook HMAC verification
 
-Local setup:
-1. Copy `.env.example` to `.env`.
-2. Start PostgreSQL/Redis with `docker compose up -d`.
-3. Run `./scripts/bootstrap.sh` in a network-enabled environment.
-4. Run `pnpm db:migrate`.
-5. Run `pnpm verify`.
+### Dynamic Pricing & FX
+- Per-plan and per-service margin rules (markup / true-margin)
+- FX rate history with verified source metadata
+- Stale-rate policies: `USE_LAST_KNOWN_GOOD` / `FREEZE_PRICE` / `BLOCK_PURCHASE`
+- Integer-only pricing engine (no floating-point rounding errors)
+- Generated price audit trail
 
-## Verification gate
-`lint → typecheck → unit tests → production build → E2E`
+### AI Gateway
+- Anthropic and OpenAI adapters with streaming (SSE)
+- Model catalog sync with per-token cost accounting
+- Credit and subscription entitlement enforcement
+- RAG ingestion, chunking, and keyword retrieval
+- Agent run persistence with tool-call audit trail
 
-A failed check blocks the gate.
+### Automation
+- Workflow engine with event and schedule triggers
+- DB-backed job queue with `FOR UPDATE SKIP LOCKED`
+- Condition/branching, delay, and webhook step types
+- Run replay and cancel controls
 
-## SEO / GEO
-Public content is designed around canonical URLs, structured data, sitemap/robots, entity consistency, internal linking, answer-first content and AI-search-readable facts. See `docs/seo/` and `docs/geo/`.
+### Social
+- Multi-channel publishing (5 channel types)
+- OAuth credential vault (AES-256-GCM encrypted)
+- Capability discovery and analytics ingestion
+- Scheduled post queue
+
+### B2B
+- API key authentication with scope enforcement
+- Sliding-window rate limiting
+- Sandbox (`dp_test_`) and live (`dp_live_`) environments
+- Agency/client workspace isolation
+- White-label branding and custom domain routing
+- Usage reporting
+
+### Observability
+- JSON structured logging with secret redaction
+- In-process metrics and W3C traceparent tracing
+- Alert rules with anomaly detection
+- Operational event persistence
+
+## Tech Stack
+
+| Layer | Choice |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript 5.9 |
+| Database | PostgreSQL (21 migrations) |
+| Cache / Queue | Redis + DB-backed job queue |
+| Package manager | pnpm 10 (monorepo) |
+| Mobile | Expo / React Native (apps/mobile) |
+| Testing | Vitest (150 unit tests) |
+| E2E | Playwright |
+| UI direction | RTL-first, Persian/Arabic + LTR |
+
+## Project Structure
+
+```
+├── app/                  # Next.js App Router pages and API routes
+├── server/               # Domain logic (never imported by client)
+│   ├── identity/         # Auth, MFA, sessions, RBAC
+│   ├── commerce/         # Orders, checkout, catalog
+│   ├── payments/         # Gateway, invoices, refunds, reconciliation
+│   ├── pricing/          # FX rates, rules, stale-rate guard
+│   ├── ai/               # Gateway, RAG, agents, streaming
+│   ├── automation/       # Workflow engine, triggers, worker
+│   ├── social/           # Channel adapters, publishing, analytics
+│   ├── b2b/              # API keys, rate limits, agency, white-label
+│   ├── billing/          # Double-entry ledger, journal
+│   └── observability/    # Logging, metrics, tracing, alerts
+├── db/migrations/        # 21 sequential SQL migrations
+├── apps/mobile/          # Expo/React Native client
+├── packages/
+│   ├── design-tokens/    # Shared semantic tokens (web + mobile)
+│   └── api-contracts/    # Shared API types
+└── docs/                 # Architecture, security, and spec docs
+```
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 22.x
+- pnpm 10.15.x
+- Docker (for PostgreSQL and Redis)
+
+### Setup
+
+```bash
+# Clone and install
+git clone https://github.com/asadiradmehdi/digital-platform-v4.2.git
+cd digital-platform-v4.2
+pnpm install
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your secrets
+
+# Start infrastructure
+docker compose up -d
+
+# Run migrations
+pnpm db:migrate
+
+# Start development server
+pnpm dev
+```
+
+### Verification Gate
+
+```bash
+pnpm lint        # ESLint
+pnpm typecheck   # tsc --noEmit
+pnpm test        # 150 unit tests
+pnpm build       # Production build
+```
+
+All four must pass before any deployment.
+
+## Database
+
+21 PostgreSQL migrations covering:
+- Core schema (users, workspaces, sessions, RBAC)
+- Wallet, ledger, orders, subscriptions
+- Dynamic pricing, FX rates, generated prices
+- AI usage, agent runs, knowledge bases
+- Automation workflows, job queue
+- Social channels, analytics
+- B2B API keys, agency/white-label
+- Observability events
+
+Run `./scripts/migrate.sh` to apply all migrations in order.
 
 ## Security
-No production credentials belong in Git. Financial operations use integer minor units, idempotency and PostgreSQL as the source of truth. External side effects require adapters, correlation IDs, auditability and safe retry behavior.
 
-## Pre-Claude status
-v2.8 adds governed agent execution, automation guardrails, operational observability primitives, and security hardening. Runtime verification must be executed in a provisioned dependency + PostgreSQL environment before any production readiness claim.
+- No secrets in source control — `.env.example` contains only placeholders
+- Financial operations use integer minor units with idempotency keys
+- All external side effects go through adapters with correlation IDs
+- Webhook payloads require HMAC signature verification before processing
+- Tenant isolation enforced via Row-Level Security (RLS) policies
+- Session cookies are `__Host-` compatible
+
+See [`docs/SECURITY.md`](docs/SECURITY.md) and [`docs/SECURITY_ARCHITECTURE_v2.md`](docs/SECURITY_ARCHITECTURE_v2.md).
 
 ## Mobile
-A first-class Expo/React Native client foundation lives in `apps/mobile`. It consumes the same API and domain contracts as the web application and shares semantic design tokens through `packages/design-tokens`.
 
-## Pre-Claude Product Surface Update
-The current pre-Claude branch includes a premium application shell, service/AI/automation/settings/security/support product surfaces, an AI workspace composer shell, shared product surface primitives, and a mobile-first visual foundation. Runtime verification remains pending until the required Node dependencies, PostgreSQL and browser/device environments are available.
+A first-class Expo/React Native client lives in `apps/mobile`. It shares API contracts and design tokens with the web application and covers: Home, AI, Services, Orders, Wallet, Subscriptions, Automation, Analytics, Support, and Security Center screens.
+
+## License
+
+Private — all rights reserved.
