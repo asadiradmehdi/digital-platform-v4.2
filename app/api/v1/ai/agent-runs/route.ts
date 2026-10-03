@@ -4,6 +4,7 @@ import { requireRequestUser } from '../../../../../server/identity/request-user'
 import { requireWorkspacePermission } from '../../../../../server/identity/rbac';
 import { startAgentRun, getAgentRun, getAgentRunToolCalls } from '../../../../../server/ai/agent-run';
 import { query } from '../../../../../server/core/db';
+import { assertSameOrigin } from '../../../../../server/core/security-boundary';
 
 export async function GET(request: NextRequest) {
   const id = correlationId(request);
@@ -37,6 +38,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const id = correlationId(request);
   try {
+    assertSameOrigin(request);
     const userId = await requireRequestUser(request);
     const body = await request.json() as {
       workspaceId: string;

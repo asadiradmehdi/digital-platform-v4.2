@@ -4,6 +4,7 @@ import { requireRequestUser } from '../../../../../server/identity/request-user'
 import { requireWorkspacePermission } from '../../../../../server/identity/rbac';
 import { getWorkflowRun, listWorkflowRuns, cancelWorkflowRun, getWorkflowWithLatestVersion, startWorkflowRun } from '../../../../../server/automation/workflow-service';
 import { enqueueWorkflowRun } from '../../../../../server/automation/worker';
+import { assertSameOrigin } from '../../../../../server/core/security-boundary';
 
 export async function GET(request: NextRequest) {
   const id = correlationId(request);
@@ -33,6 +34,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const id = correlationId(request);
   try {
+    assertSameOrigin(request);
     const userId = await requireRequestUser(request);
     const body = await request.json() as {
       workspaceId: string;

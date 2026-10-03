@@ -6,6 +6,7 @@ import { createWorkflow, getWorkflowWithLatestVersion, startWorkflowRun } from '
 import { enqueueWorkflowRun } from '../../../../../server/automation/worker';
 import { query } from '../../../../../server/core/db';
 import type { WorkflowDefinition } from '../../../../../server/automation/contracts';
+import { assertSameOrigin } from '../../../../../server/core/security-boundary';
 
 export async function GET(request: NextRequest) {
   const id = correlationId(request);
@@ -32,6 +33,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const id = correlationId(request);
   try {
+    assertSameOrigin(request);
     const userId = await requireRequestUser(request);
     const body = await request.json() as {
       workspaceId: string;
