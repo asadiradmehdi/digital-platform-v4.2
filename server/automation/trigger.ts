@@ -43,8 +43,11 @@ export async function dispatchWorkflowTriggers(event: TriggerEvent): Promise<str
 }
 
 export async function dispatchScheduledTriggers(): Promise<string[]> {
-  const r = await query<{ workflow_id: string; workspace_id: string; trigger_id: string; cron_expression: string }>(
-    `SELECT st.id AS trigger_id, st.workflow_id, w.workspace_id, st.cron_expression
+  // Fetch scheduled triggers with the latest workflow version id in a single query
+  // to avoid an N+1 pattern (previously issued one SELECT per trigger row).
+  const r = await query<{ workflow_id: string; workspace_id: string; trigger_id: string; cron_expression: string; latest_version_id: string | null }>(
+    `SELECT st.id AS trigger_id, st.workflow_id, w.workspace_id, st.cron_expression,
+            (SELECT id FROM workflow_versions WHERE workflow_id=w.id ORDER BY version DESC LIMIT 1) AS latest_version_id
      FROM scheduled_triggers st
      JOIN workflows w ON w.id = st.workflow_id
      WHERE st.active=true AND w.active=true
@@ -54,11 +57,7 @@ export async function dispatchScheduledTriggers(): Promise<string[]> {
 
   const runIds: string[] = [];
   for (const row of r.rows) {
-    const latestVer = await query<{ id: string }>(
-      `SELECT id FROM workflow_versions WHERE workflow_id=$1 ORDER BY version DESC LIMIT 1`,
-      [row.workflow_id]
-    );
-    const versionId = latestVer.rows[0]?.id;
+    const versionId = row.latest_version_id;
     if (!versionId) continue;
 
     const runId = await startWorkflowRun({

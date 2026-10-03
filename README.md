@@ -66,11 +66,11 @@ A production-grade, modular digital services platform built with Next.js 16, Typ
 |---|---|
 | Framework | Next.js 16 (App Router) |
 | Language | TypeScript 5.9 |
-| Database | PostgreSQL (21 migrations) |
+| Database | PostgreSQL (23 migrations) |
 | Cache / Queue | Redis + DB-backed job queue |
 | Package manager | pnpm 10 (monorepo) |
 | Mobile | Expo / React Native (apps/mobile) |
-| Testing | Vitest (294 unit tests, 42 test files) |
+| Testing | Vitest (328 unit tests, 47 test files) |
 | E2E | Playwright |
 | UI direction | RTL-first, Persian/Arabic + LTR |
 
@@ -89,7 +89,7 @@ A production-grade, modular digital services platform built with Next.js 16, Typ
 │   ├── b2b/              # API keys, rate limits, agency, white-label
 │   ├── billing/          # Double-entry ledger, journal
 │   └── observability/    # Logging, metrics, tracing, alerts
-├── db/migrations/        # 22 sequential SQL migrations
+├── db/migrations/        # 23 sequential SQL migrations
 ├── apps/mobile/          # Expo/React Native client
 ├── packages/
 │   ├── design-tokens/    # Shared semantic tokens (web + mobile)
@@ -132,7 +132,7 @@ pnpm dev
 ```bash
 pnpm lint        # ESLint
 pnpm typecheck   # tsc --noEmit
-pnpm test        # 294 unit tests
+pnpm test        # 328 unit tests
 pnpm build       # Production build
 ```
 
@@ -140,7 +140,7 @@ All four must pass before any deployment.
 
 ## Database
 
-22 PostgreSQL migrations covering:
+23 PostgreSQL migrations covering:
 - Core schema (users, workspaces, sessions, RBAC)
 - Wallet, ledger, orders, subscriptions
 - Dynamic pricing, FX rates, generated prices

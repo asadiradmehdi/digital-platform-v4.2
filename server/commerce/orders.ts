@@ -28,6 +28,30 @@ export async function createOrder(input: CreateOrderInput) {
     return order.rows[0];
   });
 }
+export type OrderSummary = { id: string; status: string; currency: string; totalMinor: string; createdAt: string };
+
+export async function listOrders(
+  workspaceId: string,
+  limit: number,
+  cursor?: string | null,
+): Promise<{ items: OrderSummary[]; nextCursor: string | null }> {
+  const r = await withWorkspaceTransaction(workspaceId, undefined, async client =>
+    client.query<OrderSummary>(
+      `SELECT id, status, currency,
+              total_minor::text AS "totalMinor",
+              created_at AS "createdAt"
+       FROM orders
+       WHERE workspace_id=$1
+         AND ($2::uuid IS NULL OR id > $2::uuid)
+       ORDER BY id
+       LIMIT $3`,
+      [workspaceId, cursor ?? null, limit + 1],
+    )
+  );
+  const items = r.rows.slice(0, limit);
+  return { items, nextCursor: r.rows.length > limit ? (items.at(-1)?.id ?? null) : null };
+}
+
 export async function transitionOrder(orderId: string, workspaceId: string, to: OrderStatus, actorUserId?: string) {
   return withWorkspaceTransaction(workspaceId, undefined, async (client) => {
     const current = await client.query<{ status: OrderStatus }>(`SELECT status FROM orders WHERE id=$1 FOR UPDATE`, [orderId]);
