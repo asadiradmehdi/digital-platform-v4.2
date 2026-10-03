@@ -1,0 +1,26 @@
+import { withWorkspaceTransaction } from '../core/db';
+import { AppError } from '../core/errors';
+import { requireIdempotencyKey } from '../core/idempotency';
+
+export type JournalLine = { accountId: string; direction: 'DEBIT' | 'CREDIT'; amountMinor: bigint };
+
+export async function postBalancedJournal(input: {
+  workspaceId: string; currency: string; referenceType: string; referenceId?: string;
+  idempotencyKey: string; lines: JournalLine[];
+}) {
+  requireIdempotencyKey(input.idempotencyKey);
+  if (input.lines.length < 2) throw new AppError('VALIDATION_ERROR', 'A journal requires at least two lines.');
+  const debit = input.lines.filter(x => x.direction === 'DEBIT').reduce((a,x)=>a+x.amountMinor,0n);
+  const credit = input.lines.filter(x => x.direction === 'CREDIT').reduce((a,x)=>a+x.amountMinor,0n);
+  if (debit <= 0n || debit !== credit) throw new AppError('VALIDATION_ERROR', 'Journal is not balanced.');
+  return withWorkspaceTransaction(input.workspaceId, undefined, async client => {
+    const existing = await client.query<{id:string}>(`SELECT id FROM ledger_transactions WHERE idempotency_key=$1`,[input.idempotencyKey]);
+    if (existing.rows[0]) return existing.rows[0];
+    const tx = await client.query<{id:string}>(`INSERT INTO ledger_transactions(workspace_id,currency,reference_type,reference_id,idempotency_key) VALUES($1,$2,$3,$4,$5) RETURNING id`,[input.workspaceId,input.currency,input.referenceType,input.referenceId ?? null,input.idempotencyKey]);
+    for (const line of input.lines) {
+      if (line.amountMinor <= 0n) throw new AppError('VALIDATION_ERROR','Journal amounts must be positive.');
+      await client.query(`INSERT INTO ledger_transaction_entries(transaction_id,account_id,direction,amount_minor) VALUES($1,$2,$3,$4)`,[tx.rows[0].id,line.accountId,line.direction,line.amountMinor]);
+    }
+    return tx.rows[0];
+  });
+}

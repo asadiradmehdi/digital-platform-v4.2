@@ -1,0 +1,2 @@
+import { withWorkspaceTransaction } from '../core/db';
+export async function recordAIUsage(input:{requestId:string;workspaceId:string;metrics:Array<{key:string;quantity:bigint;unit:string}>}){await withWorkspaceTransaction(input.workspaceId, undefined, async client => { for(const metric of input.metrics){await client.query(`INSERT INTO ai_usage_events(ai_request_id,workspace_id,metric_key,quantity,unit) VALUES($1,$2,$3,$4,$5)`,[input.requestId,input.workspaceId,metric.key,metric.quantity,metric.unit]); } });}

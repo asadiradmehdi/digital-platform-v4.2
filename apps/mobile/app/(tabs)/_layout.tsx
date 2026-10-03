@@ -1,0 +1,4 @@
+import { Redirect, Tabs } from 'expo-router';
+import { theme } from '../../src/theme';
+import { useAuth } from '../../src/auth/AuthProvider';
+export default function Layout(){const {ready,authenticated}=useAuth();if(!ready)return null;if(!authenticated)return <Redirect href="/login"/>;return <Tabs screenOptions={{headerShown:false,tabBarStyle:{backgroundColor:theme.colors.surface,borderTopColor:theme.colors.line,height:64},tabBarActiveTintColor:theme.colors.accentStrong,tabBarInactiveTintColor:theme.colors.muted,tabBarLabelStyle:{fontFamily:theme.typography.fa,fontSize:10}}}><Tabs.Screen name="index" options={{title:'خانه'}}/><Tabs.Screen name="ai" options={{title:'AI'}}/><Tabs.Screen name="services" options={{title:'خدمات'}}/><Tabs.Screen name="orders" options={{title:'سفارش‌ها'}}/><Tabs.Screen name="settings" options={{title:'تنظیمات'}}/></Tabs>}

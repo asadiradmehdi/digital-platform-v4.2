@@ -1,0 +1,7 @@
+import type { Metadata } from 'next';
+import { AudioLines, Bot, Code2, Image, Search, Sparkles, Video } from 'lucide-react';
+import { AppShell } from '../../components/AppShell';
+import { ProductCard, SurfaceHero, SystemStrip } from '../../components/ProductSurface';
+export const metadata: Metadata = { title: 'هوش مصنوعی', robots:{index:false,follow:false} };
+const items=[['Text & Writing','نوشتن، بازنویسی، خلاصه‌سازی و تولید محتوای ساختاریافته.',Sparkles],['Image','تولید و ویرایش تصویر با کنترل مدل و مصرف.',Image],['Video','تولید و پردازش ویدیو با usage metering.',Video],['Audio & Voice','تبدیل متن، صدا و voice workflows.',AudioLines],['Coding & Research','تحقیق، تحلیل و کدنویسی با context کنترل‌شده.',Code2],['RAG & Agents','دانش سازمانی، ابزارها و Agentهای قابل audit.',Bot]] as const;
+export default function AI(){return <AppShell><main className="workspace-page-content"><SurfaceHero eyebrow="هوش مصنوعی · مرکز مدل‌ها" title="AI که برای اجرا ساخته شده." description="یک محیط واحد برای ساخت، اجرای کنترل‌شده، اندازه‌گیری مصرف و مدیریت هزینه مدل‌های هوش مصنوعی." primaryHref="/ai/workspace" primaryLabel="باز کردن محیط هوش مصنوعی" secondaryHref="/pricing" secondaryLabel="مشاهده پلن‌ها"/><SystemStrip/><section className="product-card-grid-premium">{items.map(([title,description,Icon])=><ProductCard key={title} icon={Icon} title={title} description={description} meta="مسیریابی مدل · محاسبه مصرف"/>)}</section></main></AppShell>}

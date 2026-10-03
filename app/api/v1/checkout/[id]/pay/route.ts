@@ -1,0 +1,66 @@
+import { NextRequest } from 'next/server';
+import { correlationId, handleRouteError, json } from '../../../../../../server/core/http';
+import { requireRequestUser } from '../../../../../../server/identity/request-user';
+import { requireWorkspacePermission } from '../../../../../../server/identity/rbac';
+import { assertSameOrigin } from '../../../../../../server/core/security-boundary';
+import { query } from '../../../../../../server/core/db';
+import { beginCheckout } from '../../../../../../server/payments/service';
+import { mockGateway } from '../../../../../../server/payments/mock-gateway';
+import { AppError } from '../../../../../../server/core/errors';
+import { randomUUID } from 'node:crypto';
+
+type Params = { params: Promise<{ id: string }> };
+
+// Gateway registry — extend when real provider adapters are implemented.
+function resolveGateway(name: string) {
+  if (name === 'mock' || !name) return mockGateway;
+  throw new AppError('VALIDATION_ERROR', `Unknown payment gateway '${name}'.`);
+}
+
+export async function POST(request: NextRequest, { params }: Params) {
+  const id = correlationId(request);
+  try {
+    assertSameOrigin(request);
+    const { id: sessionId } = await params;
+    const userId = await requireRequestUser(request);
+    const body = await request.json() as Record<string, unknown>;
+
+    const session = await query<{ workspace_id: string; status: string; total_minor: string; currency: string; quote_hash: string; expires_at: string }>(
+      `SELECT workspace_id, status, total_minor, currency, quote_hash, expires_at FROM checkout_sessions WHERE id=$1`,
+      [sessionId]
+    );
+    if (!session.rows[0]) throw new AppError('NOT_FOUND', 'Checkout session not found.');
+    const s = session.rows[0];
+    await requireWorkspacePermission(userId, s.workspace_id, 'orders.create');
+
+    if (s.status !== 'OPEN') throw new AppError('CONFLICT', `Checkout session is not open (current status: ${s.status}).`);
+    if (new Date(s.expires_at) <= new Date()) throw new AppError('CONFLICT', 'Checkout session has expired.');
+
+    const quoteHash = String(body.quoteHash ?? '');
+    if (quoteHash !== s.quote_hash) throw new AppError('CONFLICT', 'Checkout quote has changed. Please refresh and try again.');
+
+    const gatewayName = String(body.gateway ?? 'mock');
+    const gateway = resolveGateway(gatewayName);
+    const callbackUrl = String(body.callbackUrl ?? `${process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'}/checkout/callback`);
+    const idempotencyKey = request.headers.get('idempotency-key') || randomUUID();
+
+    const result = await beginCheckout({
+      workspaceId: s.workspace_id,
+      amountMinor: BigInt(s.total_minor),
+      currency: s.currency,
+      gateway,
+      callbackUrl,
+      idempotencyKey,
+    });
+
+    // Mark checkout session as payment-pending.
+    await query(
+      `UPDATE checkout_sessions SET status='PAYMENT_PENDING', updated_at=now() WHERE id=$1 AND status='OPEN'`,
+      [sessionId]
+    );
+
+    return json({ paymentId: result.paymentId, checkoutUrl: result.checkoutUrl }, { correlationId: id });
+  } catch (e) {
+    return handleRouteError(e, id);
+  }
+}

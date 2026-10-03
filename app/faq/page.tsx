@@ -1,0 +1,6 @@
+import type { Metadata } from 'next';
+import { PublicPage } from '../../components/seo/PublicPage';
+import { JsonLd } from '../../components/seo/JsonLd';
+export const metadata: Metadata = { title: 'سؤالات متداول', description: 'پاسخ به سؤالات متداول درباره خدمات، AI، پرداخت و اتوماسیون.', alternates: { canonical: '/faq' } };
+const faq=[['آیا قیمت‌ها ثابت هستند؟','قیمت خدمات و مصرف AI می‌تواند وابسته به محصول، ارائه‌دهنده، مدل و زمان باشد؛ منبع قیمت باید صفحه یا کاتالوگ فعلی محصول باشد.'],['آیا API ارائه می‌شود؟','معماری محصول برای API نسخه‌دار، API Key، scope و sandbox طراحی شده و قابلیت‌ها هنگام انتشار مستند می‌شوند.'],['آیا Workspace جداگانه وجود دارد؟','بله، معماری Workspace برای جداسازی اعضا، سفارش‌ها، کیف پول، اشتراک‌ها، کانال‌ها و داده‌ها در نظر گرفته شده است.']];
+export default function FAQ(){const mainEntity=faq.map(([name,text])=>({'@type':'Question',name,acceptedAnswer:{'@type':'Answer',text}}));return <PublicPage eyebrow="FAQ" title="سؤالات متداول" description="پاسخ‌های کوتاه و دقیق به پرسش‌های پرتکرار."><JsonLd data={{'@context':'https://schema.org','@type':'FAQPage',mainEntity}}/><div className="public-list">{faq.map(([q,a])=><article key={q}><h2>{q}</h2><p>{a}</p></article>)}</div></PublicPage>}

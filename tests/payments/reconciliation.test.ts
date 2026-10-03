@@ -1,0 +1,79 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+vi.mock('../../server/core/db', () => ({ query: vi.fn(), withWorkspaceTransaction: vi.fn() }));
+vi.mock('../../server/observability/logger', () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }));
+
+import { query, withWorkspaceTransaction } from '../../server/core/db';
+import { reconcileUnconfirmedPayments } from '../../server/payments/reconciliation';
+import type { PaymentGateway } from '../../server/payments/service';
+
+const mockQuery = vi.mocked(query);
+const mockTransaction = vi.mocked(withWorkspaceTransaction);
+
+const mockGateway: PaymentGateway = {
+  name: 'mock',
+  createCheckout: vi.fn(),
+  verify: vi.fn(),
+  refund: vi.fn(),
+};
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockTransaction.mockImplementation(async (_ws, _opts, fn) => fn({ query: mockQuery } as never));
+});
+
+describe('reconcileUnconfirmedPayments', () => {
+  it('returns zero when no stale payments exist', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as never);
+    const result = await reconcileUnconfirmedPayments(mockGateway, 'ws-1');
+    expect(result.checked).toBe(0);
+    expect(result.reconciled).toBe(0);
+  });
+
+  it('reconciles a payment that gateway confirms as paid', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [
+      { id: 'pay-1', gateway_reference: 'gw-ref-1', amount_minor: '10000', currency: 'USD' }
+    ], rowCount: 1 } as never);
+    vi.mocked(mockGateway.verify).mockResolvedValueOnce({ paid: true, raw: {} });
+    // markPaymentPaid internally uses withWorkspaceTransaction
+    mockTransaction.mockResolvedValueOnce({ id: 'pay-1', status: 'PAID' } as never);
+
+    const result = await reconcileUnconfirmedPayments(mockGateway, 'ws-1');
+    expect(result.checked).toBe(1);
+    expect(result.reconciled).toBe(1);
+    expect(result.failed).toBe(0);
+  });
+
+  it('does not mark payment paid when gateway says unpaid', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [
+      { id: 'pay-2', gateway_reference: 'gw-ref-2', amount_minor: '5000', currency: 'USD' }
+    ], rowCount: 1 } as never);
+    vi.mocked(mockGateway.verify).mockResolvedValueOnce({ paid: false });
+
+    const result = await reconcileUnconfirmedPayments(mockGateway, 'ws-1');
+    expect(result.checked).toBe(1);
+    expect(result.reconciled).toBe(0);
+    expect(result.failed).toBe(0);
+  });
+
+  it('counts as failed when payment has no gateway reference', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [
+      { id: 'pay-3', gateway_reference: null, amount_minor: '2000', currency: 'USD' }
+    ], rowCount: 1 } as never);
+
+    const result = await reconcileUnconfirmedPayments(mockGateway, 'ws-1');
+    expect(result.failed).toBe(1);
+    expect(result.errors).toHaveLength(1);
+  });
+
+  it('counts as failed when gateway throws', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [
+      { id: 'pay-4', gateway_reference: 'gw-ref-4', amount_minor: '3000', currency: 'USD' }
+    ], rowCount: 1 } as never);
+    vi.mocked(mockGateway.verify).mockRejectedValueOnce(new Error('Gateway timeout'));
+
+    const result = await reconcileUnconfirmedPayments(mockGateway, 'ws-1');
+    expect(result.failed).toBe(1);
+    expect(result.errors[0]).toContain('Gateway timeout');
+  });
+});

@@ -1,0 +1,5 @@
+import { NextRequest } from 'next/server';
+import { query, withWorkspaceTransaction } from '../../../../server/core/db';
+import { requireRequestUser } from '../../../../server/identity/request-user';
+import { correlationId, handleRouteError, json } from '../../../../server/core/http';
+export async function GET(request:NextRequest){const id=correlationId(request);try{const user=await requireRequestUser(request);const memberships=await query<{workspaceId:string}>(`SELECT workspace_id AS "workspaceId" FROM workspace_members WHERE user_id=$1 AND status='ACTIVE'`,[user]);const items=[];for(const membership of memberships.rows){const r=await withWorkspaceTransaction(membership.workspaceId,user,async client=>client.query(`SELECT w.id,w.currency,w.status,COALESCE(SUM(CASE WHEN le.direction='CREDIT' THEN le.amount_minor ELSE -le.amount_minor END),0)::text AS "balanceMinor" FROM wallets w LEFT JOIN ledger_accounts la ON la.wallet_id=w.id LEFT JOIN ledger_entries le ON le.account_id=la.id WHERE w.workspace_id=$1 GROUP BY w.id`,[membership.workspaceId]));items.push(...r.rows);}return json({items},{correlationId:id});}catch(e){return handleRouteError(e,id);}}

@@ -1,0 +1,3 @@
+import { StyleSheet, Text } from 'react-native'; import { Screen } from '../../src/components/Screen'; import { Card, Metric, Title } from '../../src/components/Ui'; import { theme } from '../../src/theme';
+export default function Analytics(){return <Screen><Title eyebrow="ANALYTICS" description="شاخص‌ها از eventهای server-side ساخته می‌شوند">تحلیل و گزارش</Title><Metric label="سفارش‌های فعال" value="۳"/><Metric label="حاشیه مشارکت" value="—" hint="پس از اتصال داده واقعی محاسبه می‌شود"/><Card><Text style={styles.muted}>Revenue، Provider Cost، Payment Cost، Refund Cost، AI Usage و Margin در این بخش قابل مشاهده خواهند بود.</Text></Card></Screen>}
+const styles=StyleSheet.create({muted:{color:theme.colors.muted,fontSize:12,lineHeight:22}});

@@ -1,0 +1,2 @@
+import { Skeleton } from '../components/ui';
+export default function Loading(){return <main className="content loading-screen"><div className="loading-head"><Skeleton className="skeleton-title"/><Skeleton className="skeleton-action"/></div><div className="stats-grid"><Skeleton className="skeleton-card"/><Skeleton className="skeleton-card"/><Skeleton className="skeleton-card"/><Skeleton className="skeleton-card"/></div><div className="dashboard-lower"><Skeleton className="skeleton-panel"/><Skeleton className="skeleton-panel"/></div></main>}

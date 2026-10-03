@@ -1,0 +1,4 @@
+import type { Metadata } from 'next';
+import { PublicPage } from '../../components/seo/PublicPage';
+export const metadata: Metadata = { title: 'محتوا', description: 'مقالات آموزشی و مرجع درباره AI، اتوماسیون، خدمات دیجیتال و زیرساخت کسب‌وکار.', alternates: { canonical: '/blog' } };
+export default function Blog(){return <PublicPage eyebrow="BLOG" title="مرجع یادگیری و تصمیم‌گیری" description="محتوای عمومی باید پاسخ‌محور، مستند، به‌روز و قابل استفاده مستقل از محصول باشد."><div className="public-list"><article><h2>AI Gateway چیست و چرا مهم است؟</h2><p>مقاله در مرحله تدوین است؛ نسخه نهایی باید شامل معماری، هزینه، محدودیت و الگوهای routing باشد.</p></article><article><h2>طراحی Workflow برای عملیات کسب‌وکار</h2><p>مقاله در مرحله تدوین است؛ محتوای نهایی باید نمونه‌های واقعی و محدودیت‌های اجرایی را پوشش دهد.</p></article></div></PublicPage>}

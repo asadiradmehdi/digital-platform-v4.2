@@ -1,0 +1,3 @@
+import { createHmac, timingSafeEqual } from 'node:crypto';
+export function signWebhook(secret:string, timestamp:string, rawBody:string){return createHmac('sha256',secret).update(`${timestamp}.${rawBody}`).digest('hex');}
+export function verifyWebhookSignature(secret:string,timestamp:string,rawBody:string,provided:string,maxAgeSeconds=300){const age=Math.abs(Date.now()-Number(timestamp)*1000);if(!Number.isFinite(age)||age>maxAgeSeconds*1000)return false;const expected=signWebhook(secret,timestamp,rawBody);const a=Buffer.from(expected,'hex'),b=Buffer.from(provided,'hex');return a.length===b.length&&timingSafeEqual(a,b);}

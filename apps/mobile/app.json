@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Digital Platform",
+    "slug": "digital-platform",
+    "scheme": "digitalplatform",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "android": {
+      "package": "com.digitalplatform.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#090a0f"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.digitalplatform.app",
+      "supportsTablet": true
+    }
+  }
+}
