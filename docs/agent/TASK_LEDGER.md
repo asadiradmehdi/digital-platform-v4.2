@@ -208,3 +208,32 @@ Status: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 - [x] Contract verification script
 - [ ] Runtime verification with installed dependencies/PostgreSQL/Android/iOS toolchains
 - [ ] Independent penetration test and SCA before production
+
+## Session 3 — Security Audit + Test Coverage (2026-10-03)
+
+### Security/Auth defects fixed (Priority 1)
+- [x] POST /api/v1/ai/generate — missing assertSameOrigin (CSRF vulnerability)
+- [x] GET+POST /api/v1/pricing/rules — any authenticated user could list internal pricing margins; now requires platform_admin
+- [x] POST /api/v1/ai/catalog/sync — raw inline SQL admin check replaced with shared helper + assertSameOrigin added
+- [x] GET audit/stale + POST /api/v1/content/entities — any authed user could write/read internal content audit data; now requires platform_admin + assertSameOrigin
+- [x] POST /api/v1/automation/workflows — missing assertSameOrigin
+- [x] POST /api/v1/automation/runs — missing assertSameOrigin
+- [x] POST+DELETE /api/v1/b2b/api-keys — missing assertSameOrigin on both mutations
+- [x] POST /api/v1/ai/agent-runs — missing assertSameOrigin
+- [x] Extract requirePlatformAdmin / isPlatformAdmin into server/identity/platform-admin.ts (eliminates duplicated raw-SQL role checks)
+
+### Test coverage added (Priority 3)
+- [x] tests/identity/platform-admin.test.ts — 6 tests for requirePlatformAdmin / isPlatformAdmin
+- [x] tests/b2b/agency-whitelabel.test.ts — 10 tests for agency workspace isolation and white-label branding
+- [x] tests/billing/double-entry.test.ts — 5 tests for postBalancedTransaction (balance guard, idempotency, journal insertion)
+- [x] tests/social/publishing-analytics.test.ts — 10 tests for publishToChannel, schedulePost, ingestChannelAnalytics, getAnalyticsSummary
+- [x] tests/subscriptions/usage.test.ts — 5 tests for consumeSubscriptionUsage (zero-quantity guard, idempotency dedup, limit exceeded, within limit, unlimited)
+
+### Documentation accuracy (Priority 11)
+- [x] README.md — corrected unit test count (150 → 186) and migration count (21 → 22)
+
+### Verification gate (2026-10-03)
+- [x] pnpm lint — PASS
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm test — PASS (186/186, 30 test files)
+- [x] pnpm build — PASS (next build --webpack exit 0)
