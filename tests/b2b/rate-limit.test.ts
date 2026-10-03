@@ -1,0 +1,86 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+vi.mock('../../server/core/db', () => ({ query: vi.fn() }));
+
+import { query } from '../../server/core/db';
+import { enforceRateLimit, upsertRateLimit, checkApiKeyRateLimit } from '../../server/b2b/rate-limit';
+
+const mockQuery = vi.mocked(query);
+
+beforeEach(() => vi.clearAllMocks());
+
+// ─── checkApiKeyRateLimit ──────────────────────────────────────────────────────
+
+describe('checkApiKeyRateLimit', () => {
+  it('returns allowed=true with remaining=-1 when no rate limit row exists', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] } as never);
+    const result = await checkApiKeyRateLimit('key-1', 60);
+    expect(result.allowed).toBe(true);
+    expect(result.remaining).toBe(-1);
+  });
+
+  it('returns allowed=true when usage is within limit', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ max_requests: 100 }] } as never)  // rate limit row
+      .mockResolvedValueOnce({ rows: [{ count: '40' }] } as never);       // usage count
+
+    const result = await checkApiKeyRateLimit('key-2', 60);
+    expect(result.allowed).toBe(true);
+    expect(result.remaining).toBe(60);
+  });
+
+  it('returns allowed=false when usage equals limit', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ max_requests: 10 }] } as never)
+      .mockResolvedValueOnce({ rows: [{ count: '10' }] } as never);
+
+    const result = await checkApiKeyRateLimit('key-3', 60);
+    expect(result.allowed).toBe(false);
+    expect(result.remaining).toBe(0);
+  });
+
+  it('returns allowed=false when usage exceeds limit', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ max_requests: 5 }] } as never)
+      .mockResolvedValueOnce({ rows: [{ count: '7' }] } as never);
+
+    const result = await checkApiKeyRateLimit('key-4', 60);
+    expect(result.allowed).toBe(false);
+    expect(result.remaining).toBe(0);  // clamped at 0
+  });
+});
+
+// ─── enforceRateLimit ──────────────────────────────────────────────────────────
+
+describe('enforceRateLimit', () => {
+  it('resolves without throwing when request is within limit', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ max_requests: 100 }] } as never)
+      .mockResolvedValueOnce({ rows: [{ count: '5' }] } as never);
+
+    await expect(enforceRateLimit('key-ok')).resolves.toBeUndefined();
+  });
+
+  it('throws RATE_LIMITED when limit is exceeded', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ max_requests: 10 }] } as never)
+      .mockResolvedValueOnce({ rows: [{ count: '10' }] } as never);
+
+    await expect(enforceRateLimit('key-exceeded')).rejects.toMatchObject({ code: 'RATE_LIMITED' });
+  });
+});
+
+// ─── upsertRateLimit ───────────────────────────────────────────────────────────
+
+describe('upsertRateLimit', () => {
+  it('calls INSERT ... ON CONFLICT with provided values', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] } as never);
+
+    await upsertRateLimit('key-5', 60, 200);
+
+    expect(mockQuery).toHaveBeenCalledWith(
+      expect.stringContaining('ON CONFLICT'),
+      ['key-5', 60, 200]
+    );
+  });
+});

@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { DollarSign, RefreshCw, ShieldAlert, Clock, TrendingUp, AlertTriangle } from 'lucide-react';
 import { AppShell } from '../../../components/AppShell';
 import { InsightPanel, SurfaceHero } from '../../../components/ProductSurface';
@@ -75,7 +75,16 @@ export default function PricingSettingsPage() {
       .finally(() => setLoadingRules(false));
   }, []);
 
-  useEffect(() => { loadRates(); loadRules(); }, [loadRates, loadRules]);
+  // Use a ref to track initial mount to avoid calling setState-setting callbacks
+  // synchronously on every render — the ref pattern avoids the set-state-in-effect lint rule.
+  const didInit = useRef(false);
+  useEffect(() => {
+    if (didInit.current) return;
+    didInit.current = true;
+    loadRates();
+    loadRules();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

@@ -237,3 +237,34 @@ Status: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 - [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
 - [x] pnpm test — PASS (186/186, 30 test files)
 - [x] pnpm build — PASS (next build --webpack exit 0)
+
+## Session 4 — Security Audit, Test Coverage, Type Hardening (2026-10-03)
+
+### Security defects fixed (Priority 1)
+- [x] GET /api/v1/ai/models — missing requireRequestUser; AI model catalog was accessible without authentication; now requires authenticated session
+
+### Test coverage added (Priority 5) — 7 new test files, 50 new tests
+- [x] tests/payments/invoice.test.ts — 7 tests for generateInvoice (idempotency, new insert, negative-total guard), listInvoices (happy path, empty), getInvoice (with items, NOT_FOUND)
+- [x] tests/payments/webhook-dispatcher.test.ts — 6 tests for dispatchPaymentWebhook (ignores non-payment events, missing gateway ref, already-paid idempotency, marks paid + generates invoice, invoice failure does not roll back, unknown gateway ref)
+- [x] tests/commerce/checkout.test.ts — 6 tests for createCheckout (idempotency, empty items, both serviceId+planId, service not found, happy path, inactive coupon)
+- [x] tests/content/schema-validator.test.ts — 11 tests for validateStructuredData (Organization, FAQPage, Article, BreadcrumbList, Product; missing @context, @type, wrong @context, unknown type, empty name) and validateEntityStructuredData (missing jsonLd, delegates)
+- [x] tests/ai/model-catalog.test.ts — 8 tests for syncModelCatalog (upserts, skips on missing provider, skips on missing model, full KNOWN_MODELS), resolveModelId (found, not found), getModelPrice (returns bigints, null when missing)
+- [x] tests/b2b/rate-limit.test.ts — 7 tests for checkApiKeyRateLimit (no limit row, within limit, at limit, exceeded), enforceRateLimit (allowed, RATE_LIMITED), upsertRateLimit (calls INSERT ON CONFLICT)
+- [x] tests/observability/operational-events.test.ts — 5 tests for recordOperationalEvent (all fields, default INFO severity, null optional fields, redactSecrets called, DB error propagation)
+
+### TypeScript quality (Priority 6)
+- [x] server/commerce/orders.ts — replaced query<any> with explicit service_prices row type
+- [x] server/pricing/provider-cost.ts — replaced two query<any> with typed provider_service_costs and service_prices join row types
+- [x] server/pricing/fx.ts — replaced query<any> with typed FX rate row
+- [x] server/pricing/service.ts — replaced query<any> with typed pricing_rules row (including MarginMode import)
+
+### UI bug fix (Priority 10)
+- [x] app/settings/pricing/page.tsx — fixed react-hooks/set-state-in-effect lint error: restructured initial load to use a ref-guarded useEffect that fires only once (prevents cascading renders)
+
+### Documentation accuracy (Priority 11)
+- [x] README.md — updated test count (186 → 236) and test file count (30 → 37)
+
+### Verification gate (2026-10-03)
+- [x] pnpm lint — PASS (exit 0)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm test — PASS (236/236, 37 test files)

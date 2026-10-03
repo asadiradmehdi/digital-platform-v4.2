@@ -10,7 +10,7 @@ export async function createOrder(input: CreateOrderInput) {
   return withWorkspaceTransaction(input.workspaceId, undefined, async (client) => {
     const existing = await client.query<{ id: string; status: OrderStatus }>(`SELECT id,status FROM orders WHERE workspace_id=$1 AND idempotency_key=$2`, [input.workspaceId,input.idempotencyKey]);
     if (existing.rows[0]) return existing.rows[0];
-    const catalog = await client.query<any>(`
+    const catalog = await client.query<{ id: string; unit_price_minor: string; currency: string; price_version: number; pricing_rule_id: string | null; fx_rate_id: string | null; provider_cost_minor: string | null; provider_cost_currency: string | null }>(`
       SELECT sp.id,sp.unit_price_minor,sp.currency,sp.price_version,sp.pricing_rule_id,sp.fx_rate_id,sp.provider_cost_minor,sp.provider_cost_currency
       FROM service_prices sp
       WHERE sp.service_id=$1 AND sp.active=true AND sp.currency='IRT'

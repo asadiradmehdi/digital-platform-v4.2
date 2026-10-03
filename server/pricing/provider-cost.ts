@@ -16,7 +16,7 @@ export async function recordProviderServiceCost(input: {
 }
 
 export async function getLatestProviderServiceCost(providerServiceId: string) {
-  const result = await query<any>(`
+  const result = await query<{ id: string; unitCostMinor: string; currency: string; unit: string; effectiveFrom: string }>(`
     SELECT id,unit_cost_minor AS "unitCostMinor",currency,unit,effective_from AS "effectiveFrom"
     FROM provider_service_costs
     WHERE provider_service_id=$1 AND active=true
@@ -28,7 +28,7 @@ export async function getLatestProviderServiceCost(providerServiceId: string) {
 }
 
 export async function syncServicePriceCost(servicePriceId: string) {
-  const result = await query<any>(`
+  const result = await query<{ id: string; provider_service_id: string }>(`
     SELECT sp.id, ps.id AS provider_service_id
     FROM service_prices sp
     JOIN provider_routes pr ON pr.service_id=sp.service_id AND pr.active=true

@@ -70,7 +70,7 @@ A production-grade, modular digital services platform built with Next.js 16, Typ
 | Cache / Queue | Redis + DB-backed job queue |
 | Package manager | pnpm 10 (monorepo) |
 | Mobile | Expo / React Native (apps/mobile) |
-| Testing | Vitest (171 unit tests) |
+| Testing | Vitest (236 unit tests, 37 test files) |
 | E2E | Playwright |
 | UI direction | RTL-first, Persian/Arabic + LTR |
 

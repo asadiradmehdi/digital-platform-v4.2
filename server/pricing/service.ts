@@ -1,5 +1,5 @@
 import { withTransaction, query } from '../core/db';
-import { calculateSellPriceMinor } from './calculator';
+import { calculateSellPriceMinor, type MarginMode } from './calculator';
 import type { FxProvider } from './providers';
 import { DISPLAY_CURRENCY } from './contracts';
 import { storeVerifiedFxRate } from './fx';
@@ -19,7 +19,12 @@ export async function refreshPricing(provider: FxProvider, baseCurrencies = ['US
         source: provider.name,
         metadata: rate.metadata,
       });
-      const rules = await query<any>(`
+      const rules = await query<{
+        id: string; targetType: string; targetId: string; baseCurrency: string;
+        baseAmountMinor: string; marginBps: number; marginMode: MarginMode;
+        roundingIncrementMinor: string; minPriceMinor: string | null;
+        maxPriceMinor: string | null; staleRatePolicy: string;
+      }>(`
         SELECT id,target_type AS "targetType",target_id AS "targetId",base_currency AS "baseCurrency",
                base_amount_minor AS "baseAmountMinor",margin_bps AS "marginBps",margin_mode AS "marginMode",
                rounding_increment_minor AS "roundingIncrementMinor",min_price_minor AS "minPriceMinor",

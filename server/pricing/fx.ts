@@ -20,7 +20,7 @@ export async function storeVerifiedFxRate(input: {
 }
 
 export async function getLatestVerifiedFx(baseCurrency: string, quoteCurrency = 'IRT', maxAgeSeconds = 3600) {
-  const result = await query<any>(`
+  const result = await query<{ id: string; baseCurrency: string; quoteCurrency: string; numerator: string; denominator: string; source: string; fetchedAt: string; verified: boolean }>(`
     SELECT id,base_currency AS "baseCurrency",quote_currency AS "quoteCurrency",rate_numerator AS numerator,rate_denominator AS denominator,source,fetched_at AS "fetchedAt",is_verified AS verified
     FROM fx_rates
     WHERE base_currency=$1 AND quote_currency=$2 AND is_verified=true
