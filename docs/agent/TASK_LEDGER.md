@@ -268,3 +268,54 @@ Status: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 - [x] pnpm lint — PASS (exit 0)
 - [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
 - [x] pnpm test — PASS (236/236, 37 test files)
+
+## Session 5 — TypeScript Hardening, Security Hardening, Test Coverage (2026-10-03)
+
+### TypeScript quality — remaining query<any> elimination (Task 1)
+- [x] server/social/analytics.ts — replaced untyped query with explicit `AnalyticsSnapshotRow` type; fixed SQL column name (data → metrics)
+- [x] server/b2b/agency.ts — added `ClientWorkspaceRow` type to `listClientWorkspaces`
+- [x] server/b2b/usage.ts — added `ApiUsageSummaryRow` and `ApiUsageEventRow` types to both getApiUsageSummary and getApiKeyUsage
+- [x] server/subscriptions/service.ts — added `SubscriptionListRow` type to `listSubscriptions`
+- [x] All previously specified files (agency, whitelabel, usage, capability-service, analytics, sessions, rbac, catalog, subscriptions/service, payments/service) verified — no remaining `query<any>` patterns
+
+### Security hardening — webhook body size limit (Task 2)
+- [x] app/api/v1/webhooks/[source]/route.ts — ALREADY enforces 1 MB max via Content-Length header check AND TextEncoder byte length check; no change needed
+- [x] tests/webhooks/route-size-limit.test.ts — 3 tests: Content-Length rejection (413), actual byte length rejection (413), valid payload passes through
+
+### Login rate limiting audit (Task 3)
+- [x] app/api/v1/auth/login/route.ts — already has `consumeDistributedRateLimit` (10 req/60s per IP) using PostgreSQL `consume_rate_limit` function
+- [x] server/core/distributed-rate-limit.ts — DB-backed (PostgreSQL), NOT Redis-dependent; works in current environment
+- [x] server/core/rate-limit.ts — in-memory fallback also available
+- [x] No action needed: login is already protected by per-IP DB rate limiting + account lockout
+
+### Register route input validation audit (Task 4)
+- [x] app/api/v1/auth/register/route.ts — email validated (5-320 chars + regex), password (14-200 + assertStrongPassword), name (2-120); all criteria met
+
+### Checkout input validation audit (Task 5)
+- [x] app/api/v1/checkout/route.ts — all fields validated; currency is server-derived from catalog; quantities are positive integers; workspaceId validated via RBAC; all criteria met
+
+### Test coverage for core utilities (Task 6)
+- [x] tests/core/core-utilities.test.ts — 38 tests covering:
+  - money(): frozen value, zero amount, negative rejection
+  - addMoney(): same currency, currency mismatch
+  - subtractMoney(): valid, negative result, currency mismatch
+  - requireString(): trim, non-string, too short, too long
+  - requireUuid(): valid UUID, wrong format, too short
+  - safePositiveInteger(): valid, zero, negative, float
+  - parseLimit(): null default, valid string, over max, under 1
+  - encodeCursor / decodeCursor: round-trip, null input
+  - requireIdempotencyKey(): valid, null, too short, too long
+  - requestHash(): hex output, deterministic, different inputs
+  - writeAudit(): all fields, null optionals, DB error propagation
+
+### TODO/FIXME audit (Task 7)
+- [x] Scanned all .ts/.tsx files under server/ and app/ — no TODO/FIXME/HACK/XXX comments found
+
+### Documentation accuracy (Task 8)
+- [x] README.md — updated test count (236 → 274) and test file count (37 → 39)
+- [x] docs/agent/TASK_LEDGER.md — this Session 5 entry
+
+### Verification gate (2026-10-03)
+- [x] pnpm lint — PASS (exit 0)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm test — PASS (274/274, 39 test files)

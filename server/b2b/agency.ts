@@ -23,8 +23,10 @@ export async function createClientWorkspace(input: {
   return r.rows[0]?.id ?? '';
 }
 
-export async function listClientWorkspaces(agencyWorkspaceId: string) {
-  const r = await query(
+type ClientWorkspaceRow = { id: string; name: string; slug: string; status: string; workspace_type: string; created_at: Date };
+
+export async function listClientWorkspaces(agencyWorkspaceId: string): Promise<ClientWorkspaceRow[]> {
+  const r = await query<ClientWorkspaceRow>(
     `SELECT id, name, slug, status, workspace_type, created_at
      FROM workspaces WHERE parent_workspace_id=$1 AND workspace_type='client' ORDER BY created_at DESC`,
     [agencyWorkspaceId]

@@ -24,7 +24,9 @@ export async function cancelSubscription(subscriptionId:string, workspaceId:stri
   });
 }
 
-export async function listSubscriptions(workspaceId:string) {
-  const result = await withWorkspaceTransaction(workspaceId, undefined, async client => client.query(`SELECT s.id,s.status,s.current_period_start AS "currentPeriodStart",s.current_period_end AS "currentPeriodEnd",s.trial_ends_at AS "trialEndsAt",p.id AS "planId",p.name AS "planName" FROM subscriptions s JOIN plans p ON p.id=s.plan_id WHERE s.workspace_id=$1 ORDER BY s.created_at DESC`,[workspaceId]));
+type SubscriptionListRow = { id: string; status: string; currentPeriodStart: Date; currentPeriodEnd: Date; trialEndsAt: Date | null; planId: string; planName: string };
+
+export async function listSubscriptions(workspaceId: string): Promise<SubscriptionListRow[]> {
+  const result = await withWorkspaceTransaction(workspaceId, undefined, async client => client.query<SubscriptionListRow>(`SELECT s.id,s.status,s.current_period_start AS "currentPeriodStart",s.current_period_end AS "currentPeriodEnd",s.trial_ends_at AS "trialEndsAt",p.id AS "planId",p.name AS "planName" FROM subscriptions s JOIN plans p ON p.id=s.plan_id WHERE s.workspace_id=$1 ORDER BY s.created_at DESC`,[workspaceId]));
   return result.rows;
 }

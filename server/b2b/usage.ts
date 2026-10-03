@@ -18,9 +18,12 @@ export async function recordApiUsage(input: {
   );
 }
 
-export async function getApiUsageSummary(workspaceId: string, since?: Date) {
+type ApiUsageSummaryRow = { route: string; total_requests: string; avg_latency_ms: number | null; success_count: string; error_count: string };
+type ApiUsageEventRow = { route: string; status_code: number; latency_ms: number | null; created_at: Date };
+
+export async function getApiUsageSummary(workspaceId: string, since?: Date): Promise<ApiUsageSummaryRow[]> {
   const sinceIso = (since ?? new Date(Date.now() - 30 * 86400_000)).toISOString();
-  const r = await query(
+  const r = await query<ApiUsageSummaryRow>(
     `SELECT
        route,
        COUNT(*) AS total_requests,
@@ -36,8 +39,8 @@ export async function getApiUsageSummary(workspaceId: string, since?: Date) {
   return r.rows;
 }
 
-export async function getApiKeyUsage(apiKeyId: string, workspaceId: string, limit = 100) {
-  const r = await query(
+export async function getApiKeyUsage(apiKeyId: string, workspaceId: string, limit = 100): Promise<ApiUsageEventRow[]> {
+  const r = await query<ApiUsageEventRow>(
     `SELECT route, status_code, latency_ms, created_at
      FROM api_usage_events
      WHERE api_key_id=$1 AND workspace_id=$2

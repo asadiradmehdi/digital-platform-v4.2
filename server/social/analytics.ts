@@ -35,14 +35,16 @@ export async function ingestChannelAnalytics(channelId: string, workspaceId: str
   return data;
 }
 
+type AnalyticsSnapshotRow = { captured_at: string; metrics: unknown };
+
 export async function getAnalyticsSummary(channelId: string, workspaceId: string, limit = 30) {
-  const r = await query(
-    `SELECT sa.captured_at, sa.data
+  const r = await query<AnalyticsSnapshotRow>(
+    `SELECT sa.captured_at, sa.metrics
      FROM social_analytics_snapshots sa
      JOIN channels c ON c.id = sa.channel_id
      WHERE sa.channel_id=$1 AND c.workspace_id=$2
      ORDER BY sa.captured_at DESC LIMIT $3`,
     [channelId, workspaceId, limit]
   );
-  return r.rows.map(row => ({ capturedAt: (row as { captured_at: string }).captured_at, metrics: (row as { metrics: unknown }).metrics }));
+  return r.rows.map(row => ({ capturedAt: row.captured_at, metrics: row.metrics }));
 }
