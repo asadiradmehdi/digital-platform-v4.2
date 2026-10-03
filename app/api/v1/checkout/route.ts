@@ -6,6 +6,7 @@ import { assertSameOrigin } from '../../../../server/core/security-boundary';
 import { requireUuid } from '../../../../server/core/validation';
 import { createCheckout } from '../../../../server/commerce/checkout';
 import { AppError } from '../../../../server/core/errors';
+import { withSpan, parseTraceparent } from '../../../../server/observability/tracing';
 
 export async function POST(request: NextRequest) {
   const id = correlationId(request);
@@ -31,13 +32,18 @@ export async function POST(request: NextRequest) {
     });
 
     const idempotencyKey = request.headers.get('idempotency-key') ?? '';
-    const session = await createCheckout({
-      workspaceId,
-      items,
-      couponCode: body.couponCode ? String(body.couponCode) : undefined,
-      idempotencyKey,
-      expiresInSeconds: body.expiresInSeconds ? Number(body.expiresInSeconds) : 900,
-    });
+    const parentTrace = parseTraceparent(request.headers.get('traceparent'));
+    const { value: session } = await withSpan(
+      'checkout.create',
+      { correlationId: id, workspaceId, trace: parentTrace },
+      async () => createCheckout({
+        workspaceId,
+        items,
+        couponCode: body.couponCode ? String(body.couponCode) : undefined,
+        idempotencyKey,
+        expiresInSeconds: body.expiresInSeconds ? Number(body.expiresInSeconds) : 900,
+      }),
+    );
     return json(session, { status: 201, correlationId: id });
   } catch (e) {
     return handleRouteError(e, id);

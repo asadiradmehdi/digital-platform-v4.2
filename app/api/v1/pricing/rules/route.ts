@@ -5,6 +5,7 @@ import { requirePlatformAdmin } from '../../../../../server/identity/platform-ad
 import { assertSameOrigin } from '../../../../../server/core/security-boundary';
 import { upsertPricingRule, listPricingRules } from '../../../../../server/pricing/rules';
 import type { MarginMode, StaleRatePolicy, PricingTargetType } from '../../../../../server/pricing/contracts';
+import { AppError } from '../../../../../server/core/errors';
 
 export async function GET(request: NextRequest) {
   const id = correlationId(request);
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (!body.targetType || !body.targetId || !body.baseAmountMinor || !body.baseCurrency) {
-      return json({ error: 'targetType, targetId, baseAmountMinor, and baseCurrency are required.' }, { status: 400, correlationId: id });
+      throw new AppError('VALIDATION_ERROR', 'targetType, targetId, baseAmountMinor, and baseCurrency are required.');
     }
 
     const rule = await upsertPricingRule({

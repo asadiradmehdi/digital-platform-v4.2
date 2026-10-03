@@ -5,6 +5,7 @@ import { listContentEntities, upsertContentEntity, auditOrphanContent, findStale
 import { query } from '../../../../../server/core/db';
 import { assertSameOrigin } from '../../../../../server/core/security-boundary';
 import { requirePlatformAdmin } from '../../../../../server/identity/platform-admin';
+import { AppError } from '../../../../../server/core/errors';
 
 export async function GET(request: NextRequest) {
   const id = correlationId(request);
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
         [path]
       );
       const entity = r.rows[0];
-      if (!entity) return json({ error: 'Not found.' }, { status: 404, correlationId: id });
+      if (!entity) throw new AppError('NOT_FOUND', 'Content entity not found.');
       return json({ entity }, { correlationId: id });
     }
 
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (!body.entityType || !body.slug || !body.canonicalPath || !body.title || !body.description) {
-      return json({ error: 'entityType, slug, canonicalPath, title, and description are required.' }, { status: 400, correlationId: id });
+      throw new AppError('VALIDATION_ERROR', 'entityType, slug, canonicalPath, title, and description are required.');
     }
 
     const entityId = await upsertContentEntity(body);

@@ -1,5 +1,18 @@
 import * as SecureStore from 'expo-secure-store';
-import type { ApiError } from '@digital-platform/api-contracts';
+import type {
+  ApiError,
+  MobileSessionResponse,
+  WorkspaceSummary,
+  OrderSummary,
+  SubscriptionSummary,
+  NotificationSummary,
+  TransactionSummary,
+  AiUsageSummary,
+  Page,
+} from '@digital-platform/api-contracts';
+
+// Re-export for convenience
+export type { MobileSessionResponse, WorkspaceSummary, OrderSummary, SubscriptionSummary, NotificationSummary, TransactionSummary, AiUsageSummary, Page };
 
 const TOKEN_KEY = 'dp.mobile.session.v1';
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? '';
@@ -28,3 +41,151 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   }
   return payload as T;
 }
+
+// ---------------------------------------------------------------------------
+// Typed API methods — mirror server contract; keep in sync with app/api/v1/*
+// ---------------------------------------------------------------------------
+
+const V1 = '/api/v1';
+
+// Auth
+export const auth = {
+  mobileLogin: (body: { sessionToken: string }) =>
+    apiFetch<MobileSessionResponse>(`${V1}/auth/mobile/session`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  mobileLogout: () =>
+    apiFetch<{ ok: true }>(`${V1}/auth/mobile/logout`, { method: 'POST' }),
+};
+
+// Me
+export const me = {
+  get: () => apiFetch<{ user: { id: string; email: string; name: string } }>(`${V1}/me`),
+};
+
+// Workspaces
+export const workspaces = {
+  list: () => apiFetch<{ items: WorkspaceSummary[] }>(`${V1}/workspaces`),
+  create: (body: { name: string }) =>
+    apiFetch<{ id: string; name: string }>(`${V1}/workspaces`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  listMembers: (workspaceId: string) =>
+    apiFetch<{ items: { userId: string; email: string; role: string }[] }>(`${V1}/workspaces/${workspaceId}/members`),
+};
+
+// Wallet
+export const wallet = {
+  getBalances: () => apiFetch<{ items: { id: string; currency: string; status: string; balanceMinor: string }[] }>(`${V1}/wallet`),
+  deposit: (body: { workspaceId: string; walletId: string; amountMinor: number; currency: string; referenceType?: string; referenceId?: string }, idempotencyKey?: string) =>
+    apiFetch<{ entryId: string; balanceMinor: string; currency: string }>(`${V1}/wallet`, {
+      method: 'POST',
+      headers: idempotencyKey ? { 'idempotency-key': idempotencyKey } : {},
+      body: JSON.stringify(body),
+    }),
+};
+
+// Transactions
+export const transactions = {
+  list: (workspaceId: string, cursor?: string) =>
+    apiFetch<{ items: TransactionSummary[]; nextCursor?: string | null }>(`${V1}/transactions?workspaceId=${encodeURIComponent(workspaceId)}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`),
+};
+
+// Orders
+export const orders = {
+  list: (workspaceId: string) =>
+    apiFetch<{ items: OrderSummary[]; nextCursor?: string | null }>(`${V1}/orders?workspaceId=${encodeURIComponent(workspaceId)}`),
+  get: (orderId: string, workspaceId: string) =>
+    apiFetch<{ order: OrderSummary; events: unknown[] }>(`${V1}/orders/${encodeURIComponent(orderId)}?workspaceId=${encodeURIComponent(workspaceId)}`),
+  create: (body: { workspaceId: string; serviceId: string; quantity: number; parameters?: Record<string, unknown> }, idempotencyKey?: string) =>
+    apiFetch<{ id: string; status: string }>(`${V1}/orders`, {
+      method: 'POST',
+      headers: idempotencyKey ? { 'idempotency-key': idempotencyKey } : {},
+      body: JSON.stringify(body),
+    }),
+  cancel: (orderId: string, body: { workspaceId: string }) =>
+    apiFetch<{ id: string; status: string }>(`${V1}/orders/${encodeURIComponent(orderId)}/cancel`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+};
+
+// Subscriptions
+export const subscriptions = {
+  list: () => apiFetch<{ items: SubscriptionSummary[]; nextCursor: null }>(`${V1}/subscriptions`),
+  create: (body: { workspaceId: string; planId: string }, idempotencyKey?: string) =>
+    apiFetch<{ id: string; status: string }>(`${V1}/subscriptions`, {
+      method: 'POST',
+      headers: idempotencyKey ? { 'idempotency-key': idempotencyKey } : {},
+      body: JSON.stringify(body),
+    }),
+  cancel: (subscriptionId: string, body: { workspaceId: string }) =>
+    apiFetch<{ id: string; status: string }>(`${V1}/subscriptions/${encodeURIComponent(subscriptionId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ ...body, action: 'cancel' }),
+    }),
+};
+
+// Notifications
+export const notifications = {
+  list: () => apiFetch<{ items: NotificationSummary[] }>(`${V1}/notifications`),
+};
+
+// AI
+export const ai = {
+  generate: (body: {
+    workspaceId: string;
+    model: string;
+    messages: Array<{ role: string; content: string }>;
+    temperature?: number;
+    maxOutputTokens?: number;
+    idempotencyKey?: string;
+  }) =>
+    apiFetch<{ aiRequestId: string; text: string; inputUnits: string; outputUnits: string }>(`${V1}/ai/generate`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  listModels: (workspaceId: string) =>
+    apiFetch<{ models: unknown[] }>(`${V1}/ai/models?workspaceId=${encodeURIComponent(workspaceId)}`),
+  listAgentRuns: (workspaceId: string) =>
+    apiFetch<{ items: unknown[] }>(`${V1}/ai/agent-runs?workspaceId=${encodeURIComponent(workspaceId)}`),
+  startAgentRun: (body: { workspaceId: string; agentDefinitionId: string; input?: Record<string, unknown> }) =>
+    apiFetch<{ runId: string }>(`${V1}/ai/agent-runs`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+};
+
+// Automation
+export const automation = {
+  listWorkflows: (workspaceId: string) =>
+    apiFetch<{ items: unknown[] }>(`${V1}/automation/workflows?workspaceId=${encodeURIComponent(workspaceId)}`),
+  createWorkflow: (body: { workspaceId: string; name: string; definition: Record<string, unknown>; runNow?: boolean }) =>
+    apiFetch<{ workflowId: string; versionId: string; runId?: string }>(`${V1}/automation/workflows`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  listRuns: (workspaceId: string, workflowId?: string) =>
+    apiFetch<{ items: unknown[] }>(`${V1}/automation/runs?workspaceId=${encodeURIComponent(workspaceId)}${workflowId ? `&workflowId=${encodeURIComponent(workflowId)}` : ''}`),
+};
+
+// Invoices
+export const invoices = {
+  list: (workspaceId: string) =>
+    apiFetch<{ items: unknown[] }>(`${V1}/invoices?workspaceId=${encodeURIComponent(workspaceId)}`),
+  get: (invoiceId: string) =>
+    apiFetch<{ invoice: unknown }>(`${V1}/invoices/${encodeURIComponent(invoiceId)}`),
+};
+
+// Analytics
+export const analytics = {
+  get: (workspaceId: string) =>
+    apiFetch<{ summary: unknown }>(`${V1}/analytics?workspaceId=${encodeURIComponent(workspaceId)}`),
+};
+
+// Health
+export const health = {
+  get: () => apiFetch<{ status: string; version: string }>(`${V1}/health`),
+};

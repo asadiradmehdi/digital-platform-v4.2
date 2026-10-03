@@ -5,6 +5,7 @@ import { requireWorkspacePermission } from '../../../../../server/identity/rbac'
 import { createApiKey, listApiKeys, revokeApiKey } from '../../../../../server/b2b/api-keys';
 import { upsertRateLimit } from '../../../../../server/b2b/rate-limit';
 import { assertSameOrigin } from '../../../../../server/core/security-boundary';
+import { AppError } from '../../../../../server/core/errors';
 
 export async function GET(request: NextRequest) {
   const id = correlationId(request);
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
     const userId = await requireRequestUser(request);
     const { searchParams } = new URL(request.url);
     const workspaceId = searchParams.get('workspaceId');
-    if (!workspaceId) return json({ error: 'workspaceId is required.' }, { status: 400, correlationId: id });
+    if (!workspaceId) throw new AppError('VALIDATION_ERROR', 'workspaceId is required.');
 
     await requireWorkspacePermission(userId, workspaceId, 'api_keys.read');
     const keys = await listApiKeys(workspaceId);
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     const { workspaceId, name, scopes, environment, expiresAt, rateLimitPerMinute } = body;
     if (!workspaceId || !name || !scopes?.length) {
-      return json({ error: 'workspaceId, name, and scopes are required.' }, { status: 400, correlationId: id });
+      throw new AppError('VALIDATION_ERROR', 'workspaceId, name, and scopes are required.');
     }
 
     await requireWorkspacePermission(userId, workspaceId, 'api_keys.write');
@@ -67,11 +68,11 @@ export async function DELETE(request: NextRequest) {
     const userId = await requireRequestUser(request);
     const body = await request.json() as { workspaceId: string; keyId: string };
     const { workspaceId, keyId } = body;
-    if (!workspaceId || !keyId) return json({ error: 'workspaceId and keyId are required.' }, { status: 400, correlationId: id });
+    if (!workspaceId || !keyId) throw new AppError('VALIDATION_ERROR', 'workspaceId and keyId are required.');
 
     await requireWorkspacePermission(userId, workspaceId, 'api_keys.write');
     const revoked = await revokeApiKey(keyId, workspaceId);
-    if (!revoked) return json({ error: 'Key not found or already revoked.' }, { status: 404, correlationId: id });
+    if (!revoked) throw new AppError('NOT_FOUND', 'Key not found or already revoked.');
     return json({ revoked: true }, { correlationId: id });
   } catch (e) {
     return handleRouteError(e, id);

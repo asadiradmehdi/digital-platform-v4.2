@@ -3,6 +3,7 @@ import { correlationId, handleRouteError, json } from '../../../../../server/cor
 import { requireRequestUser } from '../../../../../server/identity/request-user';
 import { requireWorkspacePermission } from '../../../../../server/identity/rbac';
 import { getApiUsageSummary, getApiKeyUsage } from '../../../../../server/b2b/usage';
+import { AppError } from '../../../../../server/core/errors';
 
 export async function GET(request: NextRequest) {
   const id = correlationId(request);
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     const keyId = searchParams.get('keyId');
     const since = searchParams.get('since');
 
-    if (!workspaceId) return json({ error: 'workspaceId is required.' }, { status: 400, correlationId: id });
+    if (!workspaceId) throw new AppError('VALIDATION_ERROR', 'workspaceId is required.');
     await requireWorkspacePermission(userId, workspaceId, 'api_keys.read');
 
     if (keyId) {

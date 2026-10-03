@@ -319,3 +319,73 @@ Status: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 - [x] pnpm lint — PASS (exit 0)
 - [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
 - [x] pnpm test — PASS (274/274, 39 test files)
+
+---
+
+## Session 6 — API Completeness, Error Consistency, Tracing, API Contracts (2026-10-03)
+
+### Task 1 — API route completeness audit
+- [x] Audited all routes in docs/API.md against app/api/v1/ — coverage confirmed for all major spec routes
+- [x] Identified `POST /api/v1/orders/:id/cancel` as missing — implemented
+- [x] Identified `PATCH /api/v1/subscriptions/:id` (cancel action) as missing — implemented
+
+### Task 2 — Mobile API client completeness
+- [x] apps/mobile/src/api/client.ts — added typed API namespaces: auth, me, workspaces, wallet, transactions, orders, subscriptions, notifications, ai, automation, invoices, analytics, health
+- [x] All methods use `apiFetch<T>` with proper return types derived from server contracts
+
+### Task 3 — packages/api-contracts completeness
+- [x] packages/api-contracts/src/index.ts — expanded from 7 types to full contract surface:
+  - Auth: LoginRequest, RegisterRequest, MobileSessionResponse
+  - Identity: UserSummary, WorkspaceSummary, WorkspaceMemberSummary
+  - Commerce: ServiceSummary, OrderStatus (QUEUED added), OrderSummary, OrderDetail, CreateOrderRequest
+  - Checkout: CheckoutItem, CreateCheckoutRequest, CheckoutSession
+  - Wallet: WalletSummary, WalletDepositRequest/Response, TransactionSummary
+  - Subscriptions: SubscriptionStatus, SubscriptionSummary, CreateSubscriptionRequest
+  - AI: AiMessage, AiGenerateRequest/Response, AiUsageSummary, AiModelSummary
+  - Notifications, Invoices, B2B (ApiKey), Analytics, Health
+  - Extended routes constant with all v1 route paths
+
+### Task 4 — Wallet deposit route
+- [x] app/api/v1/wallet/route.ts — added `POST` handler for wallet top-up
+  - Requires auth + workspace RBAC (wallet.deposit permission)
+  - Validates amountMinor > 0, 3-letter currency code
+  - Idempotent via Idempotency-Key header (falls back to random UUID)
+  - Calls postLedgerEntry with direction=CREDIT
+  - Returns new balance alongside entry id
+  - assertSameOrigin enforced
+
+### Task 5 — Subscription management route
+- [x] app/api/v1/subscriptions/[id]/route.ts — new file implementing `PATCH` for subscription cancel
+  - Requires auth + workspace RBAC (subscriptions.cancel permission)
+  - Validates action field; only 'cancel' supported
+  - Calls cancelSubscription from server/subscriptions/service.ts (idempotent via DB)
+  - assertSameOrigin enforced
+
+### Task 6 — Error response consistency
+- [x] Audited all API routes for flat `{ error: 'string' }` inline returns
+- [x] Converted all inline validation returns to throw `AppError` in:
+  - app/api/v1/automation/runs/route.ts
+  - app/api/v1/automation/workflows/route.ts
+  - app/api/v1/b2b/api-keys/route.ts
+  - app/api/v1/b2b/usage/route.ts
+  - app/api/v1/ai/agent-runs/route.ts
+  - app/api/v1/ai/generate/route.ts
+  - app/api/v1/content/entities/route.ts
+  - app/api/v1/pricing/rules/route.ts
+- [x] All routes now flow through handleRouteError → errorEnvelope → `{ error: { code, message }, correlationId }` shape
+
+### Task 7 — Observability: request tracing
+- [x] app/api/v1/ai/generate/route.ts — gateway.generate() wrapped in `withSpan('ai.generate', ...)`; reads `traceparent` header for W3C trace propagation
+- [x] app/api/v1/checkout/route.ts — createCheckout() wrapped in `withSpan('checkout.create', ...)`
+- [x] app/api/v1/orders/route.ts — createOrder() wrapped in `withSpan('order.create', ...)`
+- [x] All three spans emit structured logs (span.start, span.end, span.error) and increment metrics counters
+
+### Task 8 — Regression tests (20 new tests)
+- [x] tests/commerce/order-cancel.test.ts — 4 tests: order cancel chain, terminal-state guard, subscription cancel, NOT_FOUND guard
+- [x] tests/billing/wallet-deposit.test.ts — 5 tests: amountMinor zero/negative rejection, idempotency, new entry insert, NOT_FOUND account
+- [x] tests/api/error-envelope.test.ts — 11 tests: every AppErrorCode mapped to correct HTTP status, unknown error → 500, structured envelope never flat string, details forwarded
+
+### Verification gate (2026-10-03)
+- [x] pnpm lint — PASS (exit 0)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm test — PASS (294/294, 42 test files)

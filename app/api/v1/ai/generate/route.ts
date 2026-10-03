@@ -3,6 +3,7 @@ import { correlationId, handleRouteError, json } from '../../../../../server/cor
 import { requireRequestUser } from '../../../../../server/identity/request-user';
 import { requireWorkspacePermission } from '../../../../../server/identity/rbac';
 import { assertSameOrigin } from '../../../../../server/core/security-boundary';
+import { AppError } from '../../../../../server/core/errors';
 import { anthropicAdapter } from '../../../../../server/ai/providers/anthropic';
 import { openaiAdapter } from '../../../../../server/ai/providers/openai';
 import { AIGateway } from '../../../../../server/ai/gateway';
@@ -11,6 +12,7 @@ import { checkAIEntitlement, recordAIRequest, completeAIRequest, failAIRequest, 
 import { recordAICost } from '../../../../../server/ai/cost-accounting';
 import { createStreamingResponse } from '../../../../../server/ai/streaming';
 import { query } from '../../../../../server/core/db';
+import { withSpan, parseTraceparent } from '../../../../../server/observability/tracing';
 import { randomUUID } from 'node:crypto';
 
 const gateway = new AIGateway([
@@ -38,13 +40,13 @@ export async function POST(request: NextRequest) {
 
     const { workspaceId, model, messages, temperature, maxOutputTokens, stream } = body;
     if (!workspaceId || !model || !messages?.length) {
-      return json({ error: 'workspaceId, model, and messages are required.' }, { status: 400, correlationId: id });
+      throw new AppError('VALIDATION_ERROR', 'workspaceId, model, and messages are required.');
     }
 
     await requireWorkspacePermission(userId, workspaceId, 'ai.generate');
 
     const modelId = await resolveModelId(model);
-    if (!modelId) return json({ error: `Model ${model} not found.` }, { status: 404, correlationId: id });
+    if (!modelId) throw new AppError('NOT_FOUND', `Model ${model} not found.`);
 
     await checkAIEntitlement(workspaceId, modelId);
 
@@ -72,11 +74,14 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const start = Date.now();
-    const result = await gateway.generate(aiInput, request.signal);
-    const latencyMs = Date.now() - start;
+    const parentTrace = parseTraceparent(request.headers.get('traceparent'));
+    const { value: result, durationMs: latencyMs } = await withSpan(
+      'ai.generate',
+      { correlationId: id, workspaceId, trace: parentTrace },
+      async () => gateway.generate(aiInput, request.signal),
+    );
 
-    await completeAIRequest(aiRequestId, result.inputUnits, result.outputUnits, latencyMs);
+    await completeAIRequest(aiRequestId, result.inputUnits, result.outputUnits, Math.round(latencyMs));
 
     const price = await getModelPrice(modelId);
     if (price) {

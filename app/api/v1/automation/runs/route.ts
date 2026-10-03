@@ -5,6 +5,7 @@ import { requireWorkspacePermission } from '../../../../../server/identity/rbac'
 import { getWorkflowRun, listWorkflowRuns, cancelWorkflowRun, getWorkflowWithLatestVersion, startWorkflowRun } from '../../../../../server/automation/workflow-service';
 import { enqueueWorkflowRun } from '../../../../../server/automation/worker';
 import { assertSameOrigin } from '../../../../../server/core/security-boundary';
+import { AppError } from '../../../../../server/core/errors';
 
 export async function GET(request: NextRequest) {
   const id = correlationId(request);
@@ -15,12 +16,12 @@ export async function GET(request: NextRequest) {
     const runId = searchParams.get('runId');
     const workflowId = searchParams.get('workflowId') ?? undefined;
 
-    if (!workspaceId) return json({ error: 'workspaceId is required.' }, { status: 400, correlationId: id });
+    if (!workspaceId) throw new AppError('VALIDATION_ERROR', 'workspaceId is required.');
     await requireWorkspacePermission(userId, workspaceId, 'automation.read');
 
     if (runId) {
       const run = await getWorkflowRun(runId, workspaceId);
-      if (!run) return json({ error: 'Run not found.' }, { status: 404, correlationId: id });
+      if (!run) throw new AppError('NOT_FOUND', 'Run not found.');
       return json({ run }, { correlationId: id });
     }
 
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     };
 
     const { workspaceId, workflowId, input, action, runId } = body;
-    if (!workspaceId) return json({ error: 'workspaceId is required.' }, { status: 400, correlationId: id });
+    if (!workspaceId) throw new AppError('VALIDATION_ERROR', 'workspaceId is required.');
 
     await requireWorkspacePermission(userId, workspaceId, 'automation.write');
 
@@ -54,10 +55,10 @@ export async function POST(request: NextRequest) {
       return json({ cancelled }, { correlationId: id });
     }
 
-    if (!workflowId) return json({ error: 'workflowId is required.' }, { status: 400, correlationId: id });
+    if (!workflowId) throw new AppError('VALIDATION_ERROR', 'workflowId is required.');
 
     const wf = await getWorkflowWithLatestVersion(workflowId, workspaceId);
-    if (!wf) return json({ error: 'Workflow not found.' }, { status: 404, correlationId: id });
+    if (!wf) throw new AppError('NOT_FOUND', 'Workflow not found.');
 
     const newRunId = await startWorkflowRun({ workflowVersionId: wf.version_id, workspaceId, triggerInput: input ?? {} });
     await enqueueWorkflowRun({ runId: newRunId, workspaceId, workflowVersionId: wf.version_id, input: input ?? {} });

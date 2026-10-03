@@ -5,6 +5,7 @@ import { requireWorkspacePermission } from '../../../../../server/identity/rbac'
 import { startAgentRun, getAgentRun, getAgentRunToolCalls } from '../../../../../server/ai/agent-run';
 import { query } from '../../../../../server/core/db';
 import { assertSameOrigin } from '../../../../../server/core/security-boundary';
+import { AppError } from '../../../../../server/core/errors';
 
 export async function GET(request: NextRequest) {
   const id = correlationId(request);
@@ -13,13 +14,13 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const workspaceId = searchParams.get('workspaceId');
     const runId = searchParams.get('runId');
-    if (!workspaceId) return json({ error: 'workspaceId is required.' }, { status: 400, correlationId: id });
+    if (!workspaceId) throw new AppError('VALIDATION_ERROR', 'workspaceId is required.');
 
     await requireWorkspacePermission(userId, workspaceId, 'ai.read');
 
     if (runId) {
       const run = await getAgentRun(runId, workspaceId);
-      if (!run) return json({ error: 'Agent run not found.' }, { status: 404, correlationId: id });
+      if (!run) throw new AppError('NOT_FOUND', 'Agent run not found.');
       const toolCalls = await getAgentRunToolCalls(runId);
       return json({ run, toolCalls }, { correlationId: id });
     }
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     const { workspaceId, agentDefinitionId, input: runInput } = body;
     if (!workspaceId || !agentDefinitionId) {
-      return json({ error: 'workspaceId and agentDefinitionId are required.' }, { status: 400, correlationId: id });
+      throw new AppError('VALIDATION_ERROR', 'workspaceId and agentDefinitionId are required.');
     }
 
     await requireWorkspacePermission(userId, workspaceId, 'ai.execute');

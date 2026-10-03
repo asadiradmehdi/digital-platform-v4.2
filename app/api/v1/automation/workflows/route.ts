@@ -7,6 +7,7 @@ import { enqueueWorkflowRun } from '../../../../../server/automation/worker';
 import { query } from '../../../../../server/core/db';
 import type { WorkflowDefinition } from '../../../../../server/automation/contracts';
 import { assertSameOrigin } from '../../../../../server/core/security-boundary';
+import { AppError } from '../../../../../server/core/errors';
 
 export async function GET(request: NextRequest) {
   const id = correlationId(request);
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     const userId = await requireRequestUser(request);
     const { searchParams } = new URL(request.url);
     const workspaceId = searchParams.get('workspaceId');
-    if (!workspaceId) return json({ error: 'workspaceId is required.' }, { status: 400, correlationId: id });
+    if (!workspaceId) throw new AppError('VALIDATION_ERROR', 'workspaceId is required.');
 
     await requireWorkspacePermission(userId, workspaceId, 'automation.read');
 
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     const { workspaceId, name, definition, runNow, input } = body;
     if (!workspaceId || !name || !definition) {
-      return json({ error: 'workspaceId, name, and definition are required.' }, { status: 400, correlationId: id });
+      throw new AppError('VALIDATION_ERROR', 'workspaceId, name, and definition are required.');
     }
 
     await requireWorkspacePermission(userId, workspaceId, 'automation.write');
