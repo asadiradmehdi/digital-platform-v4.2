@@ -35,7 +35,14 @@ export async function POST(request: NextRequest, { params }: Params) {
     const p = paymentRow.rows[0];
 
     const rawAmount = body.amountMinor;
-    const amountMinor = rawAmount != null ? BigInt(String(rawAmount)) : BigInt(p.amount_minor);
+    let amountMinor: bigint;
+    if (rawAmount != null) {
+      const parsed = BigInt(String(rawAmount));
+      if (parsed <= 0n) throw new AppError('VALIDATION_ERROR', 'amountMinor must be a positive integer.');
+      amountMinor = parsed;
+    } else {
+      amountMinor = BigInt(p.amount_minor);
+    }
 
     const result = await createRefund({
       workspaceId,

@@ -70,7 +70,7 @@ A production-grade, modular digital services platform built with Next.js 16, Typ
 | Cache / Queue | Redis + DB-backed job queue |
 | Package manager | pnpm 10 (monorepo) |
 | Mobile | Expo / React Native (apps/mobile) |
-| Testing | Vitest (328 unit tests, 47 test files) |
+| Testing | Vitest (381 unit tests, 53 test files) |
 | E2E | Playwright |
 | UI direction | RTL-first, Persian/Arabic + LTR |
 
@@ -132,7 +132,7 @@ pnpm dev
 ```bash
 pnpm lint        # ESLint
 pnpm typecheck   # tsc --noEmit
-pnpm test        # 328 unit tests
+pnpm test        # 381 unit tests
 pnpm build       # Production build
 ```
 

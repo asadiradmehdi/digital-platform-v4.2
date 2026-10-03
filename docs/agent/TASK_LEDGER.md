@@ -461,3 +461,67 @@ Status: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 - [x] pnpm lint — PASS (exit 0)
 - [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
 - [x] pnpm test — PASS (328/328, 47 test files)
+
+---
+
+## Session 8 — Security Re-audit, Test Coverage, API Documentation (2026-10-03)
+
+### Task 1 — Comprehensive API route security re-audit
+- [x] Audited all 46 route files under app/api/ (v1 + internal) for requireRequestUser / authenticateApiKey, assertSameOrigin on mutations, workspace membership validation, admin checks, and correlationId
+- [x] All routes pass all five security criteria
+- [x] Findings: no auth bypasses or missing CSRF protections found; all routes had been hardened in Sessions 3–7
+
+### Task 2 — Refund route audit
+- [x] app/api/v1/orders/[id]/refund/route.ts — assertSameOrigin present, workspace ownership validated via RBAC + payment JOIN, idempotency key present
+- [x] Added route-level `amountMinor > 0` validation when client explicitly provides the field (service layer already validates but defence-in-depth)
+
+### Task 3 — Checkout pay route audit
+- [x] app/api/v1/checkout/[id]/pay/route.ts — assertSameOrigin present, session ownership verified via workspace RBAC, gateway name validated via resolveGateway (throws VALIDATION_ERROR for unknown gateways)
+- [x] No changes needed
+
+### Task 4 — Notifications route
+- [x] GET /api/v1/notifications queries real `notifications` table (has workspace_id + user_id columns, schema exists since migration 0001)
+- [x] Not a stub — returns real data filtered by user_id
+- [x] Minor functional gap: `read` field is hardcoded `false` (no read-tracking column on notifications table); notification_deliveries.status tracks delivery not read-state
+- TODO: Add `read_at` column to notifications table (migration required) and join delivery status for accurate `read` field
+
+### Task 5 — Internal routes protection
+- [x] app/api/internal/metrics/route.ts — protected by requireInternalSecret (INTERNAL_API_SECRET env var via x-internal-secret header)
+- [x] app/api/internal/alerts/route.ts — same protection; both return 401 when secret absent or wrong
+- [x] tests/observability/internal-routes.test.ts — 7 tests covering: no header → 401, wrong secret → 401, correct secret → 200, unconfigured secret → 401 (both routes)
+
+### Task 6 — Provider cost history tests (9 new tests)
+- [x] tests/pricing/provider-cost.test.ts — 9 tests:
+  - recordProviderServiceCost: happy path, currency uppercase, default unit UNIT, custom unit TOKEN
+  - getLatestProviderServiceCost: happy path, returns null when not found
+  - syncServicePriceCost: null when no provider route, null when no cost record, updates service_prices and returns cost
+
+### Task 7 — FX rate service tests (12 new tests)
+- [x] tests/pricing/fx.test.ts — 12 tests:
+  - storeVerifiedFxRate: inserts + returns id, uppercases currencies, throws on zero numerator, throws on zero denominator, throws on negative numerator
+  - getLatestVerifiedFx: returns row, returns null, uses default maxAgeSeconds
+  - fetchWithFallback: first provider success, falls back to second, throws when all fail, error message lists provider names
+
+### Task 8 — AI streaming tests (9 new tests)
+- [x] tests/ai/streaming.test.ts — 9 tests:
+  - Provider routing: claude- → anthropic, gpt- → openai, o1 → openai, o3 → openai, unknown model → error SSE
+  - SSE format: data: {text} lines, [DONE] sentinel, error SSE on provider throw, AbortSignal passed through
+
+### Task 9 — Security event tests (6 + 10 new tests)
+- [x] tests/core/security-events.test.ts — 6 tests: all fields, null optional fields, user agent truncation, metadata serialization, empty metadata, DB error propagation
+- [x] tests/core/webhook-security.test.ts — 10 tests: signWebhook (hex output, deterministic, secret diff, body diff); verifyWebhookSignature (valid, wrong sig, expired timestamp, malformed timestamp, short sig, custom window)
+
+### Task 10 — docs/API.md accuracy
+- [x] Rewrote docs/API.md with complete table of all implemented routes (Auth, Identity, Services, Orders, Checkout, Wallet, Invoices, Subscriptions, Notifications, AI, Automation, B2B, Pricing Admin, Content, Analytics, Webhooks, Internal, Health)
+- [x] Documented 3 not-yet-implemented endpoints (POST /workspaces, GET /services/{id}, GET /balance) as TODO
+- [x] Corrected wrong path `POST /payments/checkout` → `POST /checkout`
+- [x] Added workspace-scope requirements, same-origin requirement, and internal secret requirement documentation
+
+### Task 11 — README and TASK_LEDGER update
+- [x] README.md — test count updated (328 → 381), test file count (47 → 53)
+- [x] docs/agent/TASK_LEDGER.md — Session 8 section added
+
+### Verification gate (2026-10-03)
+- [x] pnpm lint — PASS (exit 0)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm test — PASS (381/381, 53 test files)
