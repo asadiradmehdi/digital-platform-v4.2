@@ -525,3 +525,56 @@ Status: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 - [x] pnpm lint — PASS (exit 0)
 - [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
 - [x] pnpm test — PASS (381/381, 53 test files)
+
+---
+
+## Session 9 — API Completeness, Test Depth, Security (2026-10-03)
+
+### Task 1 — POST /api/v1/workspaces (workspace creation route)
+- [x] server/identity/workspace-settings.ts — added `createWorkspace(ownerUserId, name, slug?)`: CTE insert into workspaces + workspace_members + member_roles in one query; auto-derives slug from name; validates name ≤ 255 chars
+- [x] app/api/v1/workspaces/route.ts — new `POST` handler: requireAuth + assertSameOrigin + name validation (required, ≤255 chars); calls createWorkspace; returns 201 + new workspace; GET handler reformatted for clarity
+- [x] tests/identity/workspace-create.test.ts — 9 tests: happy path, slug auto-derivation, custom slug, hyphen stripping, name empty rejection, name > 255 rejection, DB no-rows INTERNAL_ERROR, ownerUserId param check, CTE SQL verification
+
+### Task 2 — GET /api/v1/services/:id (service detail route)
+- [x] server/commerce/catalog.ts — added `getService(id): CatalogServiceDetail` with JOIN products, description, active, productId columns; throws NOT_FOUND when missing; also imported AppError
+- [x] app/api/v1/services/[id]/route.ts — new file: GET with requireAuth; calls getService; returns service detail
+- [x] tests/commerce/service-detail.test.ts — 10 tests: getService happy path, NOT_FOUND, id param check, SQL serviceType alias, description/active columns, products JOIN; listServices page, nextCursor, serviceType filter, no filter
+
+### Task 3 — GET /api/v1/wallet/balance (dedicated balance endpoint)
+- [x] app/api/v1/wallet/balance/route.ts — new file: GET with requireAuth + requireWorkspacePermission(wallet.read) + workspaceId query param (required, UUID); returns per-wallet balanceMinor, currency, status via withWorkspaceTransaction
+
+### Task 4 — Notifications read/unread
+- [x] db/migrations/0023_notifications_read.sql — idempotent: ADD COLUMN IF NOT EXISTS read_at timestamptz + CREATE INDEX IF NOT EXISTS on (user_id, created_at) WHERE read_at IS NULL
+- [x] app/api/v1/notifications/[id]/route.ts — new PATCH handler: requireAuth + assertSameOrigin + action='read' validation; UPDATE notifications SET read_at = COALESCE(read_at, now()) WHERE id=$1 AND user_id=$2 (user-scoped, idempotent)
+- [x] app/api/v1/notifications/route.ts — updated GET: (read_at IS NOT NULL) AS read + read_at AS "readAt" (replaces hardcoded false)
+- [x] tests/identity/notifications.test.ts — 5 tests: migration file content, idempotency clause, COALESCE SQL, multi-call idempotency, GET SQL pattern
+
+### Task 5 — SSRF guard tests
+- [x] tests/core/ssrf-guard.test.ts — 19 tests: 127.x, 10.x, 172.16-31.x, 192.168.x, 169.254.x (metadata), localhost, metadata.google.internal, host.docker.internal, ::1 IPv6, fd00/fc00 ULA IPv6, URL credentials, non-HTTPS, invalid URL, allowlist accept/reject/subdomain match, no-allowlist public URL
+
+### Task 6 — Secret-box tests
+- [x] tests/core/secret-box.test.ts — 9 tests: encrypt→decrypt roundtrip, two encryptions differ (random IV), v1. prefix + 4-part format, wrong key fails decrypt, tampered data segment fails auth, tampered tag fails auth, unsupported version throws, empty string roundtrip, missing env key throws
+
+### Task 7 — Risk engine deep tests
+- [x] tests/core/risk-engine.test.ts — 21 tests: evaluateRisk (NORMAL below threshold, REVIEW at 40, RESTRICTED at 80, hardBlock overrides, zero-score hardBlock, multi-signal sum, negative score clamped, signals preserved, empty array, custom thresholds); riskSignalsForCommerce (no signals clean, payment_velocity, refund_velocity, coupon_abuse, order_velocity, ai_usage_anomaly, all 5 combined → RESTRICTED, threshold boundary guards)
+
+### Task 8 — Automation engine deep tests
+- [x] tests/automation/engine-deep.test.ts — 18 tests: validateWorkflowForExecution (valid, step count limit, delay ms too large, delay negative, delay non-integer, delay within range, HTTP without allowlist, HTTP with allowlist); executeWorkflow (single step, two-step chain, step budget exceeded, executor error, notification step, http step, ai step, delay step, branch step, stepsExecuted counter)
+
+### Task 9 — Agent framework deep tests
+- [x] tests/ai/agent-framework-deep.test.ts — 17 tests: authorizeAgentTool (has permission, lacks permission, inactive agent, multi-perm lacking one, multi-perm all present); executeAgentTool (authorized executes, lacks permission throws, at-budget throws, one-below-budget allowed, counter increments, runtime exceeded, cost over budget, cost at budget, cost accumulates, no cost budget unlimited, input forwarded, context forwarded)
+
+### Task 10 — Worker queue edge case tests
+- [x] tests/commerce/worker-queue-edge.test.ts — 12 tests: dequeue increments attempt+1, fail SQL CASE expression (PENDING/FAILED), deadletter SQL path, delayMs schedules future available_at, no-delay → now, zero-delay → now, FOR UPDATE SKIP LOCKED present, PENDING/FAILED filter, available_at <= now() check, PROCESSING status set, long error truncated to 2000 chars, dedupeKey ON CONFLICT DO NOTHING
+
+### Task 11 — Provider retry logic tests
+- [x] tests/providers/retry-logic.test.ts — 14 tests: unknown external state (attempt 1 + high max, never retry), transport failure at attempt 1/2/3 (backoff 1000/2000/4000ms), cap at 30_000ms, stops at maxAttempts, stops above maxAttempts, maxAttempts=1, non-transport failure no retry, delayMs=0 when not retrying, delayMs=0 for unknown state, attempt=0 base case (500ms), increasing delays
+
+### Task 12 — README and TASK_LEDGER update
+- [x] README.md — test count updated (381 → 515), test file count (53 → 63), migration count (23 → 24)
+- [x] docs/agent/TASK_LEDGER.md — Session 9 section added
+
+### Verification gate (2026-10-03)
+- [x] pnpm lint — PASS (exit 0)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm test — PASS (515/515, 63 test files)

@@ -9,7 +9,9 @@ export async function GET(request: NextRequest) {
     const userId = await requireRequestUser(request);
     const result = await query(`
       SELECT id, notification_type AS "type", payload->>'title' AS title,
-             false AS read, created_at AS "createdAt"
+             (read_at IS NOT NULL) AS read,
+             read_at AS "readAt",
+             created_at AS "createdAt"
       FROM notifications
       WHERE user_id=$1
       ORDER BY created_at DESC

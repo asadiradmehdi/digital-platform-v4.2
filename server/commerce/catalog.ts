@@ -1,6 +1,22 @@
 import { query } from '../core/db';
+import { AppError } from '../core/errors';
 import type { Page } from '../core/types';
 export type CatalogService = { id: string; name: string; slug: string; serviceType: string; productName: string; productSlug: string };
+export type CatalogServiceDetail = CatalogService & { description: string | null; active: boolean; productId: string };
+
+export async function getService(id: string): Promise<CatalogServiceDetail> {
+  const r = await query<CatalogServiceDetail>(
+    `SELECT s.id, s.name, s.slug, s.service_type AS "serviceType",
+            s.description, s.active, s.product_id AS "productId",
+            p.name AS "productName", p.slug AS "productSlug"
+     FROM services s JOIN products p ON p.id=s.product_id
+     WHERE s.id=$1`,
+    [id],
+  );
+  if (!r.rows[0]) throw new AppError('NOT_FOUND', 'Service not found.');
+  return r.rows[0];
+}
+
 export async function listServices(limit: number, cursor?: string | null, serviceType?: string | null): Promise<Page<CatalogService>> {
   const params: unknown[] = [cursor ?? null, limit + 1];
   const typeFilter = serviceType ? ` AND s.service_type=$3` : '';
