@@ -794,3 +794,18 @@ Status: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 - [x] pnpm lint — PASS (exit 0)
 - [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
 - [x] pnpm test — PASS (958/958, 106 test files)
+
+---
+
+## Session 18 — Social adapter-registry, api-key-auth tests (2026-10-04)
+
+### Task 1 — Social adapter-registry tests
+- [x] tests/social/adapter-registry.test.ts — 4 tests: all 5 types registered by default, adapter has required methods, throws for unknown type, registerChannelAdapter overrides factory
+
+### Task 2 — api-key-auth tests
+- [x] tests/core/api-key-auth.test.ts — 8 tests: missing header, non-Bearer, null key, valid key no scope, scope matches, scope missing, wildcard *, raw key passed to resolveApiKey
+
+### Verification gate (2026-10-04)
+- [x] pnpm lint — PASS (exit 0)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm test — PASS (970/970, 108 test files)
