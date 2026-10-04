@@ -761,3 +761,18 @@ Status: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 - [x] pnpm lint — PASS (exit 0)
 - [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
 - [x] pnpm test — PASS (922/922, 101 test files)
+
+---
+
+## Session 16 — AI gateway, request-user bearer path tests (2026-10-04)
+
+### Task 1 — AI Gateway class tests
+- [x] tests/ai/gateway.test.ts — 7 tests: NOT_FOUND when no routes, NOT_FOUND when all disabled, returns response from enabled route, fallback to next route on failure, sorts by priority (lower first), PROVIDER_ERROR when all fail, passes AbortSignal to adapter
+
+### Task 2 — Identity request-user tests (bearer path)
+- [x] tests/identity/request-user.test.ts — 7 tests: requireBearerToken (returns token, missing header, non-Bearer, case-insensitive); requireRequestUser bearer path (valid session, invalid session, malformed header)
+
+### Verification gate (2026-10-04)
+- [x] pnpm lint — PASS (exit 0)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm test — PASS (936/936, 103 test files)
