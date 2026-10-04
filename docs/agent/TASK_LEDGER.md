@@ -809,3 +809,44 @@ Status: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 - [x] pnpm lint — PASS (exit 0)
 - [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
 - [x] pnpm test — PASS (970/970, 108 test files)
+
+---
+
+## Session 19 — Coverage audit final closure, quality gates (2026-10-04)
+
+### Task 1 — Coverage audit: final uncovered pure-function modules
+- [x] server/core/rate-limit.ts — `memoryRateLimit` and `assertRateLimit` confirmed uncovered
+- [x] server/core/risk.ts — `assertActionAllowed` confirmed uncovered (risk-engine.test.ts covers risk-engine.ts, not risk.ts)
+- [x] server/identity/password.ts — argon2-dependent; no meaningful pure-function test surface without the library; classified as thin wrapper (not worth mocking argon2)
+- [x] server/identity/recovery.ts — DB-dependent (query per code in loop); no pure-function surface; classified as integration-only
+- [x] server/pricing/quote.ts — DB + stale-guard integration; classified as integration-only
+- [x] server/pricing/service.ts — DB pipeline; classified as integration-only
+- [x] server/providers/router.ts — routing.test.ts already covers routing.ts; router.ts is a re-export/wiring module
+
+### Task 2 — New pure-function tests
+- [x] tests/core/memory-rate-limit.test.ts — 10 tests: first request allowed, remaining decrements, limit exceeded blocked, window reset via fake timers, resetAt in future, independent keys, limit=1 boundary
+- [x] tests/core/risk-action.test.ts — 3 tests: NORMAL passes, REVIEW throws RISK_REVIEW, RESTRICTED throws FORBIDDEN
+
+### Task 3 — Security audit summary
+- [x] CSP: nonce-based strict CSP in middleware.ts with `strict-dynamic`, `frame-ancestors 'none'`
+- [x] HSTS: production-only `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`
+- [x] CSRF: `assertSameOrigin` enforced on all browser mutations; API key path bypasses only for B2B routes
+- [x] Session cookies: `__Host-dp_session` in production (prefix enforces Secure + path=/ + no Domain)
+- [x] RLS: `withWorkspaceTransaction` calls `app_set_workspace_context` before every tenant-scoped query
+- [x] Webhook: HMAC signature + timestamp window + size limit enforced in webhook inbox
+- [x] SSRF: `checkSSRFGuard` in ssrf-guard.ts covers private ranges, metadata endpoints, IPv6 ULA, credentials, non-HTTPS
+- [x] Audit trail: writeAudit wired to order.created, payment.paid, refund.completed
+
+### Task 4 — Full verification gate
+- [x] pnpm lint — PASS (exit 0)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm test — PASS (983/983, 110 test files)
+- [x] pnpm build — PASS (next build --webpack; .next/BUILD_ID present, all 78 pages rendered)
+
+### Remaining BLOCKED items (infrastructure-dependent, cannot unblock locally)
+- [ ] E2E tests (Playwright/Chromium not installed)
+- [ ] PostgreSQL migration execution (PostgreSQL not available)
+- [ ] Redis integration tests (Redis not available)
+- [ ] External AI/payment/social provider credentials
+- [ ] Production FX source selection
+- [ ] Staging/production deployment
