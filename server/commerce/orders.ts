@@ -3,6 +3,7 @@ import { AppError } from '../core/errors';
 import { assertOrderTransition, type OrderStatus } from '../core/order-state';
 import { requireIdempotencyKey } from '../core/idempotency';
 import { assertActionAllowed, type RiskState } from '../core/risk';
+import { writeAudit } from '../core/audit';
 
 export type CreateOrderInput = { workspaceId: string; serviceId: string; quantity: bigint; parameters: Record<string, unknown>; idempotencyKey: string; riskState?: RiskState };
 export async function createOrder(input: CreateOrderInput) {
@@ -25,6 +26,7 @@ export async function createOrder(input: CreateOrderInput) {
     await client.query(`INSERT INTO order_items(order_id,service_id,quantity,unit_price_minor,total_minor,parameters,price_version,pricing_rule_id,fx_rate_id,quoted_at,provider_cost_minor,provider_cost_currency) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,now(),$10,$11)`, [id,input.serviceId,input.quantity,price.unit_price_minor,total.toString(),input.parameters,price.price_version,price.pricing_rule_id,price.fx_rate_id,price.provider_cost_minor,price.provider_cost_currency]);
     await client.query(`INSERT INTO order_events(order_id,to_status,metadata) VALUES($1,'PAYMENT_PENDING',$2)`, [id,{ source:'api' }]);
     await client.query(`INSERT INTO outbox_events(aggregate_type,aggregate_id,event_type,payload) VALUES('order',$1,'order.payment_pending',$2)`, [id,{ orderId:id, workspaceId:input.workspaceId }]);
+    await writeAudit({ workspaceId: input.workspaceId, action: 'order.created', entityType: 'order', entityId: id, metadata: { serviceId: input.serviceId, idempotencyKey: input.idempotencyKey } });
     return order.rows[0];
   });
 }

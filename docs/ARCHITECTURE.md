@@ -100,3 +100,77 @@ Potential future service extraction:
 5. Public API gateway
 
 Extraction is triggered by measured bottlenecks or organizational need, not fashion.
+
+## Local Development Setup
+
+### Prerequisites
+- Node.js 22.x (`nvm use 22` or install from https://nodejs.org)
+- pnpm 10.15.x (`npm install -g pnpm@10.15`)
+- PostgreSQL 15+ running locally (or via Docker)
+- Redis 7+ running locally (or via Docker)
+
+### Bootstrap (first time)
+```bash
+# Install all dependencies
+pnpm install
+
+# Copy environment variables
+cp .env.example .env.local
+# Edit .env.local and set DATABASE_URL, REDIS_URL, SESSION_SECRET, etc.
+
+# Run database migrations
+pnpm db:migrate
+
+# (Optional) seed development data
+pnpm db:seed
+```
+
+### Running locally
+```bash
+# Start the dev server (Next.js + API routes)
+pnpm dev
+
+# In a separate terminal, start the background worker
+pnpm worker
+```
+
+The app runs at `http://localhost:3000`.
+
+### Running tests
+```bash
+# Unit + integration tests (no DB required — DB is mocked via vi.mock)
+pnpm test
+
+# Run a single test file
+pnpm test tests/identity/sessions.test.ts
+
+# Type checking
+pnpm typecheck
+
+# Linting
+pnpm lint
+
+# Production build (verifies SSR, static generation, bundling)
+pnpm build
+```
+
+### Environment variables
+Key variables in `.env.local`:
+
+| Variable | Required | Description |
+|---|---|---|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `REDIS_URL` | Yes | Redis connection string |
+| `SESSION_SECRET` | Yes | ≥32-char secret for session signing |
+| `STORAGE_SECRET` | Yes | Secret for local presigned URL tokens |
+| `STORAGE_BASE_URL` | No | Defaults to `http://localhost:3000/api/v1/storage` |
+| `LOGIN_MAX_FAILURES` | No | Max failed logins before lockout (default: 5) |
+| `LOGIN_LOCK_SECONDS` | No | Lock duration in seconds (default: 900) |
+| `TRUST_PROXY` | No | Set `true` only behind a trusted reverse proxy |
+| `INTERNAL_API_SECRET` | Yes (prod) | Secret for internal metric/alert endpoints |
+
+### Notes
+- All unit tests mock the database — no real PostgreSQL required for `pnpm test`.
+- The `pnpm build` step requires valid environment variables to avoid build-time errors.
+- Never run migrations against production directly; use a migration pipeline.
+- The test suite uses Vitest. Run `pnpm test --reporter=verbose` for detailed output.

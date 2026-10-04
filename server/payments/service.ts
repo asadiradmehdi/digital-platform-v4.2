@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { withWorkspaceTransaction } from '../core/db';
 import { AppError } from '../core/errors';
 import { requireIdempotencyKey } from '../core/idempotency';
+import { writeAudit } from '../core/audit';
 
 export type PaymentGateway = {
   readonly name: string;
@@ -45,6 +46,7 @@ export async function markPaymentPaid(input: { paymentId: string; workspaceId: s
       await client.query(`INSERT INTO order_events(order_id,from_status,to_status,metadata) SELECT id,'PAYMENT_PENDING','PAID',$2 FROM orders WHERE id=$1`, [payment.rows[0].order_id,{source:'payment'}]);
       await client.query(`INSERT INTO outbox_events(aggregate_type,aggregate_id,event_type,payload) VALUES('order',$1,'order.paid',$2)`, [payment.rows[0].order_id,{orderId:payment.rows[0].order_id,paymentId:input.paymentId}]);
     }
+    await writeAudit({ workspaceId: input.workspaceId, action: 'payment.paid', entityType: 'payment', entityId: input.paymentId, metadata: { gatewayReference: input.gatewayReference, orderId: payment.rows[0].order_id } });
     return { ...payment.rows[0], status: 'PAID' };
   });
 }

@@ -578,3 +578,57 @@ Status: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 - [x] pnpm lint — PASS (exit 0)
 - [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
 - [x] pnpm test — PASS (515/515, 63 test files)
+
+---
+
+## Session 10 — Test Gap Analysis, Audit Trail, Security Tests, Developer Docs (2026-10-04)
+
+### Task 1 — Systematic test gap analysis
+- [x] Ran `find server -name "*.ts"` to enumerate all server modules
+- [x] Identified uncovered: account-security, mobile-sessions, password-policy, mock-gateway, orders (createOrder/listOrders/transitionOrder), workspace-settings route, storage/local, audit trail
+
+### Task 2 — Password policy enforcement in registration
+- [x] Confirmed server/identity/password-policy.ts defines `assertStrongPassword` (≥14 chars, uppercase, lowercase, digit, symbol)
+- [x] Confirmed server/identity/password.ts `hashPassword` does NOT enforce policy (by design — policy checked at route layer)
+- [x] Confirmed app/api/v1/auth/register/route.ts already calls `assertStrongPassword` before `hashPassword` — policy was already wired in
+- [x] tests/identity/password-policy.test.ts — 8 tests: accepts valid password, rejects <14 chars, no uppercase, no lowercase, no digit, no symbol, exactly 14 chars, exactly 13 chars (fails); also verifies registration route imports the policy
+
+### Task 3 — Account lockout tests
+- [x] tests/identity/account-security.test.ts — 9 tests: isLoginLocked (no row → false, locked=false → false, locked=true → true, passes userId); recordLoginFailure (INSERT ON CONFLICT, includes count+locked_until CASE, MAX_FAILURES/LOCK_SECONDS as params); recordLoginSuccess (resets count=0, clears locked_until, sets last_success_at)
+
+### Task 4 — Mobile session security tests
+- [x] tests/identity/mobile-sessions.test.ts — 10 tests: hashDeviceId (64-char hex, deterministic, distinct per device); createMobileSession (returns token+hash, passes platform as clientType, hashes deviceId before passing, optional fields forwarded, ttlSeconds passed through, hash matches); revokeMobileSession (delegates to revokeSession)
+
+### Task 5 — Storage presign token tests
+- [x] tests/storage/local.test.ts — 10 tests: createUpload (returns url/key/expiresAt, key prefixed with workspaceId, sanitizes filename chars, token decodes to {key,workspaceId,expiresAt}, expiresAt = +15 min, throws on >50MB, accepts exactly 50MB); getDownloadUrl (URL has token with key, expiresAt = +1 hour); delete (resolves void)
+
+### Task 6 — Mock gateway tests
+- [x] tests/payments/mock-gateway.test.ts — 11 tests: createCheckout (URL contains paymentId, encodeURIComponent, gatewayReference=mock_{paymentId}, includes idempotencyKey, starts with /checkout/mock); verify (paid=true, simulated=true in raw); refund (uses provided gatewayReference, generates mock_refund_{paymentId} fallback, refund function exists); name='mock'
+
+### Task 7 — Workspace settings route tests
+- [x] tests/identity/workspace-settings.test.ts — 12 tests:
+  - updateWorkspaceSettings SQL contracts: VALIDATION_ERROR on >120 char name, VALIDATION_ERROR on array settings, NOT_FOUND when DB returns no rows, UPDATE includes name= clause, UPDATE includes settings=settings || JSONB merge
+  - PATCH route: 200 on success, 401 on unauth, 403 on FORBIDDEN, 400 on empty body, 400 on non-string name, 404 on NOT_FOUND, permission check verifies workspaceId
+- [x] tests/commerce/orders.test.ts — 16 tests: createOrder (idempotency replay, CONFLICT on no price, happy path 6 queries, total=qty*price, VALIDATION_ERROR on short idem key, FORBIDDEN on RESTRICTED risk, outbox event inserted); listOrders (null cursor, nextCursor, cursor param, null cursor); transitionOrder (valid transition, NOT_FOUND, CONFLICT on invalid transition, FOR UPDATE, order_events insert)
+
+### Task 8 — Audit trail completeness
+- [x] Scanned server/ — writeAudit was defined but never called from financial mutations
+- [x] server/commerce/orders.ts — added `writeAudit({ action:'order.created', entityType:'order', entityId:id })` after successful INSERT
+- [x] server/payments/service.ts — added `writeAudit({ action:'payment.paid', entityType:'payment', entityId:paymentId })` after markPaymentPaid
+- [x] server/payments/refund.ts — added `writeAudit({ action:'refund.completed', entityType:'refund', entityId:refundId })` after successful refund
+- [x] tests/payments/audit-trail.test.ts — 5 tests: createOrder calls writeAudit on creation, does NOT call on idempotent replay; markPaymentPaid calls writeAudit on success, does NOT call when already PAID; createRefund calls writeAudit on completion
+
+### Task 9 — Circular dependency check
+- [x] Ran `npx madge --circular --extensions ts server/` — No circular dependencies found
+
+### Task 10 — Developer setup guide
+- [x] Added "Local Development Setup" section to docs/ARCHITECTURE.md covering: prerequisites (Node 22, pnpm 10.15, PostgreSQL, Redis), bootstrap steps, running locally, test commands, and environment variable table
+
+### Task 11 — README and TASK_LEDGER update
+- [x] README.md — test count updated (515 → 597), test file count (63 → 71)
+- [x] docs/agent/TASK_LEDGER.md — Session 10 section added
+
+### Verification gate (2026-10-04)
+- [x] pnpm lint — PASS (exit 0)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm test — PASS (597/597, 71 test files)

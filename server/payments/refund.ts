@@ -1,6 +1,7 @@
 import { withWorkspaceTransaction } from '../core/db';
 import { AppError } from '../core/errors';
 import { requireIdempotencyKey } from '../core/idempotency';
+import { writeAudit } from '../core/audit';
 import type { PaymentGateway } from './service';
 
 export async function createRefund(input: {
@@ -74,6 +75,7 @@ export async function createRefund(input: {
       [refundId, gatewayResult.gatewayReference ?? null]
     );
 
+    await writeAudit({ workspaceId: input.workspaceId, action: 'refund.completed', entityType: 'refund', entityId: refundId, metadata: { paymentId: input.paymentId, amountMinor: input.amountMinor.toString(), currency: input.currency } });
     return { id: refundId, status: 'PAID', gatewayReference: gatewayResult.gatewayReference ?? null };
   });
 }
