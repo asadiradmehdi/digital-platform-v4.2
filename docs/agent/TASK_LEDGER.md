@@ -701,3 +701,27 @@ Status: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 - [x] pnpm lint — PASS (exit 0)
 - [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
 - [x] pnpm test — PASS (797/797, 90 test files)
+
+---
+
+## Session 13 — Coverage expansion: agency, subscription policy, order-state, capability-service, adapter-registry (2026-10-04)
+
+### Task 1 — Subscription policy pure-function tests
+- [x] tests/subscriptions/policy.test.ts — 13 tests: decideUsage (unlimited null limit, allowed, denied, rollover, exact match, consumed>limit clamps remaining, negative consumed, zero requested, negative limit); calculateRenewalPeriod (WEEKLY 7d, MONTHLY, YEARLY, no mutation)
+
+### Task 2 — Order state machine tests
+- [x] tests/core/order-state.test.ts — 15 tests: assertOrderTransition (valid CREATED→PAYMENT_PENDING, valid CREATED→CANCELLED, CONFLICT CREATED→PAID, valid PAYMENT_PENDING→PAID, valid PAID→QUEUED, valid PAID→REFUND_PENDING, CONFLICT CANCELLED→anything, CONFLICT REFUNDED→anything, valid PROCESSING→PROVIDER_SUBMITTED, valid PROCESSING→FAILED, error details); canTransitionOrder (true/false/terminal/IN_PROGRESS→COMPLETED)
+
+### Task 3 — B2B agency workspace tests
+- [x] tests/b2b/agency.test.ts — 10 tests: createClientWorkspace (FORBIDDEN non-agency, FORBIDDEN missing, happy path, INSERT SQL/params, empty rows fallback); listClientWorkspaces (rows, empty, SQL filter); promoteToAgency (UPDATE SQL, resolves on already-agency)
+
+### Task 4 — Social capability-service tests
+- [x] tests/social/capability-service.test.ts — 7 tests: discoverChannelCapabilities (channel not found, adapter called + upserts, workspace scoping, ON CONFLICT upsert SQL); getStoredCapabilities (map from rows, empty, channel_type query)
+
+### Task 5 — Provider adapter-registry tests
+- [x] tests/providers/adapter-registry.test.ts — 7 tests: mock adapter pre-registered, unknown returns false, mock createAdapter, throws for unregistered, register new factory, factory receives credentials, overwrite replaces factory
+
+### Verification gate (2026-10-04)
+- [x] pnpm lint — PASS (exit 0)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm test — PASS (849/849, 95 test files)
