@@ -743,3 +743,21 @@ Status: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 - [x] pnpm lint — PASS (exit 0)
 - [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
 - [x] pnpm test — PASS (891/891, 98 test files)
+
+---
+
+## Session 15 — Observability/tracing, security-boundary, webhook-inbox tests (2026-10-04)
+
+### Task 1 — Observability tracing tests
+- [x] tests/observability/tracing.test.ts — 15 tests: newTraceContext (fields, inherits traceId, new spanId); parseTraceparent (null, malformed, wrong version, all-zero traceId, all-zero spanId, valid parse, lowercase); formatTraceparent (00- format); withSpan (returns value, returns trace+durationMs, re-throws errors, passes trace to handler)
+
+### Task 2 — Security boundary tests
+- [x] tests/core/security-boundary.test.ts — 12 tests: assertSameOrigin (GET passes, matching origin, mismatched origin, matching referer, missing origin throws, authorization header bypass, PATCH/DELETE methods); clientFingerprint (unknown, x-real-ip with TRUST_PROXY, x-forwarded-for first IP, ignores without TRUST_PROXY, truncates to 128 chars)
+
+### Task 3 — Webhook inbox tests
+- [x] tests/core/webhook-inbox.test.ts — 4 tests: UNAUTHORIZED on invalid signature, accepted=true on insert, duplicate=true on conflict, SQL params verified
+
+### Verification gate (2026-10-04)
+- [x] pnpm lint — PASS (exit 0)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm test — PASS (922/922, 101 test files)
