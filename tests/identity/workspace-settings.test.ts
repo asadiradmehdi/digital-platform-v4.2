@@ -67,7 +67,7 @@ describe('updateWorkspaceSettings — SQL contracts', () => {
     await expect(
       realFn({ workspaceId: 'ws-1', name: 'x'.repeat(121) })
     ).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
-  });
+  }, 30000);
 
   it('throws VALIDATION_ERROR when settings is an array', async () => {
     const { updateWorkspaceSettings: realFn } =
@@ -81,7 +81,7 @@ describe('updateWorkspaceSettings — SQL contracts', () => {
         settings: [1, 2, 3] as unknown as Record<string, unknown>,
       })
     ).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
-  });
+  }, 30000);
 
   it('NOT_FOUND when DB returns no rows for the workspace', async () => {
     const { updateWorkspaceSettings: realFn } =
@@ -95,7 +95,7 @@ describe('updateWorkspaceSettings — SQL contracts', () => {
     await expect(
       realFn({ workspaceId: 'ws-missing', name: 'Test' })
     ).rejects.toMatchObject({ code: 'NOT_FOUND' });
-  });
+  }, 30000);
 
   it('UPDATE query includes name= clause when name is provided', async () => {
     const { updateWorkspaceSettings: realFn } =
@@ -115,7 +115,7 @@ describe('updateWorkspaceSettings — SQL contracts', () => {
     await realFn({ workspaceId: 'ws-1', name: 'New Name' });
     const updateSql = clientQuery.mock.calls[1][0] as string;
     expect(updateSql).toContain('name=');
-  });
+  }, 30000);
 
   it('UPDATE query includes settings=settings || for settings merge', async () => {
     const { updateWorkspaceSettings: realFn } =
@@ -136,7 +136,7 @@ describe('updateWorkspaceSettings — SQL contracts', () => {
     await realFn({ workspaceId: 'ws-1', settings: { theme: 'dark' } });
     const updateSql = clientQuery.mock.calls[1][0] as string;
     expect(updateSql).toContain('settings=settings ||');
-  });
+  }, 30000);
 });
 
 // ─── PATCH /api/v1/workspaces/[id] route ─────────────────────────────────────

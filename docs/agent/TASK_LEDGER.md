@@ -632,3 +632,48 @@ Status: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 - [x] pnpm lint — PASS (exit 0)
 - [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
 - [x] pnpm test — PASS (597/597, 71 test files)
+
+---
+
+## Session 11 — Security hardening, test coverage, subscription renewal (2026-10-04)
+
+### Task 1 — TypeScript quality: fix unguarded mock.calls destructuring
+- [x] tests/b2b/whitelabel.test.ts — cast `mock.calls[0]` to `[string, unknown[]]` (7 occurrences)
+- [x] tests/content/entities.test.ts — same pattern (9 occurrences)
+- [x] tests/queue/outbox-dispatch.test.ts — same pattern (7 occurrences)
+- [x] tests/ai/agent-run.test.ts — same pattern (8 occurrences)
+- [x] tests/automation/workflow-service.test.ts — same pattern + fixed sampleDef to match WorkflowDefinition type + `mockReturnValue(true)` for boolean-returning mock
+
+### Task 2 — Security: recovery-codes rate limiting
+- [x] app/api/v1/auth/recovery-codes/route.ts — added `consumeDistributedRateLimit` before `regenerateRecoveryCodes` (max 5/15min per IP)
+- [x] tests/identity/recovery-codes-rate-limit.test.ts — 8 tests: import check, POST handler rate-limit call, IP fingerprint key, auth.recovery scope, window/maxRequests, rate-limit before regenerate; also validates register + MFA challenge rate-limit
+
+### Task 3 — Financial: double-charge prevention
+- [x] server/payments/service.ts — `beginCheckout` now throws CONFLICT if payment is already PAID before invoking gateway
+- [x] tests/payments/double-charge.test.ts — 3 tests: PAID guard, PENDING proceeds normally, markPaymentPaid idempotency
+
+### Task 4 — Subscription lifecycle: usage period reset
+- [x] server/subscriptions/usage.ts — added `resetUsagePeriod`: fetches existing metric keys, inserts new-period counters (consumed=0) with ON CONFLICT DO NOTHING, updates subscriptions.current_period_start/end
+- [x] tests/subscriptions/usage.test.ts — 4 new tests for resetUsagePeriod: inserts counters per metric, idempotency, subscriptions table update, rollover carry-forward
+
+### Task 5 — New test coverage
+- [x] tests/payments/refund.test.ts — 12 tests: idempotency replay, zero amount, NOT_FOUND payment, CONFLICT (not PAID), over-refund guard, exact balance, gateway.refund call, UNAVAILABLE (no refund method), gateway failure + FAILED mark, writeAudit on success, PAID result, idem key validated first
+- [x] tests/providers/credential-vault.test.ts — 11 tests: getProviderCredentials (decrypt all, empty, active=true filter, call count), upsertProviderCredential (encrypt + ON CONFLICT + re-activate), revokeProviderCredential (active=false, no DELETE, non-throw)
+- [x] tests/billing/ledger.test.ts — 9 tests: zero/negative guard, NOT_FOUND account, idempotency replay, insert + return, FOR UPDATE lock, direction/amount/currency/refType, null referenceId, empty metadata
+- [x] tests/analytics/usage-events.test.ts — 7 tests: column correctness, table name, ON CONFLICT DO NOTHING, null sourceId, provided sourceId, workspace tx scoping, idempotent re-insert
+- [x] tests/content/entities.test.ts — 12 tests: upsertContentEntity (ON CONFLICT, defaults, custom data, updated_at), getContentEntity (query, null), listContentEntities (no filter, entityType filter), getContentRelations, auditOrphanContent, findStaleContent
+
+### Task 6 — Subscription renewal worker
+- [x] server/subscriptions/renewal.ts — `advanceSubscriptionPeriod`: skips if not ACTIVE/TRIALING, auto_renew=false, future period, cancel_at_period_end (with cancellation); advances period by billing_interval (weekly/monthly/quarterly/annual); calls resetUsagePeriod; inserts RENEWED event
+- [x] server/subscriptions/renewal.ts — `findSubscriptionsDueForRenewal`: queries subscriptions with period_end <= now, ACTIVE/TRIALING, auto_renew=true
+- [x] tests/subscriptions/renewal.test.ts — 14 tests: NOT_FOUND, SKIPPED (cancelled/auto_renew/future), cancel_at_period_end handling, 30-day monthly advance, period start = old period end, resetUsagePeriod call, RENEWED event, weekly/annual intervals, findSubscriptionsDueForRenewal SQL + empty + custom limit
+
+### Task 7 — Documentation accuracy
+- [x] docs/API.md — removed POST /workspaces + GET /services/{id} from not-yet-implemented (both implemented in Session 9)
+- [x] README.md — test count updated (597 → 749), test file count (71 → 86)
+- [x] docs/agent/TASK_LEDGER.md — Session 11 section added
+
+### Verification gate (2026-10-04)
+- [x] pnpm lint — PASS (exit 0)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm test — PASS (749/749, 86 test files)

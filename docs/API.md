@@ -182,9 +182,7 @@ Protected by `INTERNAL_API_SECRET` (`x-internal-secret` header). Not accessible 
 
 ## Not-yet-implemented (TODO)
 
-- `POST /api/v1/workspaces` — workspace creation UI/API
-- `GET /api/v1/services/{id}` — single service detail
-- `GET /api/v1/balance` — public B2B balance check
+- `GET /api/v1/balance` — public B2B balance check (wallet balance is at `GET /api/v1/wallet/balance`)
 
 ## Tenant-scoped reads
 

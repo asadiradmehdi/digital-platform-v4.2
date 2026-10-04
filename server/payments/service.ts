@@ -53,6 +53,11 @@ export async function markPaymentPaid(input: { paymentId: string; workspaceId: s
 
 export async function beginCheckout(input: { workspaceId: string; orderId?: string; amountMinor: bigint; currency: string; gateway: PaymentGateway; callbackUrl: string; idempotencyKey: string }) {
   const payment = await createPayment({ workspaceId: input.workspaceId, orderId: input.orderId, amountMinor: input.amountMinor, currency: input.currency, gateway: input.gateway.name, idempotencyKey: input.idempotencyKey });
+  // Guard: if this payment was already completed, do not invoke the gateway a second time.
+  // Returning a CONFLICT signals to the caller that the checkout has already been paid.
+  if (payment.status === 'PAID') {
+    throw new AppError('CONFLICT', 'This payment has already been completed and cannot be reinitiated.');
+  }
   const referenceKey = `${input.idempotencyKey}:${payment.id}`;
   const checkout = await input.gateway.createCheckout({ paymentId: payment.id, amountMinor: input.amountMinor, currency: input.currency, callbackUrl: input.callbackUrl }, referenceKey);
   if (checkout.gatewayReference) await withWorkspaceTransaction(input.workspaceId, undefined, async client => client.query(`UPDATE payments SET gateway_reference=$2,updated_at=now() WHERE id=$1`, [payment.id, checkout.gatewayReference]));

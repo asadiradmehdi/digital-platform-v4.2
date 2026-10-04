@@ -57,7 +57,21 @@
       "Bash(npx eslint *)",
       "Bash(echo \"EXIT:$?\")",
       "Bash(git init *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git config *)",
+      "Bash(gh auth *)",
+      "Bash(apt-get install *)",
+      "Bash(git push *)",
+      "Bash(gh repo *)",
+      "Bash(pkill -f \"next build\")",
+      "Bash(npx vitest *)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(git *)",
+      "Bash(npx madge *)",
+      "Bash(grep -v \"^$\")",
+      "Bash(pnpm vitest *)",
+      "Bash(grep *)"
     ]
   }
 }

@@ -6,10 +6,11 @@ vi.mock('../../server/core/db', () => ({
 }));
 vi.mock('../../server/core/idempotency', () => ({ requireIdempotencyKey: vi.fn() }));
 
-import { withWorkspaceTransaction } from '../../server/core/db';
-import { consumeSubscriptionUsage } from '../../server/subscriptions/usage';
+import { query, withWorkspaceTransaction } from '../../server/core/db';
+import { consumeSubscriptionUsage, resetUsagePeriod } from '../../server/subscriptions/usage';
 
 const mockTx = vi.mocked(withWorkspaceTransaction);
+const mockQuery = vi.mocked(query);
 beforeEach(() => vi.clearAllMocks());
 
 const baseInput = {
@@ -76,5 +77,81 @@ describe('consumeSubscriptionUsage', () => {
 
     const result = await consumeSubscriptionUsage({ ...baseInput, limitQuantity: null });
     expect(result.allowed).toBe(true);
+  });
+});
+
+describe('resetUsagePeriod', () => {
+  const resetInput = {
+    subscriptionId: 'sub-1',
+    workspaceId: 'ws-1',
+    newPeriodStart: new Date('2026-11-01'),
+    newPeriodEnd: new Date('2026-11-30'),
+  };
+
+  it('inserts new-period counters with consumed=0 for each existing metric', async () => {
+    const insertedRows: unknown[][] = [];
+    const clientQuery = vi.fn()
+      // SELECT DISTINCT metric_key rows
+      .mockResolvedValueOnce({ rows: [{ metric_key: 'api_calls', limit_quantity: '100' }, { metric_key: 'storage_gb', limit_quantity: null }], rowCount: 2 })
+      // INSERT for api_calls
+      .mockImplementation(async (_sql: string, params: unknown[]) => {
+        insertedRows.push(params);
+        return { rows: [], rowCount: 1 };
+      });
+
+    mockTx.mockImplementationOnce(async (_wid, _userId, fn) => fn({ query: clientQuery } as never));
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
+
+    await resetUsagePeriod(resetInput);
+
+    // Two INSERT calls (one per metric key)
+    const insertCalls = clientQuery.mock.calls.filter((args) => String(args[0]).includes('INSERT INTO usage_counters'));
+    expect(insertCalls).toHaveLength(2);
+    const [_sql, params] = insertCalls[0];
+    expect(params).toContain('0');         // consumed='0' (string for BigInt safety)
+    expect(params).toContain('sub-1');
+    expect(params).toContain('ws-1');
+  });
+
+  it('uses ON CONFLICT DO NOTHING for idempotency', async () => {
+    const clientQuery = vi.fn()
+      .mockResolvedValueOnce({ rows: [{ metric_key: 'api_calls', limit_quantity: '50' }], rowCount: 1 })
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // conflict — do nothing
+    mockTx.mockImplementationOnce(async (_wid, _userId, fn) => fn({ query: clientQuery } as never));
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
+
+    // Should not throw even when row already exists
+    await expect(resetUsagePeriod(resetInput)).resolves.not.toThrow();
+    const insertCall = clientQuery.mock.calls.find((args) => String(args[0]).includes('ON CONFLICT'));
+    expect(insertCall).toBeDefined();
+    expect(insertCall![0]).toContain('DO NOTHING');
+  });
+
+  it('updates subscriptions table with new period dates', async () => {
+    const clientQuery = vi.fn()
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // no metrics — nothing to reset
+    mockTx.mockImplementationOnce(async (_wid, _userId, fn) => fn({ query: clientQuery } as never));
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
+
+    await resetUsagePeriod(resetInput);
+
+    const [sql, params] = mockQuery.mock.calls[0];
+    expect(sql).toContain('UPDATE subscriptions');
+    expect(sql).toContain('current_period_start');
+    expect(sql).toContain('current_period_end');
+    expect(params).toContain('sub-1');
+  });
+
+  it('carries rolloverQuantity into the new period counter', async () => {
+    let insertParams: unknown[] = [];
+    const clientQuery = vi.fn()
+      .mockResolvedValueOnce({ rows: [{ metric_key: 'tokens', limit_quantity: '1000' }], rowCount: 1 })
+      .mockImplementation(async (_sql: string, p: unknown[]) => { insertParams = p; return { rows: [], rowCount: 1 }; });
+    mockTx.mockImplementationOnce(async (_wid, _userId, fn) => fn({ query: clientQuery } as never));
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
+
+    await resetUsagePeriod({ ...resetInput, rolloverQuantity: 200n });
+
+    expect(insertParams).toContain('200');
   });
 });
