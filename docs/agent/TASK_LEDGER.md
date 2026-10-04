@@ -725,3 +725,21 @@ Status: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 - [x] pnpm lint — PASS (exit 0)
 - [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
 - [x] pnpm test — PASS (849/849, 95 test files)
+
+---
+
+## Session 14 — Pricing/commerce pure-function tests, pricing rules DB tests (2026-10-04)
+
+### Task 1 — Pricing calculator pure-function tests
+- [x] tests/pricing/calculator.test.ts — 17 tests: ceilDiv (zero, round-up, exact, zero-denominator, negative); calculateSellPriceMinor (MARKUP 10%, MARKUP 0%, MARGIN 20%, FX rate, rounding increment, minPrice floor, maxPrice throw, negative base, zero rateNumerator, invalid marginBps, MARGIN >= 100%, zero rounding)
+
+### Task 2 — Commerce calculator pure-function tests
+- [x] tests/commerce/calculator.test.ts — 14 tests: calculateDiscount (FIXED, PERCENT 10%, PERCENT 25%, cap to subtotal, maxDiscountMinor cap, zero discount, PERCENT 100%, negative subtotal, negative value); calculateCheckoutTotal (subtraction, zero when equal, discount > subtotal, negative subtotal, negative discount)
+
+### Task 3 — Pricing rules DB tests
+- [x] tests/pricing/rules.test.ts — 11 tests: upsertPricingRule (inserts + audit, marginPercent → bps, uppercase currency, default rounding, ON CONFLICT DO UPDATE, negative margin, margin > 1000, audit event SQL); listPricingRules (rows, empty, camelCase aliases)
+
+### Verification gate (2026-10-04)
+- [x] pnpm lint — PASS (exit 0)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm test — PASS (891/891, 98 test files)
