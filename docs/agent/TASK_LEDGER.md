@@ -677,3 +677,27 @@ Status: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 - [x] pnpm lint — PASS (exit 0)
 - [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
 - [x] pnpm test — PASS (749/749, 86 test files)
+
+---
+
+## Session 12 — AI entitlement tests, B2B middleware tests, Automation worker/trigger tests (2026-10-04)
+
+### Task 1 — AI entitlement tests
+- [x] tests/ai/entitlement.test.ts — 13 tests: checkAIEntitlement (PAYMENT_REQUIRED no access, NOT_FOUND model price, resolves with access+price, SQL contains ai_access/ACTIVE/TRIALING); checkWalletBalance (insufficient, exact balance, excess, null balance, currency filter SQL); recordAIRequest (inserts + returns id, empty rows); completeAIRequest (updates with BigInt→string params); failAIRequest (marks FAILED)
+- [x] Fixed TypeScript: added missing `idempotencyKey` field to recordAIRequest calls
+
+### Task 2 — B2B API middleware tests
+- [x] tests/b2b/api-middleware.test.ts — 18 tests: authenticateApiKey (missing header, malformed, wrong pattern, null key, live env, test env, passes raw key, returns scopes); requireScope (present, absent, wildcard); apiKeyMiddleware (success, bad key, missing scope); withApiKeyUsageTracking (returns response, records 201 status, records 500 on throw, swallows recordApiUsage failures)
+- [x] Fixed TypeScript: `resolvedKey` now includes `environment: 'live' as const`
+
+### Task 3 — Automation trigger tests
+- [x] tests/automation/trigger.test.ts — 10 tests: dispatchWorkflowTriggers (no match, null version_id skip, starts + enqueues, multiple, SQL params, triggerInput payload); dispatchScheduledTriggers (no due, null version_id skip, starts + enqueues + updates next_run_at, schedule triggerInput)
+
+### Task 4 — Automation worker tests
+- [x] tests/automation/worker.test.ts — 7 tests: enqueueWorkflowRun (enqueues with type/payload, passes delayMs+dedupeKey); processWorkflowJob (FAILED on missing version, COMPLETED on success, FAILED on execute throw, queries by workflowVersionId, passes workspaceId in input)
+- [x] Fixed TypeScript: `mockExecute.mockResolvedValueOnce({})` (engine returns `Record<string,unknown>`, not void)
+
+### Verification gate (2026-10-04)
+- [x] pnpm lint — PASS (exit 0)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm test — PASS (797/797, 90 test files)
