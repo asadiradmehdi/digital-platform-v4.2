@@ -776,3 +776,21 @@ Status: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 - [x] pnpm lint — PASS (exit 0)
 - [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
 - [x] pnpm test — PASS (936/936, 103 test files)
+
+---
+
+## Session 17 — Distributed rate limit, FX provider, AI providers, request-user tests (2026-10-04)
+
+### Task 1 — Distributed rate limit tests
+- [x] tests/core/distributed-rate-limit.test.ts — 5 tests: resolves on allowed=true, RATE_LIMITED on allowed=false, INTERNAL_ERROR on missing row, SQL params check, resetAt in error details
+
+### Task 2 — FX HTTP provider tests
+- [x] tests/pricing/fx-provider.test.ts — 6 tests: fetch called with base/quote, parsed numerator/denominator, PROVIDER_ERROR on non-OK, custom headers, AbortSignal, provider name
+
+### Task 3 — Anthropic and OpenAI adapter tests
+- [x] tests/ai/providers.test.ts — 11 tests: anthropic provider=anthropic, endpoint URL, returns text/inputUnits/outputUnits, non-OK throws, missing key throws, system message separation; openai provider=openai, endpoint URL, returns units, non-OK throws, missing key throws
+
+### Verification gate (2026-10-04)
+- [x] pnpm lint — PASS (exit 0)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm test — PASS (958/958, 106 test files)
