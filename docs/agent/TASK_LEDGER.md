@@ -963,9 +963,16 @@ Status: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 - [x] vitest.config.ts — added hookTimeout:60000 and testTimeout:60000 to fix workspace-settings PATCH route beforeAll timeout flakiness under parallel load
 - [x] components/AppShell.tsx — replaced undefined var(--brand) with var(--accent) in sample notification color
 
+### Task 4 — Route test coverage expansion
+- [x] tests/identity/me-route.test.ts — 5 tests: GET /api/v1/me: 200 with user+workspaces, 401 unauth, 500 user-not-found, users SQL shape verification, workspace ACTIVE membership filter
+- [x] tests/analytics/analytics-route.test.ts — 6 tests: GET /api/v1/analytics: 200 metrics, 401 unauth, 400 invalid workspaceId, 403 missing permission, empty-ledger zero fallback, permission workspaceId binding
+- [x] tests/identity/notification-patch.test.ts — 5 tests: PATCH /api/v1/notifications/:id: 200 mark-read, 401 unauth, 400 invalid action, 404 not-found/ownership, COALESCE idempotency SQL shape
+- [x] tests/automation/workflow-routes.test.ts — 10 tests: GET+POST /api/v1/automation/workflows: list/create auth, permission, validation, runNow flow
+- [x] Fixed vi.clearAllMocks() → vi.resetAllMocks() in all new test files to prevent unconsumed mockOnce bleeding between tests
+
 ### Verification gate (2026-10-05)
 - [x] bash scripts/verify-visual-parity.sh — VISUAL_PARITY_STATIC=PASS
 - [x] pnpm lint — PASS
 - [x] pnpm typecheck — PASS
-- [x] pnpm test — PASS (983/983, 110 test files, hookTimeout fix confirmed stable)
+- [x] pnpm test — PASS (1009/1009, 114 test files)
 - [x] pnpm build — PASS (.next/BUILD_ID present, completed 2026-10-05 20:07)
