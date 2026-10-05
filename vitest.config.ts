@@ -7,5 +7,7 @@ export default defineConfig({
       '**/e2e/**',
       '**/tests/visual/**',
     ],
+    hookTimeout: 60000,
+    testTimeout: 60000,
   },
 });

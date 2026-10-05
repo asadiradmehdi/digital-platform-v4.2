@@ -62,7 +62,7 @@ function SidebarContent({ pathname, onClose }: { pathname: string; onClose?: () 
 
 const sampleNotifications = [
   { id: 'n1', icon: CheckCircle2, color: 'var(--success)', text: 'سفارش #DP-10482 تکمیل شد', time: '۲ دقیقه پیش', read: false },
-  { id: 'n2', icon: Zap, color: 'var(--brand)', text: 'مصرف AI به ۶۸٪ رسید', time: '۲ ساعت پیش', read: false },
+  { id: 'n2', icon: Zap, color: 'var(--accent)', text: 'مصرف AI به ۶۸٪ رسید', time: '۲ ساعت پیش', read: false },
   { id: 'n3', icon: CheckCircle2, color: 'var(--subtle)', text: 'اشتراک Pro تمدید شد', time: 'دیروز', read: true },
 ];
 
