@@ -1,6 +1,22 @@
 import type { Metadata } from 'next';
-import { Bot, Layers3, Workflow } from 'lucide-react';
 import { AppShell } from '../../components/AppShell';
-import { ProductCard, SurfaceHero, SystemStrip } from '../../components/ProductSurface';
-export const metadata: Metadata = { title: 'خدمات دیجیتال', robots:{index:false,follow:false} };
-export default function Services(){return <AppShell><main className="workspace-page-content"><SurfaceHero eyebrow="خدمات دیجیتال · یکپارچه" title="هر کاری، یک مسیر روشن." description="خدمات شبکه‌های اجتماعی، ابزارهای هوش مصنوعی و اتوماسیون را در یک محیط یکپارچه انتخاب، پیکربندی و مدیریت کنید؛ با قیمت شفاف، وضعیت لحظه‌ای و کنترل کامل سفارش." primaryHref="/ai" primaryLabel="ورود به هوش مصنوعی" secondaryHref="/automation" secondaryLabel="ساخت فرآیند"/><SystemStrip/><section className="product-card-grid-premium"><ProductCard icon={Layers3} title="خدمات شبکه‌های اجتماعی" description="خدمات اینستاگرام، تلگرام، تیک‌تاک، یوتیوب و سایر شبکه‌ها با مسیردهی هوشمند تأمین‌کننده و پیگیری سفارش." meta="اینستاگرام · تلگرام · تیک‌تاک · یوتیوب · X" href="/social"/><ProductCard icon={Bot} title="خدمات هوش مصنوعی" description="مدل‌های متن، تصویر، ویدیو، صدا، تحقیق، کدنویسی و Agent در یک درگاه واحد با کنترل مصرف." meta="مصرف‌محور · کنترل هزینه · چندمدلی" href="/ai"/><ProductCard icon={Workflow} title="اتوماسیون کسب‌وکار" description="فرآیندهای زمان‌بندی‌شده و Agentهای عملیاتی برای کارهای تکراری، اعلان‌ها، وب‌هوک‌ها و عملیات روزانه." meta="محرک · شرط · اقدام · زمان‌بندی" href="/automation"/></section></main></AppShell>}
+import { SystemStrip } from '../../components/ProductSurface';
+import ServicesCatalog from './ServicesCatalog';
+export const metadata: Metadata = { title: 'خدمات دیجیتال', robots: { index: false, follow: false } };
+export default function ServicesPage() {
+  return (
+    <AppShell>
+      <main className="services-page">
+        <header className="page-header" style={{ marginBottom: 22 }}>
+          <div>
+            <span className="eyebrow">خدمات · کاتالوگ</span>
+            <h1>خدمات دیجیتال</h1>
+            <p>خدمات شبکه‌های اجتماعی، هوش مصنوعی و اتوماسیون با قیمت شفاف و پیگیری لحظه‌ای.</p>
+          </div>
+        </header>
+        <SystemStrip/>
+        <ServicesCatalog/>
+      </main>
+    </AppShell>
+  );
+}
