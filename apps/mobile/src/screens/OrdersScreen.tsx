@@ -1,4 +1,56 @@
-import { StyleSheet, Text, View } from 'react-native'; import { Screen } from '../components/Screen'; import { Card, Section, Status, Title } from '../components/Ui'; import { theme } from '../theme';
-const orders=[['#DP-10482','در حال پردازش','۱٬۲۰۰٬۰۰۰ تومان','info'],['#DP-10481','تکمیل شده','۷۵۰٬۰۰۰ تومان','success'],['#DP-10476','در انتظار پرداخت','۳۲۰٬۰۰۰ تومان','warning']] as const;
-export function OrdersScreen(){return <Screen><Title eyebrow="COMMERCE" description="وضعیت سفارش، مبلغ و state از API مشترک خوانده می‌شود">سفارش‌ها</Title><Card><Section title="سفارش‌های اخیر"/>{orders.map(([code,status,total,tone])=><View key={code} style={styles.row}><View style={styles.main}><Text style={styles.code}>{code}</Text><Text style={styles.total}>{total}</Text></View><View style={styles.right}><Status tone={tone}>{status}</Status></View></View>)}</Card></Screen>}
-const styles=StyleSheet.create({row:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingVertical:14,borderTopWidth:1,borderTopColor:theme.colors.line},main:{gap:4},right:{alignItems:'flex-end'},code:{color:theme.colors.ink,fontWeight:'800',fontSize:12},total:{color:theme.colors.muted,fontSize:10}});
+import { StyleSheet, Text, View } from 'react-native';
+import { Screen } from '../components/Screen';
+import { Action, Card, Divider, Section, Status, Title } from '../components/Ui';
+import { theme } from '../theme';
+
+type Tone = 'info' | 'success' | 'warning' | 'danger' | 'neutral';
+const orders: { code: string; service: string; status: string; total: string; date: string; tone: Tone }[] = [
+  { code: '#DP-10482', service: 'Instagram Growth', status: 'در حال پردازش', total: '۱٬۴۵۰٬۰۰۰ تومان', date: '۲ مهر', tone: 'info' },
+  { code: '#DP-10477', service: 'AI Writer Pro', status: 'تکمیل شده', total: '۶٬۶۰۰٬۰۰۰ تومان', date: '۱ مهر', tone: 'success' },
+  { code: '#DP-10469', service: 'AI Image Studio', status: 'در صف', total: '۴٬۲۰۰٬۰۰۰ تومان', date: '۱ مهر', tone: 'warning' },
+];
+
+export function OrdersScreen() {
+  return (
+    <Screen>
+      <Title eyebrow="COMMERCE / ORDERS" description="وضعیت، مبلغ و state سفارش‌ها از API مشترک">
+        سفارش‌ها
+      </Title>
+
+      <Action>سفارش جدید</Action>
+
+      <Card>
+        <Section title="سفارش‌های اخیر" />
+        {orders.map((o, i) => (
+          <View key={o.code}>
+            {i > 0 && <Divider />}
+            <View style={styles.row}>
+              <View style={styles.main}>
+                <View style={styles.topRow}>
+                  <Text style={styles.code}>{o.code}</Text>
+                  <Status tone={o.tone}>{o.status}</Status>
+                </View>
+                <Text style={styles.service}>{o.service}</Text>
+                <View style={styles.bottomRow}>
+                  <Text style={styles.total}>{o.total}</Text>
+                  <Text style={styles.date}>{o.date}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        ))}
+      </Card>
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  row: { paddingVertical: 13 },
+  main: { gap: 5 },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  code: { color: theme.colors.ink, fontWeight: '800', fontSize: 12, fontFamily: 'monospace' },
+  service: { color: theme.colors.muted, fontSize: 11 },
+  bottomRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  total: { color: theme.colors.ink, fontSize: 12, fontWeight: '700' },
+  date: { color: theme.colors.subtle, fontSize: 10 },
+});

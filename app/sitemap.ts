@@ -4,10 +4,11 @@ import { publicEntities } from '../content/marketing/catalog';
 
 const staticRoutes = ['/', '/services', '/ai', '/social', '/automation', '/pricing', '/blog', '/about', '/contact', '/faq', '/privacy', '/terms'];
 const channelRoutes = ['instagram', 'telegram', 'tiktok', 'youtube', 'x'].map((x) => `/social/${x}`);
+const blogRoutes = ['ai-gateway', 'workflow-automation', 'social-growth', 'api-security', 'multi-workspace'].map((x) => `/blog/${x}`);
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
-  const routes = [...staticRoutes, ...channelRoutes, ...publicEntities.map((x) => x.href)];
+  const routes = [...staticRoutes, ...channelRoutes, ...blogRoutes, ...publicEntities.map((x) => x.href)];
   return [...new Set(routes)].map((path) => ({
     url: absoluteUrl(path),
     lastModified: now,
