@@ -850,3 +850,30 @@ Status: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 - [ ] External AI/payment/social provider credentials
 - [ ] Production FX source selection
 - [ ] Staging/production deployment
+
+---
+
+## Session 20 — UI completeness: settings sub-pages, auth form, workspace page (2026-10-05)
+
+### Task 1 — Settings sub-pages (previously dead-ended back to /settings)
+- [x] app/settings/page.tsx — updated all 6 InsightPanel links to real sub-page routes
+- [x] app/settings/profile/page.tsx — Profile/Account: name, display name, email, phone, bio form; avatar with camera button; danger zone with account delete
+- [x] app/settings/security/page.tsx — Password change form; MFA status (TOTP active badge + reconfigure/recovery-codes links); active sessions list with device/IP/last-seen and revoke button; Passkey empty state with add button
+- [x] app/settings/billing/page.tsx — Current plan tile (Pro, price, renewal date, payment method); wallet balance tile; invoices table with download/view actions
+- [x] app/settings/notifications/page.tsx — Channel toggles (email/push/sms); category toggles (orders/payments/security/AI/automation/updates); security always-on guard; save button
+- [x] app/settings/api-keys/page.tsx — Active keys list with name, prefix masked, env badge, scopes, created/lastUsed; eye/copy/delete actions; usage documentation panel with header example
+
+### Task 2 — Auth page (was raw HTML POST to JSON API — broken UX)
+- [x] app/auth/AuthForm.tsx — new client component: login/register tab switcher; fetch POST to /api/v1/auth/login or /api/v1/auth/register with JSON body; loading spinner during submission; error banner with message from API error envelope; redirect to /dashboard on success; forgot password link; security trust note
+- [x] app/auth/page.tsx — server component wrapper (keeps metadata export); renders AuthForm
+
+### Task 3 — Workspace page (was bare placeholder)
+- [x] app/workspace/page.tsx — workspace list with avatar, name, active badge, slug, member count, plan; settings and open links; dashed "new workspace" button
+
+### Task 4 — CSS additions
+- [x] globals.css — .ws-new-btn, .auth-error, .auth-switch, .spin-icon/@keyframes spin, .settings-layout, .settings-form, .form-row, .form-actions, .profile-avatar-row, .avatar-edit, .session-row, .session-icon, .toggle-row, .api-key-row, .api-key-icon, .button.danger
+
+### Verification gate (2026-10-05)
+- [x] pnpm lint — PASS (exit 0)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm test — PASS (983/983, 110 test files)
