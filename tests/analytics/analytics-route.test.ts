@@ -31,7 +31,7 @@ const mockRequireUser = vi.mocked(requireRequestUser);
 const mockRequirePermission = vi.mocked(requireWorkspacePermission);
 const mockRequireUuid = vi.mocked(requireUuid);
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => vi.resetAllMocks());
 
 type RouteModule = typeof import('../../app/api/v1/analytics/route');
 let GET: RouteModule['GET'];

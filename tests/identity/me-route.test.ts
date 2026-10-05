@@ -19,7 +19,7 @@ import { AppError } from '../../server/core/errors';
 const mockQuery = vi.mocked(query);
 const mockRequireUser = vi.mocked(requireRequestUser);
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => vi.resetAllMocks());
 
 type RouteModule = typeof import('../../app/api/v1/me/route');
 let GET: RouteModule['GET'];
