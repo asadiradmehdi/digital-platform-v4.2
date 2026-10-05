@@ -877,3 +877,69 @@ Status: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 - [x] pnpm lint — PASS (exit 0)
 - [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
 - [x] pnpm test — PASS (983/983, 110 test files)
+
+---
+
+## Session 21 — UI completeness: orders, services, wallet, analytics, subscriptions, pricing, social, AI workspace (2026-10-05)
+
+### Task 1 — AppShell mobile drawer
+- [x] components/AppShell.tsx — added mobile drawer overlay with RTL-correct slide-in animation; body overflow lock while open; auto-close on navigation; SidebarContent shared between desktop sidebar and mobile drawer
+
+### Task 2 — Services catalog + order flow
+- [x] app/services/ServicesCatalog.tsx — 12 services with category filter, platform tags, price display; links to /orders/new?service=id
+- [x] app/services/page.tsx — renders ServicesCatalog
+- [x] app/orders/[id]/page.tsx — order detail with timeline, meta panel, status badges; static registry with 3 orders
+- [x] app/orders/new/page.tsx — service configurator with quantity selector, URL/target field, summary panel, price calculation via unitDivisor; success state; Suspense wrapper for useSearchParams
+- [x] app/orders/page.tsx — table with links to /orders/${id}, formatted dates and amounts
+
+### Task 3 — Financial pages
+- [x] app/wallet/page.tsx — balance card, ledger with debit/credit pills, top-up panel with presets
+- [x] app/subscriptions/page.tsx — plan card, usage bar, entitlements grid
+- [x] app/analytics/page.tsx — KPI grid, unit economics breakdown with progress bars, margin summary
+
+### Task 4 — Public/marketing pages
+- [x] app/pricing/page.tsx — 4-plan grid (Free/Basic/Pro/Enterprise) with feature comparison, Pro highlight
+- [x] app/social/page.tsx — feature highlights, channel list with service arrays
+- [x] app/social/[channel]/page.tsx — per-channel detail with capabilities, limitations, CTA; generateStaticParams
+- [x] app/ai/workspace/page.tsx — 6 starter prompt buttons, composer with enter hint
+- [x] app/contact/page.tsx — 4 contact channels with real hrefs; response hours section
+
+### CSS additions (globals.css)
+- [x] Mobile drawer: .drawer-overlay, .app-drawer, .app-drawer.open, .drawer-close
+- [x] Services: .services-page, .filter-bar, .filter-btn, .service-catalog, .service-card, .service-card-head, .service-icon, .service-platforms, .platform-tag, .service-card-foot, .service-price, .service-order-btn
+- [x] Orders: .order-detail-grid, .timeline-list, .timeline-item, .timeline-dot-col, .timeline-dot, .timeline-line, .timeline-body, .order-meta-list, .order-meta-row
+- [x] Orders-new: .order-new-layout, .qty-grid, .qty-btn
+- [x] Pricing: .pricing-grid, .pricing-card, .pricing-card-highlight, .pricing-badge, .pricing-price, .pricing-features, .pricing-cta-primary, .pricing-cta-secondary
+- [x] AI workspace: .ai-starters, .ai-starter-btn
+- [x] Bug fix: .side-nav a:first-child → .side-nav a.active (was hardcoding Home as always active)
+
+### Verification gate (2026-10-05)
+- [x] pnpm lint — PASS
+- [x] pnpm typecheck — PASS
+- [x] pnpm test — PASS (983/983)
+- [x] pnpm build — PASS
+
+---
+
+## Session 22 — Content completeness: FAQ, about, support/new, blog, automation/new, privacy, terms (2026-10-05)
+
+### Task 1 — Expanded public content pages
+- [x] app/faq/page.tsx — 5 sections, 13 Q&A items covering account, orders, payment, API, security; JSON-LD FAQPage schema
+- [x] app/about/page.tsx — why-we-built-it prose, 4 product principles (speed/security/AI/transparency), tech stack table, CTA links
+- [x] app/blog/page.tsx — 5 real article previews with tags and read-time
+- [x] app/blog/[slug]/page.tsx — 5 full article pages: AI Gateway, Workflow Design, Social Growth, API Security, Multi-Workspace
+
+### Task 2 — Support ticket form upgrade
+- [x] app/support/new/page.tsx — category selector (7 categories), priority picker (normal/high/urgent with descriptions), optional order reference field, character counter, success state; Suspense wrapper for useSearchParams; client component
+
+### Task 3 — New workflow builder
+- [x] app/automation/new/page.tsx — trigger type selector (4 types), step builder with add/remove, success state; linked from /automation SurfaceHero CTA
+
+### Task 4 — Legal page content
+- [x] app/privacy/page.tsx — 6 sections covering data collection, purpose, retention, third parties, rights, security
+- [x] app/terms/page.tsx — 7 sections covering acceptance, permitted/prohibited use, content ownership, payment, liability, termination
+
+### Verification gate (2026-10-05)
+- [x] pnpm lint — PASS
+- [x] pnpm typecheck — PASS
+- [ ] pnpm build — running (b5gy9twu9)

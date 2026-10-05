@@ -1,8 +1,8 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { Activity, Bell, ChevronDown, CircleHelp, Home, LayoutGrid, LogOut, Menu, Package, Settings2, Sparkles, WalletCards, Workflow, X } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Activity, Bell, CheckCircle2, ChevronDown, CircleHelp, Home, LayoutGrid, LogOut, Menu, Package, Settings2, Sparkles, WalletCards, Workflow, X, Zap } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 const primaryNav = [
@@ -60,9 +60,28 @@ function SidebarContent({ pathname, onClose }: { pathname: string; onClose?: () 
   );
 }
 
+const sampleNotifications = [
+  { id: 'n1', icon: CheckCircle2, color: 'var(--success)', text: 'سفارش #DP-10482 تکمیل شد', time: '۲ دقیقه پیش', read: false },
+  { id: 'n2', icon: Zap, color: 'var(--brand)', text: 'مصرف AI به ۶۸٪ رسید', time: '۲ ساعت پیش', read: false },
+  { id: 'n3', icon: CheckCircle2, color: 'var(--subtle)', text: 'اشتراک Pro تمدید شد', time: 'دیروز', read: true },
+];
+
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!notifOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [notifOpen]);
 
   useEffect(() => { setDrawerOpen(false); }, [pathname]);
   useEffect(() => {
@@ -103,7 +122,33 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span>جستجو در پلتفرم...</span>
           </div>
           <div className="top-actions">
-            <button aria-label="اعلان‌ها"><Bell size={18}/><i /></button>
+            <div ref={notifRef} style={{ position: 'relative' }}>
+              <button
+                aria-label="اعلان‌ها"
+                aria-expanded={notifOpen}
+                onClick={() => setNotifOpen(o => !o)}
+              >
+                <Bell size={18}/>
+                <i />
+              </button>
+              {notifOpen && (
+                <div className="notif-dropdown" role="menu">
+                  <div className="notif-head">
+                    <span>اعلان‌ها</span>
+                    <button type="button" onClick={() => setNotifOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--subtle)', padding: 0 }}><X size={15}/></button>
+                  </div>
+                  {sampleNotifications.map(({ id, icon: Icon, color, text, time, read }) => (
+                    <div key={id} className={`notif-item${read ? ' read' : ''}`}>
+                      <span style={{ color, flexShrink: 0 }}><Icon size={15}/></span>
+                      <span className="notif-body"><b>{text}</b><small>{time}</small></span>
+                    </div>
+                  ))}
+                  <Link href="/dashboard" className="notif-footer" onClick={() => setNotifOpen(false)}>
+                    مشاهده همه
+                  </Link>
+                </div>
+              )}
+            </div>
             <Link href="/settings" className="account-chip"><span>ا</span><b>اسد</b></Link>
           </div>
         </header>
