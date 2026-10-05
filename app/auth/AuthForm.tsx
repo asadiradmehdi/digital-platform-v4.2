@@ -1,12 +1,14 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { AlertCircle, ArrowLeft, Loader2, ShieldCheck } from 'lucide-react';
 
 type Mode = 'login' | 'register';
 type Status = 'idle' | 'loading' | 'error';
 
 export default function AuthForm() {
+  const router = useRouter();
   const [mode, setMode] = useState<Mode>('login');
   const [status, setStatus] = useState<Status>('idle');
   const [errorMsg, setErrorMsg] = useState('');
@@ -26,7 +28,7 @@ export default function AuthForm() {
         body: JSON.stringify(data),
       });
       if (res.ok) {
-        window.location.href = '/dashboard';
+        router.push('/dashboard');
       } else {
         const body = await res.json().catch(() => ({}));
         setErrorMsg(body?.error?.message ?? (mode === 'login' ? 'ایمیل یا رمز عبور اشتباه است.' : 'ثبت‌نام ناموفق بود. لطفاً دوباره تلاش کنید.'));

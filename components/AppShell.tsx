@@ -83,6 +83,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [notifOpen]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setDrawerOpen(false); }, [pathname]);
   useEffect(() => {
     if (drawerOpen) document.body.style.overflow = 'hidden';
