@@ -26,7 +26,9 @@ function NavLink({ href, label, icon: Icon, active }: { href: string; label: str
   );
 }
 
-function SidebarContent({ pathname, onClose }: { pathname: string; onClose?: () => void }) {
+function SidebarContent({ pathname, workspaceLabel, onClose }: { pathname: string; workspaceLabel?: string; onClose?: () => void }) {
+  const wsName = workspaceLabel ?? '...';
+  const wsInitial = wsName !== '...' ? wsName.slice(0, 1) : '؟';
   return (
     <>
       <Link href="/dashboard" className="side-brand" onClick={onClose}>
@@ -34,8 +36,8 @@ function SidebarContent({ pathname, onClose }: { pathname: string; onClose?: () 
         <span><b>پلتفرم</b><small>نسخه حرفه‌ای</small></span>
       </Link>
       <div className="workspace-switch">
-        <span className="workspace-avatar">ا</span>
-        <span><b>فضای کاری اصلی</b><small>حساب شخصی</small></span>
+        <span className="workspace-avatar">{wsInitial}</span>
+        <span><b>{wsName}</b><small>فضای کاری</small></span>
         <ChevronDown size={15}/>
       </div>
       <nav className="side-nav" aria-label="ناوبری اصلی">
@@ -71,6 +73,21 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  const [userLabel, setUserLabel] = useState('...');
+  const [workspaceLabel, setWorkspaceLabel] = useState('...');
+
+  useEffect(() => {
+    fetch('/api/v1/me', { credentials: 'same-origin' })
+      .then(r => r.ok ? r.json() : null)
+      .then((data: { user?: { displayName?: string }; workspaces?: { name: string }[] } | null) => {
+        if (!data) return;
+        const name = data.user?.displayName ?? '';
+        if (name) setUserLabel(name);
+        const ws = data.workspaces?.[0]?.name;
+        if (ws) setWorkspaceLabel(ws);
+      })
+      .catch(() => { /* silently ignore — session may be absent on public pages */ });
+  }, []);
 
   useEffect(() => {
     if (!notifOpen) return;
@@ -94,7 +111,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="app-frame">
       <aside className="app-sidebar">
-        <SidebarContent pathname={pathname} />
+        <SidebarContent pathname={pathname} workspaceLabel={workspaceLabel} />
       </aside>
 
       {/* Mobile drawer */}
@@ -105,7 +122,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <button className="drawer-close" onClick={() => setDrawerOpen(false)} aria-label="بستن منو">
           <X size={20}/>
         </button>
-        <SidebarContent pathname={pathname} onClose={() => setDrawerOpen(false)} />
+        <SidebarContent pathname={pathname} workspaceLabel={workspaceLabel} onClose={() => setDrawerOpen(false)} />
       </aside>
 
       <div className="app-main">
@@ -150,7 +167,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </div>
               )}
             </div>
-            <Link href="/settings" className="account-chip"><span>ا</span><b>اسد</b></Link>
+            <Link href="/settings" className="account-chip"><span>{userLabel !== '...' ? userLabel.slice(0, 1) : '؟'}</span><b>{userLabel}</b></Link>
           </div>
         </header>
         {children}
