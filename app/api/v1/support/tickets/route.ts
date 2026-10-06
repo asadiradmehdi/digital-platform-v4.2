@@ -4,6 +4,23 @@ import { assertSameOrigin } from '../../../../../server/core/security-boundary';
 import { requireWorkspacePermission } from '../../../../../server/identity/rbac';
 import { query } from '../../../../../server/core/db';
 import { AppError } from '../../../../../server/core/errors';
+import { correlationId, handleRouteError, json } from '../../../../../server/core/http';
+
+export async function GET(request: NextRequest) {
+  const id = correlationId(request);
+  try {
+    const userId = await requireRequestUser(request);
+    const workspaceId = request.nextUrl.searchParams.get('workspaceId');
+    if (!workspaceId) return json({ error: { code: 'VALIDATION_ERROR', message: 'workspaceId required' } }, { status: 400, correlationId: id });
+    await requireWorkspacePermission(userId, workspaceId, 'workspace.read');
+    const result = await query<{ id: string; subject: string; status: string; priority: string; createdAt: string }>(
+      `SELECT id, subject, status, priority, created_at AS "createdAt"
+       FROM support_tickets WHERE workspace_id=$1 ORDER BY created_at DESC LIMIT 20`,
+      [workspaceId],
+    );
+    return json({ items: result.rows }, { correlationId: id });
+  } catch (error) { return handleRouteError(error, id); }
+}
 
 export async function POST(req: NextRequest) {
   try { assertSameOrigin(req); } catch {

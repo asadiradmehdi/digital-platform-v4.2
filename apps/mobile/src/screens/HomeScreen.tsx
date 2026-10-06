@@ -1,11 +1,40 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../components/Screen';
-import { Action, Card, Metric, Section, Status, Title } from '../components/Ui';
+import { Action, Card, Metric, Section, State, Status, Title } from '../components/Ui';
 import { theme } from '../theme';
+import { useWorkspace } from '../hooks/useWorkspace';
+import { useQuery } from '../hooks/useQuery';
+import { wallet, orders, subscriptions } from '../api/client';
+import { formatToman } from '../format';
 
 export function HomeScreen() {
   const router = useRouter();
+  const { workspaceId, userDisplayName, loading: wsLoading } = useWorkspace();
+
+  const walletQ = useQuery(
+    () => workspaceId ? wallet.getBalances() : Promise.resolve({ items: [] }),
+    [workspaceId],
+  );
+  const ordersQ = useQuery(
+    () => workspaceId ? orders.list(workspaceId) : Promise.resolve({ items: [], nextCursor: null }),
+    [workspaceId],
+  );
+  const subsQ = useQuery(
+    () => subscriptions.list(),
+    [],
+  );
+
+  const balanceMinor = walletQ.data?.items?.[0]?.balanceMinor ?? '0';
+  const activeOrders = ordersQ.data?.items?.filter(
+    (o) => ['PAID', 'QUEUED', 'PROCESSING', 'PROVIDER_SUBMITTED'].includes(o.status),
+  ).length ?? 0;
+  const activeSubs = subsQ.data?.items?.filter(
+    (s) => ['ACTIVE', 'TRIALING'].includes(s.status),
+  ).length ?? 0;
+
+  const greeting = userDisplayName ? `سلام، ${userDisplayName.split(' ')[0]}.` : 'سلام.';
+
   return (
     <Screen>
       <View style={styles.hero}>
@@ -15,7 +44,7 @@ export function HomeScreen() {
           <Text style={styles.kicker}>WORKSPACE / OVERVIEW</Text>
         </View>
         <Title description="مرکز کنترل AI، سرویس‌ها، سفارش‌ها و عملیات شما">
-          صبح بخیر، اسد.
+          {wsLoading ? 'صبح بخیر.' : greeting}
         </Title>
         <Text style={styles.heroNote}>مهم‌ترین وضعیت‌های امروز، بدون شلوغی.</Text>
         <View style={styles.heroActions}>
@@ -24,10 +53,15 @@ export function HomeScreen() {
         </View>
       </View>
 
-      <View style={styles.grid}>
-        <Metric accent label="موجودی کیف پول" value="۱۲٬۵۰۰٬۰۰۰ تومان" hint="قابل استفاده" />
-        <Metric label="مصرف AI" value="۶۸٪" hint="از اعتبار دوره" />
-      </View>
+      {walletQ.status === 'loading' ? (
+        <State loading />
+      ) : walletQ.status === 'error' ? (
+        <State error={walletQ.error} />
+      ) : (
+        <View style={styles.grid}>
+          <Metric accent label="موجودی کیف پول" value={formatToman(balanceMinor)} hint="قابل استفاده" />
+        </View>
+      )}
 
       <Card>
         <Section title="دسترسی سریع" />
@@ -48,8 +82,8 @@ export function HomeScreen() {
       <Card>
         <Section title="وضعیت امروز" />
         <View style={styles.statusRow}>
-          <Text style={styles.muted}>۳ سفارش فعال</Text>
-          <Text style={styles.muted}>۱ اشتراک فعال</Text>
+          <Text style={styles.muted}>{activeOrders} سفارش فعال</Text>
+          <Text style={styles.muted}>{activeSubs} اشتراک فعال</Text>
           <Status tone="success">امنیت سالم</Status>
         </View>
       </Card>

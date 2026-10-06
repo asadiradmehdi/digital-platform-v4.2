@@ -1,59 +1,79 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../../src/components/Screen';
-import { Card, Divider, Metric, Section, Title, UsageBar } from '../../src/components/Ui';
+import { Card, Divider, Metric, Section, State, Title, UsageBar } from '../../src/components/Ui';
 import { theme } from '../../src/theme';
+import { useWorkspace } from '../../src/hooks/useWorkspace';
+import { useQuery } from '../../src/hooks/useQuery';
+import { analytics } from '../../src/api/client';
+import { formatToman } from '../../src/format';
 
-const costs = [
-  { label: 'هزینه Provider', pct: 36, display: '۱٬۷۳۰٬۰۰۰ تومان' },
-  { label: 'هزینه پرداخت', pct: 2, display: '۸۵٬۰۰۰ تومان' },
-  { label: 'استرداد', pct: 2.5, display: '۱۲۰٬۰۰۰ تومان' },
-];
+type AnalyticsResponse = { workspaceId: string; metrics: { creditMinor: string; debitMinor: string } };
 
 export default function Analytics() {
+  const { workspaceId } = useWorkspace();
+  const analyticsQ = useQuery(
+    () => workspaceId
+      ? analytics.get(workspaceId) as Promise<AnalyticsResponse>
+      : Promise.resolve(null),
+    [workspaceId],
+  );
+
+  const creditMinor = parseInt(analyticsQ.data?.metrics?.creditMinor ?? '0', 10);
+  const debitMinor = parseInt(analyticsQ.data?.metrics?.debitMinor ?? '0', 10);
+  const contribution = Math.max(0, creditMinor - debitMinor);
+  const margin = creditMinor > 0 ? Math.round((contribution / creditMinor) * 100) : 0;
+  const providerRatio = creditMinor > 0 ? Math.round((debitMinor / creditMinor) * 100) : 0;
+
   return (
     <Screen>
       <Title eyebrow="ANALYTICS / OPERATIONS" description="شاخص‌ها از رویدادهای عملیاتی سمت سرور">
         تحلیل و گزارش
       </Title>
 
-      <View style={styles.row2}>
-        <View style={styles.half}>
-          <Metric label="Revenue این ماه" value="۴٬۸۶۰٬۰۰۰" hint="تومان" />
-        </View>
-        <View style={styles.half}>
-          <Metric label="کاربران فعال" value="۱٬۲۴۰" hint="این ماه" />
-        </View>
-      </View>
+      {analyticsQ.status === 'loading' && <State loading />}
+      {analyticsQ.status === 'error' && <State error={analyticsQ.error} />}
 
-      <View style={styles.row2}>
-        <View style={styles.half}>
-          <Metric label="MRR" value="۱٬۸۹۰٬۰۰۰" hint="تومان" />
-        </View>
-        <View style={styles.half}>
-          <Metric label="سفارش‌های فعال" value="۳" hint="در حال پردازش" />
-        </View>
-      </View>
-
-      <Card>
-        <Section title="ساختار هزینه (از Revenue)" />
-        {costs.map((c, i) => (
-          <View key={c.label}>
-            {i > 0 && <Divider />}
-            <View style={styles.costRow}>
-              <View style={styles.costInfo}>
-                <Text style={styles.costLabel}>{c.label}</Text>
-                <Text style={styles.costAmt}>{c.display}</Text>
-              </View>
-              <View style={styles.barWrap}>
-                <UsageBar value={c.pct * 2} />
-              </View>
-              <Text style={styles.costPct}>{c.pct}٪</Text>
+      {analyticsQ.status === 'success' && (
+        <>
+          <View style={styles.row2}>
+            <View style={styles.half}>
+              <Metric label="بستانکار" value={formatToman(creditMinor)} hint="کل واریز" />
+            </View>
+            <View style={styles.half}>
+              <Metric label="بدهکار" value={formatToman(debitMinor)} hint="کل برداشت" />
             </View>
           </View>
-        ))}
-      </Card>
 
-      <Metric accent label="حاشیه مشارکت" value="۶۰٪" hint="Contribution ÷ Revenue" />
+          <Metric accent label="موجودی خالص" value={formatToman(contribution)} hint="بستانکار منهای بدهکار" />
+
+          <Card>
+            <Section title="ساختار تراکنش‌ها" />
+            <View>
+              <View style={styles.costRow}>
+                <View style={styles.costInfo}>
+                  <Text style={styles.costLabel}>بدهکار (برداشت)</Text>
+                  <Text style={styles.costAmt}>{formatToman(debitMinor)}</Text>
+                </View>
+                <View style={styles.barWrap}>
+                  <UsageBar value={providerRatio} />
+                </View>
+                <Text style={styles.costPct}>{providerRatio}٪</Text>
+              </View>
+              <Divider />
+              <View style={styles.costRow}>
+                <View style={styles.costInfo}>
+                  <Text style={styles.costLabel}>موجودی خالص</Text>
+                  <Text style={styles.costAmt}>{formatToman(contribution)}</Text>
+                </View>
+                <View style={styles.barWrap}>
+                  <UsageBar value={margin} />
+                </View>
+                <Text style={styles.costPct}>{margin}٪</Text>
+              </View>
+            </View>
+          </Card>
+        </>
+      )}
     </Screen>
   );
 }

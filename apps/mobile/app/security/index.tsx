@@ -1,82 +1,108 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../../src/components/Screen';
-import { Card, Divider, Section, Status, Title } from '../../src/components/Ui';
+import { Card, Divider, Section, State, Status, Title } from '../../src/components/Ui';
 import { theme } from '../../src/theme';
+import { useQuery } from '../../src/hooks/useQuery';
+import { sessions, auditEvents } from '../../src/api/client';
 
-const sessions = [
-  { id: 's1', device: 'iPhone 15 Pro', location: 'تهران، ایران', last: '۳ دقیقه پیش', current: true },
-  { id: 's2', device: 'Chrome / macOS', location: 'تهران، ایران', last: '۲ ساعت پیش', current: false },
-  { id: 's3', device: 'Firefox / Windows', location: 'اصفهان، ایران', last: 'دیروز', current: false },
-];
+type Tone = 'success' | 'info' | 'warning' | 'danger' | 'neutral';
 
-const auditEvents = [
-  { id: 'e1', action: 'ورود موفق', detail: 'iPhone 15 Pro', time: '۳ دقیقه پیش', tone: 'success' as const },
-  { id: 'e2', action: 'تغییر رمز عبور', detail: 'Chrome / macOS', time: '۲ روز پیش', tone: 'warning' as const },
-  { id: 'e3', action: 'فعال‌سازی OTP', detail: 'تنظیمات امنیتی', time: '۱ هفته پیش', tone: 'info' as const },
-];
+function auditTone(action: string): Tone {
+  if (action.includes('LOGIN') || action.includes('SESSION')) return 'success';
+  if (action.includes('PASSWORD') || action.includes('MFA')) return 'warning';
+  if (action.includes('FAIL') || action.includes('REVOKE')) return 'danger';
+  return 'info';
+}
+
+function auditLabel(action: string): string {
+  const labels: Record<string, string> = {
+    USER_LOGIN: 'ورود موفق',
+    USER_LOGOUT: 'خروج',
+    PASSWORD_CHANGE: 'تغییر رمز عبور',
+    MFA_ENABLED: 'فعال‌سازی OTP',
+    MFA_DISABLED: 'غیرفعال‌سازی OTP',
+    SESSION_REVOKED: 'خروج نشست',
+    PASSKEY_ADDED: 'افزودن Passkey',
+  };
+  return labels[action.toUpperCase()] ?? action;
+}
 
 export default function SecurityCenter() {
+  const sessionsQ = useQuery(() => sessions.list(), []);
+  const auditQ = useQuery(() => auditEvents.list(), []);
+
+  const sessionItems = sessionsQ.data?.items ?? [];
+  const eventItems = auditQ.data?.items ?? [];
+
   return (
     <Screen>
       <Title eyebrow="SECURITY / CENTER" description="تصمیم‌های حساس همیشه سمت سرور enforce می‌شوند">
         مرکز امنیت
       </Title>
 
-      {/* Security status overview */}
       <Card>
         <Section title="وضعیت امنیتی" />
-        <View style={styles.statusRow}>
-          <View style={styles.statusItem}>
-            <Text style={styles.statusLabel}>MFA / OTP</Text>
-            <Status tone="success">فعال</Status>
-          </View>
-          <Divider />
-          <View style={styles.statusItem}>
-            <Text style={styles.statusLabel}>Passkey</Text>
-            <Status tone="warning">غیرفعال</Status>
-          </View>
-          <Divider />
-          <View style={styles.statusItem}>
-            <Text style={styles.statusLabel}>هشدار بحرانی</Text>
-            <Status tone="success">ندارد</Status>
-          </View>
+        <View style={styles.statusItem}>
+          <Text style={styles.statusLabel}>نشست‌های فعال</Text>
+          <Status tone={sessionItems.length > 0 ? 'success' : 'neutral'}>
+            {sessionsQ.status === 'loading' ? '…' : String(sessionItems.length)}
+          </Status>
+        </View>
+        <Divider />
+        <View style={styles.statusItem}>
+          <Text style={styles.statusLabel}>رویدادهای امنیتی</Text>
+          <Status tone={eventItems.length > 0 ? 'info' : 'neutral'}>
+            {auditQ.status === 'loading' ? '…' : String(eventItems.length)}
+          </Status>
         </View>
       </Card>
 
-      {/* Active sessions */}
       <Card>
         <Section title="نشست‌های فعال" />
-        {sessions.map((s, i) => (
+        {sessionsQ.status === 'loading' && <State loading />}
+        {sessionsQ.status === 'error' && <State error={sessionsQ.error} />}
+        {sessionsQ.status === 'success' && sessionItems.length === 0 && (
+          <State empty="نشست فعالی یافت نشد." />
+        )}
+        {sessionItems.map((s, i) => (
           <View key={s.id}>
             {i > 0 && <Divider />}
             <View style={styles.sessionRow}>
               <View style={styles.sessionLeft}>
                 <View style={styles.sessionNameRow}>
-                  <Text style={styles.sessionDevice}>{s.device}</Text>
+                  <Text style={styles.sessionDevice}>{s.deviceName}</Text>
                   {s.current && <Status tone="success">فعلی</Status>}
                 </View>
-                <Text style={styles.sessionMeta}>{s.location} · {s.last}</Text>
+                <Text style={styles.sessionMeta}>
+                  {s.clientType} · {new Date(s.lastSeenAt ?? s.createdAt).toLocaleDateString('fa-IR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </Text>
               </View>
-              {!s.current && (
-                <Text style={styles.revokeBtn}>خروج</Text>
-              )}
+              {!s.current && <Text style={styles.revokeBtn}>خروج</Text>}
             </View>
           </View>
         ))}
       </Card>
 
-      {/* Audit log */}
       <Card>
         <Section title="رویدادهای امنیتی اخیر" />
-        {auditEvents.map((ev, i) => (
+        {auditQ.status === 'loading' && <State loading />}
+        {auditQ.status === 'error' && <State error={auditQ.error} />}
+        {auditQ.status === 'success' && eventItems.length === 0 && (
+          <State empty="رویداد امنیتی ثبت نشده است." />
+        )}
+        {eventItems.map((ev, i) => (
           <View key={ev.id}>
             {i > 0 && <Divider />}
             <View style={styles.eventRow}>
               <View style={styles.eventLeft}>
-                <Text style={styles.eventAction}>{ev.action}</Text>
-                <Text style={styles.eventDetail}>{ev.detail} · {ev.time}</Text>
+                <Text style={styles.eventAction}>{auditLabel(ev.action)}</Text>
+                <Text style={styles.eventDetail}>
+                  {ev.entityType} · {new Date(ev.createdAt).toLocaleDateString('fa-IR', { month: 'short', day: 'numeric' })}
+                </Text>
               </View>
-              <Status tone={ev.tone}>{ev.tone === 'success' ? '✓' : ev.tone === 'warning' ? '!' : 'i'}</Status>
+              <Status tone={auditTone(ev.action)}>
+                {auditTone(ev.action) === 'success' ? '✓' : auditTone(ev.action) === 'warning' ? '!' : 'i'}
+              </Status>
             </View>
           </View>
         ))}
@@ -86,7 +112,6 @@ export default function SecurityCenter() {
 }
 
 const styles = StyleSheet.create({
-  statusRow: { gap: 0 },
   statusItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 11 },
   statusLabel: { color: theme.colors.muted, fontSize: 12 },
   sessionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, gap: 10 },

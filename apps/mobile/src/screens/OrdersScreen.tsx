@@ -1,16 +1,68 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../components/Screen';
-import { Action, Card, Divider, Section, Status, Title } from '../components/Ui';
+import { Action, Card, Divider, Section, State, Status, Title } from '../components/Ui';
 import { theme } from '../theme';
+import { useWorkspace } from '../hooks/useWorkspace';
+import { useQuery } from '../hooks/useQuery';
+import { orders } from '../api/client';
+import type { OrderSummary } from '../api/client';
+import { formatToman } from '../format';
 
 type Tone = 'info' | 'success' | 'warning' | 'danger' | 'neutral';
-const orders: { code: string; service: string; status: string; total: string; date: string; tone: Tone }[] = [
-  { code: '#DP-10482', service: 'Instagram Growth', status: 'در حال پردازش', total: '۱٬۴۵۰٬۰۰۰ تومان', date: '۲ مهر', tone: 'info' },
-  { code: '#DP-10477', service: 'AI Writer Pro', status: 'تکمیل شده', total: '۶٬۶۰۰٬۰۰۰ تومان', date: '۱ مهر', tone: 'success' },
-  { code: '#DP-10469', service: 'AI Image Studio', status: 'در صف', total: '۴٬۲۰۰٬۰۰۰ تومان', date: '۱ مهر', tone: 'warning' },
-];
+
+function statusTone(status: string): Tone {
+  switch (status) {
+    case 'COMPLETED': return 'success';
+    case 'PROCESSING': case 'PROVIDER_SUBMITTED': return 'info';
+    case 'QUEUED': case 'PAID': return 'warning';
+    case 'FAILED': case 'CANCELLED': return 'danger';
+    default: return 'neutral';
+  }
+}
+
+function statusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    COMPLETED: 'تکمیل شده',
+    PROCESSING: 'در حال پردازش',
+    PROVIDER_SUBMITTED: 'ارسال به Provider',
+    QUEUED: 'در صف',
+    PAID: 'پرداخت شده',
+    FAILED: 'ناموفق',
+    CANCELLED: 'لغو شده',
+  };
+  return labels[status] ?? status;
+}
+
+function OrderRow({ order, last }: { order: OrderSummary; last: boolean }) {
+  return (
+    <View>
+      {!last && <Divider />}
+      <View style={styles.row}>
+        <View style={styles.main}>
+          <View style={styles.topRow}>
+            <Text style={styles.code}>{order.code ?? `#${order.id.slice(0, 8).toUpperCase()}`}</Text>
+            <Status tone={statusTone(order.status)}>{statusLabel(order.status)}</Status>
+          </View>
+          <Text style={styles.service}>{order.status}</Text>
+          <View style={styles.bottomRow}>
+            <Text style={styles.total}>{formatToman(order.totalMinor)}</Text>
+            <Text style={styles.date}>{new Date(order.createdAt).toLocaleDateString('fa-IR', { month: 'short', day: 'numeric' })}</Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
 
 export function OrdersScreen() {
+  const { workspaceId, loading: wsLoading } = useWorkspace();
+  const ordersQ = useQuery(
+    () => workspaceId ? orders.list(workspaceId) : Promise.resolve({ items: [], nextCursor: null }),
+    [workspaceId],
+  );
+
+  const items = ordersQ.data?.items ?? [];
+
   return (
     <Screen>
       <Title eyebrow="COMMERCE / ORDERS" description="وضعیت، مبلغ و state سفارش‌ها از API مشترک">
@@ -19,27 +71,21 @@ export function OrdersScreen() {
 
       <Action>سفارش جدید</Action>
 
-      <Card>
-        <Section title="سفارش‌های اخیر" />
-        {orders.map((o, i) => (
-          <View key={o.code}>
-            {i > 0 && <Divider />}
-            <View style={styles.row}>
-              <View style={styles.main}>
-                <View style={styles.topRow}>
-                  <Text style={styles.code}>{o.code}</Text>
-                  <Status tone={o.tone}>{o.status}</Status>
-                </View>
-                <Text style={styles.service}>{o.service}</Text>
-                <View style={styles.bottomRow}>
-                  <Text style={styles.total}>{o.total}</Text>
-                  <Text style={styles.date}>{o.date}</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        ))}
-      </Card>
+      {(wsLoading || ordersQ.status === 'loading') && <State loading />}
+      {ordersQ.status === 'error' && <State error={ordersQ.error} />}
+
+      {ordersQ.status === 'success' && items.length === 0 && (
+        <State empty="سفارشی ثبت نشده است." />
+      )}
+
+      {items.length > 0 && (
+        <Card>
+          <Section title="سفارش‌های اخیر" />
+          {items.map((o, i) => (
+            <OrderRow key={o.id} order={o} last={i === items.length - 1} />
+          ))}
+        </Card>
+      )}
     </Screen>
   );
 }

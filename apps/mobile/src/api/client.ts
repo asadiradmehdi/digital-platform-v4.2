@@ -185,6 +185,37 @@ export const analytics = {
     apiFetch<{ summary: unknown }>(`${V1}/analytics?workspaceId=${encodeURIComponent(workspaceId)}`),
 };
 
+// Support tickets
+export const support = {
+  listTickets: (workspaceId: string) =>
+    apiFetch<{ items: { id: string; subject: string; status: string; priority: string; createdAt: string }[] }>(
+      `${V1}/support/tickets?workspaceId=${encodeURIComponent(workspaceId)}`,
+    ),
+  createTicket: (body: { workspaceId: string; subject: string; category?: string; priority?: string; message?: string }) =>
+    apiFetch<{ ticket: { id: string } }>(`${V1}/support/tickets`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+};
+
+// Sessions (security center)
+export const sessions = {
+  list: () =>
+    apiFetch<{ items: { id: string; clientType: string; deviceName: string; lastSeenAt: string; createdAt: string; current: boolean }[] }>(
+      `${V1}/auth/sessions`,
+    ),
+  revokeOthers: () =>
+    apiFetch<{ ok: true }>(`${V1}/auth/sessions`, { method: 'DELETE' }),
+};
+
+// Audit events
+export const auditEvents = {
+  list: () =>
+    apiFetch<{ items: { id: string; action: string; entityType: string; createdAt: string }[] }>(
+      `${V1}/me/audit-events`,
+    ),
+};
+
 // Health
 export const health = {
   get: () => apiFetch<{ status: string; version: string }>(`${V1}/health`),

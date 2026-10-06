@@ -1,14 +1,37 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../../src/components/Screen';
-import { Action, Card, Divider, Section, Status, Title } from '../../src/components/Ui';
+import { Action, Card, Divider, Section, State, Status, Title } from '../../src/components/Ui';
 import { theme } from '../../src/theme';
+import { useWorkspace } from '../../src/hooks/useWorkspace';
+import { useQuery } from '../../src/hooks/useQuery';
+import { support } from '../../src/api/client';
 
-const tickets = [
-  { id: 'tk-001', subject: 'سفارش #DP-10477 تکمیل نشد', status: 'بسته', tone: 'neutral' as const, date: '۱ مهر' },
-  { id: 'tk-002', subject: 'خطا در شارژ کیف پول', status: 'در بررسی', tone: 'warning' as const, date: 'امروز' },
-];
+type Tone = 'info' | 'success' | 'warning' | 'danger' | 'neutral';
+
+function ticketTone(status: string): Tone {
+  switch (status.toUpperCase()) {
+    case 'OPEN': return 'warning';
+    case 'IN_PROGRESS': return 'info';
+    case 'RESOLVED': case 'CLOSED': return 'success';
+    default: return 'neutral';
+  }
+}
+
+function ticketStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    OPEN: 'باز', IN_PROGRESS: 'در بررسی', RESOLVED: 'حل شده', CLOSED: 'بسته',
+  };
+  return labels[status.toUpperCase()] ?? status;
+}
 
 export default function Support() {
+  const { workspaceId } = useWorkspace();
+  const ticketsQ = useQuery(
+    () => workspaceId ? support.listTickets(workspaceId) : Promise.resolve({ items: [] }),
+    [workspaceId],
+  );
+  const items = ticketsQ.data?.items ?? [];
+
   return (
     <Screen>
       <Title eyebrow="SUPPORT / TICKETS" description="تیکت‌ها با Workspace scope می‌شوند">
@@ -17,24 +40,29 @@ export default function Support() {
 
       <Action>ثبت تیکت جدید</Action>
 
-      {/* Open tickets */}
       <Card>
         <Section title="تیکت‌های اخیر" />
-        {tickets.map((t, i) => (
+        {ticketsQ.status === 'loading' && <State loading />}
+        {ticketsQ.status === 'error' && <State error={ticketsQ.error} />}
+        {ticketsQ.status === 'success' && items.length === 0 && (
+          <State empty="تیکت پشتیبانی ثبت نشده است." />
+        )}
+        {items.map((t, i) => (
           <View key={t.id}>
             {i > 0 && <Divider />}
             <View style={styles.ticketRow}>
               <View style={styles.ticketLeft}>
                 <Text style={styles.ticketSubject}>{t.subject}</Text>
-                <Text style={styles.ticketMeta}>{t.id} · {t.date}</Text>
+                <Text style={styles.ticketMeta}>
+                  #{t.id.slice(0, 8).toUpperCase()} · {new Date(t.createdAt).toLocaleDateString('fa-IR', { month: 'short', day: 'numeric' })}
+                </Text>
               </View>
-              <Status tone={t.tone}>{t.status}</Status>
+              <Status tone={ticketTone(t.status)}>{ticketStatusLabel(t.status)}</Status>
             </View>
           </View>
         ))}
       </Card>
 
-      {/* Hours */}
       <Card>
         <Section title="ساعات پاسخگویی" />
         <View style={styles.infoRow}>

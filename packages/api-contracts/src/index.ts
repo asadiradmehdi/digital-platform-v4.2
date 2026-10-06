@@ -108,7 +108,16 @@ export type WalletDepositRequest = {
   referenceId?: string;
 };
 export type WalletDepositResponse = { entryId: string; balanceMinor: string; currency: string };
-export type TransactionSummary = { id: string; type: string; label: string; amountMinor: number; createdAt: string };
+export type LedgerEntry = { accountId: string; direction: 'CREDIT' | 'DEBIT'; amountMinor: number };
+export type TransactionSummary = {
+  id: string;
+  currency: string;
+  referenceType: string;
+  referenceId: string | null;
+  idempotencyKey: string;
+  createdAt: string;
+  entries: LedgerEntry[];
+};
 export type DashboardSummary = { walletBalanceMinor: number; currency: string; activeOrders: number; activeSubscription?: string; aiUsagePercent: number };
 
 // ---------------------------------------------------------------------------

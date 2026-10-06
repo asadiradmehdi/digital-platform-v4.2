@@ -1270,3 +1270,40 @@ Security:
 
 ### Cumulative test count
 After Sessions 33-37: ~1272 tests across 151 test files (1259 base + 9 renewal/plans-route + 4 getServiceBySlug)
+
+---
+
+## Session 38 — Complete mobile live API integration (2026-10-06)
+
+### Stage 11 — Mobile Client: all 6 screens now use real API data
+
+#### Infrastructure hooks + utilities (created)
+- [x] `apps/mobile/src/hooks/useQuery.ts` — generic async query hook: idle/loading/success/error state machine, `useRef` mounted-guard, re-fetch via `useCallback` deps
+- [x] `apps/mobile/src/hooks/useWorkspace.ts` — fetches `/api/v1/me`, module-level cache, exposes `workspaceId / workspaceName / userDisplayName`
+- [x] `apps/mobile/src/format.ts` — `formatToman(minor)` (IRR minor → Persian Toman), `formatCount(n)` with `fa-IR` locale
+- [x] `tests/mobile/format.test.ts` — 10 tests (formatToman: string/number/NaN/zero/rounding; formatCount: string/invalid/zero)
+- [x] `tests/mobile/useQuery.test.ts` — 14 tests (ApiClientError shape, LedgerEntry shape, TransactionSummary shape, status tone mapping, referenceTypeLabel mapping)
+
+#### API contract updates
+- [x] `packages/api-contracts/src/index.ts` — rewrote `TransactionSummary` to match actual ledger API response: `{ id, currency, referenceType, referenceId, idempotencyKey, createdAt, entries: LedgerEntry[] }`; added `LedgerEntry` type `{ accountId, direction: 'CREDIT'|'DEBIT', amountMinor }`
+- [x] `apps/mobile/src/api/client.ts` — added `support` namespace (`listTickets`, `createTicket`); added `sessions` namespace (`list`, `revokeOthers`); added `auditEvents` namespace (`list`)
+
+#### New API endpoints
+- [x] `app/api/v1/support/tickets/route.ts` — added GET handler: workspace-scoped, `requireWorkspacePermission('workspace.read')`, returns last 20 tickets ordered by created_at DESC
+- [x] `app/api/v1/auth/sessions/route.ts` — added GET handler: lists user's active sessions (non-revoked, non-expired), marks `current: boolean` via SHA-256 hash comparison of session cookie
+- [x] `app/api/v1/me/audit-events/route.ts` — new route: GET actor user's last 20 audit log entries from `audit_logs` table
+
+#### Mobile screens converted to real API data
+- [x] `apps/mobile/app/wallet/index.tsx` — real wallet balances + transactions; `TxRow` reads `tx.entries` for CREDIT/DEBIT; `referenceTypeLabel` maps to Persian
+- [x] `apps/mobile/app/subscriptions/index.tsx` — real subscription list; renewal date from API; entitlements array rendered
+- [x] `apps/mobile/app/support/index.tsx` — real ticket list from `support.listTickets(workspaceId)`; loading/error/empty states
+- [x] `apps/mobile/app/automation/index.tsx` — real workflows + runs from `automation.listWorkflows/listRuns`; `workflowTone/runTone` helpers; derived active/total counts
+- [x] `apps/mobile/app/security/index.tsx` — real sessions from `sessions.list()`; real audit events from `auditEvents.list()`; `auditTone/auditLabel` helpers
+- [x] `apps/mobile/src/screens/HomeScreen.tsx` — real wallet balance (formatToman), real order count, real subscription status
+- [x] `apps/mobile/src/screens/OrdersScreen.tsx` — real orders list; `statusTone` helper
+- [x] `apps/mobile/src/screens/AIScreen.tsx` — real subscription usagePercent + entitlements
+
+### Verification gate (2026-10-06)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm test — PASS (1296/1296, 153 test files)
+- [x] pnpm build — PASS (next build --webpack exit 0)
