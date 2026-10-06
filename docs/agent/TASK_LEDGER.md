@@ -1260,3 +1260,13 @@ Security:
 - [x] pnpm typecheck — PASS
 - [x] pnpm lint — PASS
 - [x] new tests: 9/9 pass
+
+---
+
+## Session 37 — getServiceBySlug test coverage (2026-10-06)
+
+### Task 1 — Tests for getServiceBySlug
+- [x] tests/commerce/service-detail.test.ts — added 4 tests for `getServiceBySlug`: found returns item with description, not-found returns null, slug param + active=true filter, SQL includes description field (total: 14 tests in file)
+
+### Cumulative test count
+After Sessions 33-37: ~1272 tests across 151 test files (1259 base + 9 renewal/plans-route + 4 getServiceBySlug)

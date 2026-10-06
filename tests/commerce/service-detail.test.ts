@@ -5,7 +5,7 @@ vi.mock('../../server/core/db', () => ({
 }));
 
 import { query } from '../../server/core/db';
-import { getService, listServices } from '../../server/commerce/catalog';
+import { getService, getServiceBySlug, listServices } from '../../server/commerce/catalog';
 
 const mockQuery = vi.mocked(query);
 beforeEach(() => vi.clearAllMocks());
@@ -69,6 +69,37 @@ describe('getService', () => {
     expect(sql).toContain('JOIN products');
     expect(sql).toContain('"productName"');
     expect(sql).toContain('"productSlug"');
+  });
+});
+
+describe('getServiceBySlug', () => {
+  it('returns service when found by slug', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [serviceRow], rowCount: 1 } as never);
+    const result = await getServiceBySlug('instagram-followers');
+    expect(result).not.toBeNull();
+    expect(result!.slug).toBe('instagram-followers');
+    expect(result!.description).toBe('1000 real Instagram followers');
+  });
+
+  it('returns null when slug not found', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as never);
+    const result = await getServiceBySlug('nonexistent-slug');
+    expect(result).toBeNull();
+  });
+
+  it('passes slug as query parameter and filters active=true', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as never);
+    await getServiceBySlug('some-slug');
+    const [sql, params] = mockQuery.mock.calls[0] as [string, unknown[]];
+    expect(params[0]).toBe('some-slug');
+    expect(sql).toContain('active=true');
+  });
+
+  it('SQL selects description field', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as never);
+    await getServiceBySlug('x');
+    const [sql] = mockQuery.mock.calls[0] as [string, unknown[]];
+    expect(sql).toContain('description');
   });
 });
 
