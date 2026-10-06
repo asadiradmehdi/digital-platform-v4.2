@@ -17,12 +17,14 @@ type WorkspaceState = {
 let cache: WorkspaceState | null = null;
 
 export function useWorkspace(): WorkspaceState {
-  const [state, setState] = useState<WorkspaceState>(
-    cache ?? { workspaceId: null, workspaceName: null, userDisplayName: null, loading: true, error: null },
+  const [state, setState] = useState<WorkspaceState>(() =>
+    (cache && !cache.loading)
+      ? cache
+      : { workspaceId: null, workspaceName: null, userDisplayName: null, loading: true, error: null },
   );
 
   useEffect(() => {
-    if (cache && !cache.loading) { setState(cache); return; }
+    if (cache && !cache.loading) return;
     apiFetch<MeResponse>('/api/v1/me')
       .then((data) => {
         const ws = data.workspaces?.[0];

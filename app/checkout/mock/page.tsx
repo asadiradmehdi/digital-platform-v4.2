@@ -12,8 +12,8 @@ function MockCheckoutContent() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!paymentId) { setStatus('failed'); setError('شناسه پرداخت یافت نشد.'); return; }
     const confirmPayment = async () => {
+      if (!paymentId) { setStatus('failed'); setError('شناسه پرداخت یافت نشد.'); return; }
       try {
         const res = await fetch(`/api/v1/webhooks/mock`, {
           method: 'POST',

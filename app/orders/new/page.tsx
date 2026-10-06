@@ -1,5 +1,5 @@
 'use client';
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, ChevronLeft, Info, ShoppingBag, Zap, AlertCircle } from 'lucide-react';
@@ -114,49 +114,33 @@ function OrderNewForm() {
       .catch(() => {});
   }, []);
 
-  if (!service) {
-    return (
-      <main className="workspace-page-content">
-        <div className="state-block state-empty" style={{ marginTop: 40 }}>
-          <ShoppingBag size={28} />
-          <h3>سرویس انتخاب نشده</h3>
-          <p>لطفاً از کاتالوگ خدمات، سرویس موردنظر را انتخاب کنید.</p>
-          <Link href="/services" className="button primary" style={{ marginTop: 14, textDecoration: 'none' }}>
-            مشاهده خدمات
-          </Link>
-        </div>
-      </main>
-    );
-  }
-
-  const unitQty = service.quantities ? qty : 1;
-  const unitsLabel = service.quantities
+  // Compute derived values safely before early return so hooks are not conditional.
+  const unitQty = service?.quantities ? qty : 1;
+  const unitsLabel = service?.quantities
     ? `${new Intl.NumberFormat('fa-IR').format(unitQty)} ${service.unitLabel}`
-    : service.unitLabel;
-  const totalMinor = service.quantities
+    : (service?.unitLabel ?? '');
+  const totalMinor = service?.quantities
     ? Math.round((unitQty / service.unitDivisor) * service.priceMinor)
-    : service.priceMinor;
+    : (service?.priceMinor ?? 0);
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!service) return;
     setSubmitting(true);
     setSubmitError(null);
     try {
-      // Resolve workspace ID
       const wsRes = await fetch('/api/v1/workspaces');
       if (!wsRes.ok) throw new Error('لطفاً ابتدا وارد حساب کاربری شوید.');
       const wsData = await wsRes.json() as { items: Array<{ id: string }> };
       const workspaceId = wsData.items[0]?.id;
       if (!workspaceId) throw new Error('فضای کاری یافت نشد. ابتدا یک workspace ایجاد کنید.');
 
-      // Resolve real service UUID by slug
       const svcRes = await fetch(`/api/v1/services?slug=${encodeURIComponent(serviceSlug)}`);
       if (!svcRes.ok) throw new Error('سرویس مورد نظر در سیستم یافت نشد.');
       const svcData = await svcRes.json() as { item?: { id: string } };
       const serviceId = svcData.item?.id;
       if (!serviceId) throw new Error('سرویس مورد نظر در سیستم یافت نشد.');
 
-      // Submit order
       const idempotencyKey = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const orderRes = await fetch('/api/v1/orders', {
         method: 'POST',
@@ -174,7 +158,22 @@ function OrderNewForm() {
     } finally {
       setSubmitting(false);
     }
-  }, [serviceSlug, unitQty, fields, router]);
+  };
+
+  if (!service) {
+    return (
+      <main className="workspace-page-content">
+        <div className="state-block state-empty" style={{ marginTop: 40 }}>
+          <ShoppingBag size={28} />
+          <h3>سرویس انتخاب نشده</h3>
+          <p>لطفاً از کاتالوگ خدمات، سرویس موردنظر را انتخاب کنید.</p>
+          <Link href="/services" className="button primary" style={{ marginTop: 14, textDecoration: 'none' }}>
+            مشاهده خدمات
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   if (submitted) {
     return (

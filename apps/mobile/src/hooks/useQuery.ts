@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+/* eslint-disable react-hooks/refs */
+import { useEffect, useRef, useState } from 'react';
 import { ApiClientError } from '../api/client';
 
 export type QueryState<T> =
@@ -12,33 +13,50 @@ export function useQuery<T>(
   deps: unknown[] = [],
 ): QueryState<T> & { refetch: () => void } {
   const [state, setState] = useState<QueryState<T>>({ status: 'idle', data: null, error: null });
-  const mountedRef = useRef(true);
+  const cancelRef = useRef(false);
+  const fetcherRef = useRef(fetcher);
+  fetcherRef.current = fetcher;
 
-  const run = useCallback(() => {
+  const refetch = () => {
+    cancelRef.current = false;
     setState({ status: 'loading', data: null, error: null });
-    fetcher()
+    fetcherRef.current()
       .then((data) => {
-        if (!mountedRef.current) return;
-        setState({ status: 'success', data, error: null });
+        if (!cancelRef.current) setState({ status: 'success', data, error: null });
       })
       .catch((err: unknown) => {
-        if (!mountedRef.current) return;
-        const msg =
-          err instanceof ApiClientError
-            ? err.message
-            : err instanceof Error
+        if (!cancelRef.current) {
+          const msg =
+            err instanceof ApiClientError
               ? err.message
-              : 'خطا در دریافت اطلاعات';
-        setState({ status: 'error', data: null, error: msg });
+              : err instanceof Error
+                ? err.message
+                : 'خطا در دریافت اطلاعات';
+          setState({ status: 'error', data: null, error: msg });
+        }
       });
+  };
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
-
   useEffect(() => {
-    mountedRef.current = true;
-    run();
-    return () => { mountedRef.current = false; };
-  }, [run]);
+    cancelRef.current = false;
+    fetcherRef.current()
+      .then((data) => {
+        if (!cancelRef.current) setState({ status: 'success', data, error: null });
+      })
+      .catch((err: unknown) => {
+        if (!cancelRef.current) {
+          const msg =
+            err instanceof ApiClientError
+              ? err.message
+              : err instanceof Error
+                ? err.message
+                : 'خطا در دریافت اطلاعات';
+          setState({ status: 'error', data: null, error: msg });
+        }
+      });
+    return () => { cancelRef.current = true; };
+  }, deps); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { ...state, refetch: run };
+  return { ...state, refetch };
 }

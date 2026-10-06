@@ -1396,3 +1396,25 @@ After Sessions 33-37: ~1272 tests across 151 test files (1259 base + 9 renewal/p
 - [x] CSRF / assertSameOrigin coverage — all mutation routes protected
 - [x] IDOR scan — ownership verified in all user-scoped routes
 - [x] Known INFO items: mock payment gateway (dev only, documented), WebAuthn stub verifier (correctly returns UNAVAILABLE until @simplewebauthn/server installed)
+
+---
+
+## Session 41 — Release hardening: lint fixes, real WebAuthn, mobile hook quality (2026-10-06)
+
+### Task 1 — Lint gate: 4 react-hooks errors fixed
+- [x] `app/checkout/mock/page.tsx` — moved early-return guard inside async function to avoid synchronous setState in effect body (`react-hooks/set-state-in-effect`)
+- [x] `app/orders/new/page.tsx` — moved computed values (`unitQty`, `unitsLabel`, `totalMinor`) and `handleSubmit` before the `!service` early return; replaced `useCallback` with plain `async` function; removed unused `useCallback` import. Fixes `react-hooks/rules-of-hooks` (conditional hook call after early return)
+- [x] `apps/mobile/src/hooks/useQuery.ts` — rewrote to avoid dynamic deps in `useCallback` dep list (rule required array literal). Uses `fetcherRef` ref-stable pattern; `deps` forwarded to `useEffect` via inline eslint-disable; no refs mutated during render
+- [x] `apps/mobile/src/hooks/useWorkspace.ts` — replaced synchronous `setState(cache)` in effect body with lazy `useState` initializer; effect now only runs the API fetch when no cached value exists
+
+### Task 2 — WebAuthn real implementation (@simplewebauthn/server)
+- [x] Installed `@simplewebauthn/server@^14.0.3` at workspace root
+- [x] Created `server/identity/webauthn-verifier.ts` — implements `PasskeyVerifier` interface using `verifyRegistrationResponse` + `verifyAuthenticationResponse` from `@simplewebauthn/server`; handles both origin URL and bare hostname for `rpId`; credential IDs stored as SHA-256 hex; public keys stored as base64
+- [x] Updated `app/api/v1/me/passkeys/route.ts` — replaced stub verifier with `simpleWebAuthnVerifier` singleton; removed UNAVAILABLE error stubs
+- [x] Updated `server/identity/passkey-service.ts` — updated module comment to reflect real verifier availability
+
+### Verification gate (2026-10-06)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm lint — PASS (exit 0, 1 harmless warning)
+- [x] pnpm test — PASS (1336/1336, 156 test files)
+- [x] pnpm build — PASS (next build --webpack exit 0)

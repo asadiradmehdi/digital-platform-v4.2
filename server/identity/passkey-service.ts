@@ -1,21 +1,17 @@
 /**
  * Passkey / WebAuthn server-side contract.
  *
- * This module implements the server-side state machine for FIDO2/WebAuthn
- * passkey registration and authentication. It does NOT implement the actual
- * CBOR/COSE cryptographic verification — that requires the browser/authenticator
- * interaction at runtime with a library such as @simplewebauthn/server.
+ * Server-side state machine for FIDO2/WebAuthn passkey registration and
+ * authentication. Cryptographic verification is injected via `PasskeyVerifier`;
+ * production wires in `simpleWebAuthnVerifier` from webauthn-verifier.ts
+ * (backed by @simplewebauthn/server).
  *
- * What this module provides:
+ * Responsibilities:
  *   1. Challenge generation and persistence (stored as a hash, never raw)
  *   2. Credential registration state (pending → confirmed)
  *   3. Credential discovery for authentication
  *   4. Replay protection (sign_count must advance monotonically)
  *   5. Revocation by credential id hash
- *
- * The actual attestation/assertion verification is injected via the
- * `PasskeyVerifier` interface so that a real library can be wired in
- * without changing this module's public contract.
  */
 import { createHash, randomBytes } from 'node:crypto';
 import { query } from '../core/db';

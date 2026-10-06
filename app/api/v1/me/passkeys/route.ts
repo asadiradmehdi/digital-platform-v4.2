@@ -4,6 +4,7 @@ import { requireRequestUser } from '../../../../../server/identity/request-user'
 import { assertSameOrigin } from '../../../../../server/core/security-boundary';
 import { AppError } from '../../../../../server/core/errors';
 import { listPasskeys, beginPasskeyRegistration, completePasskeyRegistration } from '../../../../../server/identity/passkey-service';
+import { simpleWebAuthnVerifier } from '../../../../../server/identity/webauthn-verifier';
 
 export async function GET(request: NextRequest) {
   const id = correlationId(request);
@@ -18,10 +19,6 @@ export async function GET(request: NextRequest) {
  * POST /api/v1/me/passkeys
  * Stage 1 (begin): returns { stage: 'challenge', challengeToken }
  * Stage 2 (complete): body includes { challengeToken, attestationResponse, label }
- *
- * The actual attestation crypto requires @simplewebauthn/server at runtime.
- * Until that dependency is installed, completePasskeyRegistration will fail
- * at the verifier call — this is the correct behavior (no fake success path).
  */
 export async function POST(request: NextRequest) {
   const id = correlationId(request);
@@ -42,20 +39,10 @@ export async function POST(request: NextRequest) {
       if (!body.attestationResponse) throw new AppError('VALIDATION_ERROR', 'attestationResponse الزامی است.');
 
       const rpId = request.headers.get('origin') ?? '';
-      // Verifier must be injected at runtime (e.g. via env-configured WebAuthn library).
-      // The stub verifier below rejects all requests until a real verifier is wired in.
-      const stubVerifier = {
-        async verifyAttestation() {
-          throw new AppError('UNAVAILABLE', 'WebAuthn verification library not configured. Install @simplewebauthn/server.');
-        },
-        async verifyAssertion() {
-          throw new AppError('UNAVAILABLE', 'WebAuthn verification library not configured.');
-        },
-      };
 
       const passkeyId = await completePasskeyRegistration(
         userId, body.challengeToken, body.attestationResponse,
-        typeof body.label === 'string' ? body.label : null, rpId, stubVerifier,
+        typeof body.label === 'string' ? body.label : null, rpId, simpleWebAuthnVerifier,
       );
       return json({ id: passkeyId }, { status: 201, correlationId: id });
     }
