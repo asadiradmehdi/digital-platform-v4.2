@@ -1307,3 +1307,62 @@ After Sessions 33-37: ~1272 tests across 151 test files (1259 base + 9 renewal/p
 - [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
 - [x] pnpm test — PASS (1296/1296, 153 test files)
 - [x] pnpm build — PASS (next build --webpack exit 0)
+
+---
+
+## Session 39 — Stage 12: High-Assurance Security (2026-10-06)
+
+### Stage 12 — High-Assurance Security
+
+#### Task 1 — Step-up authentication service (`server/identity/step-up.ts`)
+- [x] `getTransactionSecurityPolicy(actionType)` — fetches server-side policy from `transaction_security_policies` table; converts `maxAmountMinor` from string to number
+- [x] `issueStepUpChallenge(userId, actionType)` — issues a `STEP_UP:<actionType>` security challenge; returns a raw token for the client to submit with MFA
+- [x] `verifyStepUpChallenge(userId, challengeToken, code, codeType, correlationId)` — verifies TOTP or recovery code against a step-up challenge; on success records append-only `security_action_evidence` and returns evidence id; consumes challenge to prevent replay
+- [x] `enforceStepUpPolicy(userId, actionType, evidenceId?, amountMinor?)` — gate function for high-risk routes; checks policy, enforces amount limits, verifies evidence freshness within `requireRecentAuthSeconds` window
+
+#### Task 2 — Step-up API routes
+- [x] `GET /api/v1/auth/step-up?action=X` — returns policy for action; if step-up required, issues and returns a challenge token
+- [x] `POST /api/v1/auth/step-up` — verifies TOTP/recovery code against challenge; returns `evidenceId` authorizing the high-risk action
+
+#### Task 3 — Trusted device service (`server/identity/trusted-devices.ts`)
+- [x] `registerTrustedDevice(userId, deviceName, platform)` — generates and returns a raw device key (stored as SHA-256 hash only); ON CONFLICT guard
+- [x] `listTrustedDevices(userId)` — returns all non-revoked devices with metadata
+- [x] `revokeTrustedDevice(deviceId, userId)` — revokes single device scoped to owning user; throws NOT_FOUND guard
+- [x] `verifyTrustedDevice(userId, rawDeviceKey)` — verifies device key hash, updates `last_seen_at`
+- [x] `revokeAllTrustedDevices(userId)` — nuclear revocation (e.g. after password reset); returns revoked count
+
+#### Task 4 — Trusted device API routes
+- [x] `GET /api/v1/me/trusted-devices` — list user's non-revoked trusted devices
+- [x] `POST /api/v1/me/trusted-devices` — register new trusted device; returns `deviceKey` + `deviceId`
+- [x] `DELETE /api/v1/me/trusted-devices/[id]` — revoke a specific trusted device
+
+#### Task 5 — Passkey/WebAuthn server contract (`server/identity/passkey-service.ts`)
+- [x] `beginPasskeyRegistration(userId)` — issues `PASSKEY_REGISTER` security challenge
+- [x] `completePasskeyRegistration(userId, rawChallenge, attestation, label, rpId, verifier)` — verifies challenge, delegates attestation crypto to injected `PasskeyVerifier`, persists credential with sign_count, consumes challenge; ON CONFLICT guard
+- [x] `beginPasskeyAuthentication(userId)` — issues `PASSKEY_AUTHENTICATE` security challenge
+- [x] `completePasskeyAuthentication(userId, rawChallenge, credentialIdHash, assertion, rpId, verifier)` — verifies challenge, looks up credential, delegates assertion crypto to verifier, enforces monotonic sign_count (replay protection), updates credential
+- [x] `listPasskeys(userId)` — returns active (non-revoked) passkeys
+- [x] `revokePasskey(passkeyId, userId)` — revokes passkey scoped to owning user
+- [x] `PasskeyVerifier` interface — separates crypto verification from state management; production can inject @simplewebauthn/server; stub included in passkeys API route rejects with UNAVAILABLE
+
+#### Task 6 — Passkey API routes
+- [x] `GET /api/v1/me/passkeys` — list user's active passkeys
+- [x] `POST /api/v1/me/passkeys` — begin (stage: begin) or complete (stage: complete) passkey registration; stub verifier returns UNAVAILABLE until @simplewebauthn/server is installed
+- [x] `DELETE /api/v1/me/passkeys/[id]` — revoke a passkey
+
+#### Task 7 — Security test suite
+- [x] `tests/security/step-up.test.ts` — 15 tests: policy fetch (null/typed/null-amount), challenge issue (SQL params check), challenge verify (not-found/wrong-purpose/wrong-code/totp-success/recovery-path), enforce policy (no-policy/inactive/amount-exceeded/missing-evidence/expired/fresh)
+- [x] `tests/security/trusted-devices.test.ts` — 12 tests: register (success/conflict/params/hash-not-raw), list (items/empty), revoke (owned/not-found), verify (valid/invalid), revokeAll (count/skip-audit)
+- [x] `tests/security/passkey-service.test.ts` — 13 tests: begin registration (challenge SQL), complete (unauthorized/success/conflict), begin auth (challenge SQL), complete auth (unauthorized/not-found/replay/success), list (items/empty), revoke (success/not-found)
+
+### Verification gate (2026-10-06)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm test — PASS (1336/1336, 156 test files; +40 new security tests)
+- [x] pnpm build — PASS (next build --webpack exit 0)
+
+### Environment blockers (Stage 12 — cannot implement without infrastructure)
+- [ ] Real WebAuthn crypto verification — requires @simplewebauthn/server + browser authenticator
+- [ ] KMS/secrets-manager integration — requires cloud KMS (AWS KMS, HashiCorp Vault, etc.)
+- [ ] Key rotation automation — requires infrastructure + scheduled jobs
+- [ ] Passkey browser integration test — requires Playwright + WebAuthn mock
+- [ ] Independent security audit — external engagement
