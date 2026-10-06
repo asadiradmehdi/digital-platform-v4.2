@@ -6,6 +6,7 @@ import { AppShell } from '../../../components/AppShell';
 import { SystemStrip } from '../../../components/ProductSurface';
 import { requireCurrentUser } from '../../../server/identity/request-user';
 import { query } from '../../../server/core/db';
+import ProfileForm from './ProfileForm';
 
 export const metadata: Metadata = { title: 'حساب و پروفایل', robots: { index: false, follow: false } };
 
@@ -44,16 +45,8 @@ export default async function ProfileSettings() {
                 <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--muted)' }} dir="ltr">{user?.email ?? '—'}</p>
               </div>
             </div>
-            <form className="settings-form">
-              <div className="form-row">
-                <label>نام نمایشی<input name="displayName" defaultValue={user?.display_name ?? ''} autoComplete="nickname"/></label>
-              </div>
-              <label>ایمیل<input name="email" type="email" defaultValue={user?.email ?? ''} autoComplete="email" dir="ltr" readOnly/></label>
-              <label>شماره موبایل<input name="phone" type="tel" defaultValue={user?.phone ?? ''} placeholder="اختیاری" autoComplete="tel" dir="ltr"/></label>
-              <div className="form-actions">
-                <button className="button primary" type="submit">ذخیره تغییرات</button>
-              </div>
-            </form>
+            <label>ایمیل<input name="email" type="email" defaultValue={user?.email ?? ''} autoComplete="email" dir="ltr" readOnly style={{ opacity: 0.6 }}/></label>
+            <ProfileForm initialDisplayName={user?.display_name ?? ''} initialPhone={user?.phone ?? ''} />
           </article>
           <article className="surface-panel" style={{ padding: 24 }}>
             <div className="panel-head"><div><span className="panel-kicker">DANGER ZONE</span><h2>حذف حساب</h2></div></div>
