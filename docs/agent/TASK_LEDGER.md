@@ -1113,3 +1113,33 @@ Security:
 
 ### Verification gate (2026-10-06)
 - [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+
+---
+
+## Session 31-32 — Core business flow, dead UI audit, security hardening (2026-10-06)
+
+### Task 1 — Close Order→Payment→Fulfillment chain
+- [x] server/payments/service.ts — added payOrderFromWallet(): atomic wallet-funded order payment; checks balance, debits ledger, creates PAID payment (gateway='wallet'), transitions PAYMENT_PENDING→PAID, writes outbox_event order.paid, writeAudit; throws PAYMENT_REQUIRED (402) on insufficient balance
+- [x] app/api/v1/orders/route.ts — POST now immediately calls payOrderFromWallet after createOrder; returns { ...order, payment } in 201 response
+- [x] app/api/internal/queue/outbox/route.ts — PAID→QUEUED transition added before dispatchOrder to close state-machine gap (orders were stuck PAID, never QUEUED)
+- [x] app/checkout/mock/page.tsx — new page: auto-confirms mock payment via /api/v1/webhooks/[source], redirects to /orders on success
+
+### Task 2 — Fix dispatchOrder hasAdapter bug
+- [x] server/providers/routing.ts — added providerType to ProviderCandidate type
+- [x] server/providers/dispatch.ts — loadCandidates() now includes providerType in mapped object; hasAdapter() call changed from providerId (UUID) to providerType (fixes dispatch always filtering out all candidates)
+
+### Task 3 — Dead UI flows audit and fix
+- [x] components/AppShell.tsx — removed sampleNotifications hardcoded array; replaced with empty state "اعلان جدیدی وجود ندارد"
+- [x] app/orders/new/page.tsx — fetches real wallet balance from /api/v1/wallet on mount; replaces hardcoded ١٬٢٥٠٬٠٠٠ تومان display
+- [x] app/orders/[id]/OrderActions.tsx — new client island for order detail action buttons; Refresh Status calls router.refresh(); Invoice button alerts "coming soon"
+- [x] app/orders/[id]/page.tsx — replaced no-op server component buttons with OrderActions client island
+- [x] app/ai/workspace/AIComposer.tsx — fixed P0 API contract: now fetches workspaceId, sends messages array (not prompt string), parses data.text (not data.response?.content)
+- [x] app/automation/workflow/[id]/page.tsx — new server component workflow detail page with run history table; auth gate + workspace scope
+- [x] app/automation/page.tsx — fixed list link from /automation/{uuid} (404) to /automation/workflow/{uuid}
+
+### Task 4 — Security hardening
+- [x] app/api/v1/notifications/preferences/route.ts — added 100-item array limit; added channel/category allowlist validation before upsert; coerce enabled to boolean
+
+### Verification gate (2026-10-06)
+- [x] pnpm typecheck — PASS (tsc --noEmit, zero errors)
+- [x] pnpm test — PASS (1245/1245, 148 test files)
