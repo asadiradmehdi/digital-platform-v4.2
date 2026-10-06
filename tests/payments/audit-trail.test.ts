@@ -84,11 +84,13 @@ describe('createOrder — audit trail', () => {
 
 describe('markPaymentPaid — audit trail', () => {
   it('calls writeAudit with action=payment.paid on successful payment', async () => {
-    const paymentRow = { id: 'pay-1', workspace_id: 'ws-1', order_id: null, status: 'PENDING' };
+    const paymentRow = { id: 'pay-1', workspace_id: 'ws-1', order_id: null, status: 'PENDING', amount_minor: '10000', currency: 'IRR' };
     const clientQuery = vi.fn()
       .mockResolvedValueOnce({ rows: [paymentRow] })  // SELECT ... FOR UPDATE
       .mockResolvedValueOnce({ rows: [] })             // UPDATE payments
-      .mockResolvedValueOnce({ rows: [] });            // INSERT payment_attempts
+      .mockResolvedValueOnce({ rows: [] })             // INSERT payment_attempts
+      .mockResolvedValueOnce({ rows: [] })             // SELECT ledger account (no wallet → skip ledger write)
+      .mockResolvedValueOnce({ rows: [] });            // INSERT ledger_entries (TOPUP)
 
     mockTx.mockImplementationOnce(async (_wid, _uid, fn) => fn({ query: clientQuery } as never));
     mockWriteAudit.mockResolvedValueOnce(undefined);
@@ -111,7 +113,7 @@ describe('markPaymentPaid — audit trail', () => {
   });
 
   it('does NOT call writeAudit when payment is already PAID (idempotent)', async () => {
-    const paymentRow = { id: 'pay-1', workspace_id: 'ws-1', order_id: null, status: 'PAID' };
+    const paymentRow = { id: 'pay-1', workspace_id: 'ws-1', order_id: null, status: 'PAID', amount_minor: '10000', currency: 'IRR' };
     const clientQuery = vi.fn().mockResolvedValueOnce({ rows: [paymentRow] }); // already PAID
     mockTx.mockImplementationOnce(async (_wid, _uid, fn) => fn({ query: clientQuery } as never));
 

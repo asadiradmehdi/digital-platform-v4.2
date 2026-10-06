@@ -35,17 +35,49 @@ export async function createPayment(input: {
 
 export async function markPaymentPaid(input: { paymentId: string; workspaceId: string; gatewayReference: string; raw?: unknown }) {
   return withWorkspaceTransaction(input.workspaceId, undefined, async client => {
-    const payment = await client.query<{ id: string; workspace_id: string; order_id: string | null; status: string }>(
-      `SELECT id,workspace_id,order_id,status FROM payments WHERE id=$1 FOR UPDATE`, [input.paymentId]);
+    const payment = await client.query<{ id: string; workspace_id: string; order_id: string | null; status: string; amount_minor: string; currency: string }>(
+      `SELECT id,workspace_id,order_id,status,amount_minor::text AS amount_minor,currency FROM payments WHERE id=$1 FOR UPDATE`, [input.paymentId]);
     if (!payment.rows[0]) throw new AppError('NOT_FOUND', 'Payment not found.');
     if (payment.rows[0].status === 'PAID') return payment.rows[0];
     await client.query(`UPDATE payments SET status='PAID',gateway_reference=$2,updated_at=now() WHERE id=$1`, [input.paymentId, input.gatewayReference]);
     await client.query(`INSERT INTO payment_attempts(payment_id,status,gateway_reference,raw_response) VALUES($1,'PAID',$2,$3)`, [input.paymentId,input.gatewayReference,input.raw ?? {}]);
+
+    // Resolve the workspace wallet and MAIN ledger account for this transaction.
+    const acctRow = await client.query<{ account_id: string }>(
+      `SELECT la.id AS account_id FROM ledger_accounts la JOIN wallets w ON w.id=la.wallet_id WHERE w.workspace_id=$1 AND la.account_code='MAIN' LIMIT 1`,
+      [input.workspaceId],
+    );
+    const accountId = acctRow.rows[0]?.account_id ?? null;
+
     if (payment.rows[0].order_id) {
       await client.query(`UPDATE orders SET status='PAID',updated_at=now() WHERE id=$1 AND status='PAYMENT_PENDING'`, [payment.rows[0].order_id]);
       await client.query(`INSERT INTO order_events(order_id,from_status,to_status,metadata) SELECT id,'PAYMENT_PENDING','PAID',$2 FROM orders WHERE id=$1`, [payment.rows[0].order_id,{source:'payment'}]);
-      await client.query(`INSERT INTO outbox_events(aggregate_type,aggregate_id,event_type,payload) VALUES('order',$1,'order.paid',$2)`, [payment.rows[0].order_id,{orderId:payment.rows[0].order_id,paymentId:input.paymentId}]);
+      await client.query(`INSERT INTO outbox_events(aggregate_type,aggregate_id,event_type,payload) VALUES('order',$1,'order.paid',$2)`, [payment.rows[0].order_id,{orderId:payment.rows[0].order_id,paymentId:input.paymentId,workspaceId:input.workspaceId}]);
+      // Debit wallet for order service charge (idempotent via payment id).
+      if (accountId) {
+        const orderRow = await client.query<{ total_minor: string }>(
+          `SELECT total_minor::text AS total_minor FROM orders WHERE id=$1`, [payment.rows[0].order_id],
+        );
+        const chargeMinor = orderRow.rows[0]?.total_minor ?? payment.rows[0].amount_minor;
+        await client.query(
+          `INSERT INTO ledger_entries(account_id,direction,amount_minor,currency,reference_type,reference_id,idempotency_key,metadata)
+           VALUES($1,'DEBIT',$2,$3,'SERVICE_CHARGE',$4,$5,$6)
+           ON CONFLICT(account_id,idempotency_key) DO NOTHING`,
+          [accountId, chargeMinor, payment.rows[0].currency, payment.rows[0].order_id, `charge:${input.paymentId}`, { label: 'هزینه سرویس' }],
+        );
+      }
+    } else {
+      // Top-up / deposit: credit the wallet.
+      if (accountId) {
+        await client.query(
+          `INSERT INTO ledger_entries(account_id,direction,amount_minor,currency,reference_type,reference_id,idempotency_key,metadata)
+           VALUES($1,'CREDIT',$2,$3,'TOPUP',$4,$5,$6)
+           ON CONFLICT(account_id,idempotency_key) DO NOTHING`,
+          [accountId, payment.rows[0].amount_minor, payment.rows[0].currency, input.paymentId, `topup:${input.paymentId}`, { label: 'افزایش موجودی' }],
+        );
+      }
     }
+
     await writeAudit({ workspaceId: input.workspaceId, action: 'payment.paid', entityType: 'payment', entityId: input.paymentId, metadata: { gatewayReference: input.gatewayReference, orderId: payment.rows[0].order_id } });
     return { ...payment.rows[0], status: 'PAID' };
   });

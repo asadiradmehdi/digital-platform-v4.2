@@ -1,9 +1,31 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { ArrowRight, Camera, Trash2 } from 'lucide-react';
 import { AppShell } from '../../../components/AppShell';
 import { SystemStrip } from '../../../components/ProductSurface';
-export const metadata = { title: 'حساب و پروفایل', robots: { index: false, follow: false } };
-export default function ProfileSettings() {
+import { requireCurrentUser } from '../../../server/identity/request-user';
+import { query } from '../../../server/core/db';
+
+export const metadata: Metadata = { title: 'حساب و پروفایل', robots: { index: false, follow: false } };
+
+export default async function ProfileSettings() {
+  let userId: string;
+  try {
+    userId = await requireCurrentUser();
+  } catch {
+    redirect('/auth');
+  }
+
+  const r = await query<{ display_name: string; email: string | null; phone: string | null }>(
+    `SELECT COALESCE(display_name, split_part(COALESCE(email,''), '@', 1)) AS display_name,
+            email, phone
+     FROM users WHERE id=$1`,
+    [userId],
+  );
+  const user = r.rows[0];
+  const initials = user?.display_name?.slice(0, 1) ?? '؟';
+
   return (
     <AppShell>
       <main className="workspace-page-content">
@@ -16,17 +38,18 @@ export default function ProfileSettings() {
           <article className="surface-panel" style={{ padding: 24 }}>
             <div className="panel-head"><div><span className="panel-kicker">IDENTITY</span><h2>اطلاعات شخصی</h2></div></div>
             <div className="profile-avatar-row">
-              <div className="profile-avatar"><span>ا</span><button className="avatar-edit" aria-label="تغییر تصویر"><Camera size={14}/></button></div>
-              <div><p style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>اسد رضایی</p><p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--muted)' }}>asad@example.com</p></div>
+              <div className="profile-avatar"><span>{initials}</span><button className="avatar-edit" aria-label="تغییر تصویر"><Camera size={14}/></button></div>
+              <div>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>{user?.display_name ?? '—'}</p>
+                <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--muted)' }} dir="ltr">{user?.email ?? '—'}</p>
+              </div>
             </div>
             <form className="settings-form">
               <div className="form-row">
-                <label>نام<input name="name" defaultValue="اسد رضایی" autoComplete="name"/></label>
-                <label>نام نمایشی<input name="displayName" defaultValue="اسد" autoComplete="nickname"/></label>
+                <label>نام نمایشی<input name="displayName" defaultValue={user?.display_name ?? ''} autoComplete="nickname"/></label>
               </div>
-              <label>ایمیل<input name="email" type="email" defaultValue="asad@example.com" autoComplete="email" dir="ltr"/></label>
-              <label>شماره موبایل<input name="phone" type="tel" defaultValue="" placeholder="اختیاری" autoComplete="tel" dir="ltr"/></label>
-              <label>بیوگرافی کوتاه<textarea name="bio" rows={3} maxLength={200} placeholder="توضیح کوتاه درباره خود (اختیاری)"/></label>
+              <label>ایمیل<input name="email" type="email" defaultValue={user?.email ?? ''} autoComplete="email" dir="ltr" readOnly/></label>
+              <label>شماره موبایل<input name="phone" type="tel" defaultValue={user?.phone ?? ''} placeholder="اختیاری" autoComplete="tel" dir="ltr"/></label>
               <div className="form-actions">
                 <button className="button primary" type="submit">ذخیره تغییرات</button>
               </div>

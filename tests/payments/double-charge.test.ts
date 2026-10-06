@@ -77,7 +77,7 @@ describe('markPaymentPaid — idempotent on repeated calls', () => {
     mockWithWorkspaceTransaction.mockImplementationOnce(async (_wsId, _userId, fn) => {
       const client = {
         query: vi.fn()
-          .mockResolvedValueOnce({ rows: [{ id: 'pay-3', workspace_id: 'ws-1', order_id: null, status: 'PENDING' }], rowCount: 1 }) // FOR UPDATE fetch
+          .mockResolvedValueOnce({ rows: [{ id: 'pay-3', workspace_id: 'ws-1', order_id: null, status: 'PENDING', amount_minor: '5000', currency: 'IRR' }], rowCount: 1 }) // FOR UPDATE fetch
           .mockResolvedValue({ rows: [], rowCount: 1 }),
       };
       return fn(client as never);
@@ -88,7 +88,7 @@ describe('markPaymentPaid — idempotent on repeated calls', () => {
     // Second call — row is now PAID (idempotent replay)
     mockWithWorkspaceTransaction.mockImplementationOnce(async (_wsId, _userId, fn) => {
       const client = {
-        query: vi.fn().mockResolvedValueOnce({ rows: [{ id: 'pay-3', workspace_id: 'ws-1', order_id: null, status: 'PAID' }], rowCount: 1 }),
+        query: vi.fn().mockResolvedValueOnce({ rows: [{ id: 'pay-3', workspace_id: 'ws-1', order_id: null, status: 'PAID', amount_minor: '5000', currency: 'IRR' }], rowCount: 1 }),
       };
       return fn(client as never);
     });
