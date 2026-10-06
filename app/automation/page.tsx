@@ -76,7 +76,7 @@ export default async function Automation() {
                     </td>
                     <td>
                       <Link
-                        href={`/automation/${w.id}`}
+                        href={`/automation/workflow/${w.id}`}
                         style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--muted)', fontSize: 11, textDecoration: 'none' }}
                       >
                         <Activity size={13}/>جزئیات
