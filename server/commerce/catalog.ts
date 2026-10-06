@@ -17,6 +17,16 @@ export async function getService(id: string): Promise<CatalogServiceDetail> {
   return r.rows[0];
 }
 
+export async function getServiceBySlug(slug: string): Promise<CatalogService | null> {
+  const r = await query<CatalogService>(
+    `SELECT s.id,s.name,s.slug,s.service_type AS "serviceType",p.name AS "productName",p.slug AS "productSlug"
+     FROM services s JOIN products p ON p.id=s.product_id
+     WHERE s.slug=$1 AND s.active=true LIMIT 1`,
+    [slug],
+  );
+  return r.rows[0] ?? null;
+}
+
 export async function listServices(limit: number, cursor?: string | null, serviceType?: string | null): Promise<Page<CatalogService>> {
   const params: unknown[] = [cursor ?? null, limit + 1];
   const typeFilter = serviceType ? ` AND s.service_type=$3` : '';

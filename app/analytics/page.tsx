@@ -1,16 +1,80 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { AppShell } from '../../components/AppShell';
 import { SystemStrip } from '../../components/ProductSurface';
-import { analyticsFixture } from '../../lib/product-fixtures';
 import { formatTomanFromIRR } from '../../lib/format';
+import { requireCurrentUser } from '../../server/identity/request-user';
+import { query, withWorkspaceTransaction } from '../../server/core/db';
 
 export const metadata: Metadata = { title: 'تحلیل و گزارش', robots: { index: false, follow: false } };
 
-export default function Analytics() {
-  const a = analyticsFixture;
-  const margin = a.contributionMinor / a.revenueMinor;
-  const providerRatio = a.providerCostMinor / a.revenueMinor;
-  const paymentRatio = a.paymentCostMinor / a.revenueMinor;
+async function getAnalytics(workspaceId: string) {
+  return withWorkspaceTransaction(workspaceId, undefined, async client => {
+    const orders = await client.query<{
+      revenueMinor: string; providerCostMinor: string; refundMinor: string;
+    }>(
+      `SELECT
+         COALESCE(SUM(o.total_minor),0)::text AS "revenueMinor",
+         COALESCE(SUM(oi.provider_cost_minor * oi.quantity),0)::text AS "providerCostMinor",
+         0::text AS "refundMinor"
+       FROM orders o
+       LEFT JOIN order_items oi ON oi.order_id=o.id
+       WHERE o.workspace_id=$1
+         AND o.status IN ('PAID','COMPLETED','PROCESSING','PROVIDER_SUBMITTED')
+         AND o.created_at >= date_trunc('month', now())`,
+      [workspaceId],
+    );
+
+    const mrr = await client.query<{ mrrMinor: string }>(
+      `SELECT COALESCE(SUM(s.price_minor),0)::text AS "mrrMinor"
+       FROM subscriptions s
+       WHERE s.workspace_id=$1 AND s.status IN ('ACTIVE','TRIALING')`,
+      [workspaceId],
+    );
+
+    const members = await client.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM workspace_members WHERE workspace_id=$1 AND status='ACTIVE'`,
+      [workspaceId],
+    );
+
+    const rev = BigInt(orders.rows[0]?.revenueMinor ?? '0');
+    const providerCost = BigInt(orders.rows[0]?.providerCostMinor ?? '0');
+    const refund = BigInt(orders.rows[0]?.refundMinor ?? '0');
+    const contribution = rev - providerCost - refund;
+
+    return {
+      revenueMinor: Number(rev),
+      providerCostMinor: Number(providerCost),
+      paymentCostMinor: 0,
+      refundMinor: Number(refund),
+      contributionMinor: Number(contribution > 0n ? contribution : 0n),
+      mrrMinor: Number(mrr.rows[0]?.mrrMinor ?? '0'),
+      activeUsers: Number(members.rows[0]?.count ?? '0'),
+    };
+  });
+}
+
+export default async function Analytics() {
+  let userId: string;
+  try {
+    userId = await requireCurrentUser();
+  } catch {
+    redirect('/login');
+  }
+
+  const memberships = await query<{ workspace_id: string }>(
+    `SELECT workspace_id FROM workspace_members WHERE user_id=$1 AND status='ACTIVE' ORDER BY created_at LIMIT 1`,
+    [userId],
+  );
+  const workspaceId = memberships.rows[0]?.workspace_id ?? null;
+
+  const a = workspaceId
+    ? await getAnalytics(workspaceId)
+    : { revenueMinor: 0, providerCostMinor: 0, paymentCostMinor: 0, refundMinor: 0, contributionMinor: 0, mrrMinor: 0, activeUsers: 0 };
+
+  const margin = a.revenueMinor > 0 ? a.contributionMinor / a.revenueMinor : 0;
+  const providerRatio = a.revenueMinor > 0 ? a.providerCostMinor / a.revenueMinor : 0;
+  const paymentRatio = a.revenueMinor > 0 ? a.paymentCostMinor / a.revenueMinor : 0;
 
   return (
     <AppShell>
@@ -25,7 +89,6 @@ export default function Analytics() {
 
         <SystemStrip />
 
-        {/* KPI Grid */}
         <section className="metric-grid-4" style={{ marginBottom: 16 }}>
           <article className="metric-tile">
             <span>Revenue</span>
@@ -35,7 +98,7 @@ export default function Analytics() {
           <article className="metric-tile">
             <span>Contribution</span>
             <strong>{formatTomanFromIRR(a.contributionMinor)}</strong>
-            <small style={{ color: 'var(--success)' }}>
+            <small style={{ color: a.revenueMinor > 0 ? 'var(--success)' : 'var(--muted)' }}>
               {(margin * 100).toFixed(1)}٪ margin
             </small>
           </article>
@@ -45,14 +108,13 @@ export default function Analytics() {
             <small>درآمد تکرارپذیر</small>
           </article>
           <article className="metric-tile">
-            <span>کاربران فعال</span>
+            <span>اعضای فضای کاری</span>
             <strong>{new Intl.NumberFormat('fa-IR').format(a.activeUsers)}</strong>
-            <small>این ماه</small>
+            <small>عضو فعال</small>
           </article>
         </section>
 
         <div className="analytics-layout">
-          {/* Unit Economics */}
           <article className="surface-panel">
             <div className="panel-head" style={{ marginBottom: 18 }}>
               <div>
@@ -65,7 +127,7 @@ export default function Analytics() {
                 { label: 'درآمد ناخالص', value: a.revenueMinor, color: 'var(--ink)', pct: 100 },
                 { label: 'هزینه تأمین‌کننده', value: -a.providerCostMinor, color: 'var(--danger)', pct: providerRatio * 100 },
                 { label: 'هزینه پرداخت', value: -a.paymentCostMinor, color: 'var(--warning)', pct: paymentRatio * 100 },
-                { label: 'مرجوعی', value: -a.refundMinor, color: 'var(--danger)', pct: (a.refundMinor / a.revenueMinor) * 100 },
+                { label: 'مرجوعی', value: -a.refundMinor, color: 'var(--danger)', pct: a.revenueMinor > 0 ? (a.refundMinor / a.revenueMinor) * 100 : 0 },
                 { label: 'Contribution Margin', value: a.contributionMinor, color: 'var(--success)', pct: margin * 100 },
               ].map(({ label, value, color, pct }) => (
                 <div key={label} style={{ display: 'grid', gap: 8 }}>
@@ -76,14 +138,13 @@ export default function Analytics() {
                     </span>
                   </div>
                   <div className="progress-track">
-                    <i style={{ width: `${Math.min(pct, 100)}%`, background: color === 'var(--success)' ? 'linear-gradient(90deg,var(--success),rgba(69,214,162,.6))' : color === 'var(--danger)' ? 'linear-gradient(90deg,var(--danger),rgba(255,113,135,.5))' : 'linear-gradient(90deg,var(--warning),rgba(244,189,97,.5))' }} />
+                    <i style={{ width: `${Math.min(Math.max(pct, 0), 100)}%`, background: color === 'var(--success)' ? 'linear-gradient(90deg,var(--success),rgba(69,214,162,.6))' : color === 'var(--danger)' ? 'linear-gradient(90deg,var(--danger),rgba(255,113,135,.5))' : 'linear-gradient(90deg,var(--warning),rgba(244,189,97,.5))' }} />
                   </div>
                 </div>
               ))}
             </div>
           </article>
 
-          {/* Growth metrics */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <article className="surface-panel">
               <div className="panel-head" style={{ marginBottom: 14 }}>
@@ -98,12 +159,12 @@ export default function Analytics() {
                   <strong>{formatTomanFromIRR(a.mrrMinor)}</strong>
                 </div>
                 <div className="order-meta-row">
-                  <span>کاربران فعال</span>
+                  <span>اعضای فضای کاری</span>
                   <strong>{new Intl.NumberFormat('fa-IR').format(a.activeUsers)}</strong>
                 </div>
                 <div className="order-meta-row">
                   <span>ARPU</span>
-                  <strong>{formatTomanFromIRR(Math.round(a.revenueMinor / a.activeUsers))}</strong>
+                  <strong>{a.activeUsers > 0 ? formatTomanFromIRR(Math.round(a.revenueMinor / a.activeUsers)) : '—'}</strong>
                 </div>
               </div>
             </article>
@@ -121,7 +182,7 @@ export default function Analytics() {
                 </div>
                 <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 6 }}>Contribution Margin</div>
                 <div className="progress-track" style={{ marginTop: 16 }}>
-                  <i style={{ width: `${margin * 100}%` }} />
+                  <i style={{ width: `${Math.min(margin * 100, 100)}%` }} />
                 </div>
               </div>
             </article>

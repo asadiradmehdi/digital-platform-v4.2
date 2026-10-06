@@ -1,9 +1,9 @@
 'use client';
-import { Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { Suspense, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useState } from 'react';
-import { ArrowRight, ChevronLeft, Info, ShoppingBag, Zap } from 'lucide-react';
+import { ArrowRight, ChevronLeft, Info, ShoppingBag, Zap, AlertCircle } from 'lucide-react';
 import { AppShell } from '../../../components/AppShell';
 
 const serviceRegistry: Record<string, {
@@ -91,11 +91,14 @@ function formatPrice(minor: number) {
 
 function OrderNewForm() {
   const params = useSearchParams();
-  const serviceId = params.get('service') ?? '';
-  const service = serviceRegistry[serviceId];
+  const router = useRouter();
+  const serviceSlug = params.get('service') ?? '';
+  const service = serviceRegistry[serviceSlug];
 
   const [qty, setQty] = useState<number>(service?.quantities?.[1] ?? 1);
   const [fields, setFields] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
   if (!service) {
@@ -121,10 +124,44 @@ function OrderNewForm() {
     ? Math.round((unitQty / service.unitDivisor) * service.priceMinor)
     : service.priceMinor;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-  };
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      // Resolve workspace ID
+      const wsRes = await fetch('/api/v1/workspaces');
+      if (!wsRes.ok) throw new Error('لطفاً ابتدا وارد حساب کاربری شوید.');
+      const wsData = await wsRes.json() as { items: Array<{ id: string }> };
+      const workspaceId = wsData.items[0]?.id;
+      if (!workspaceId) throw new Error('فضای کاری یافت نشد. ابتدا یک workspace ایجاد کنید.');
+
+      // Resolve real service UUID by slug
+      const svcRes = await fetch(`/api/v1/services?slug=${encodeURIComponent(serviceSlug)}`);
+      if (!svcRes.ok) throw new Error('سرویس مورد نظر در سیستم یافت نشد.');
+      const svcData = await svcRes.json() as { item?: { id: string } };
+      const serviceId = svcData.item?.id;
+      if (!serviceId) throw new Error('سرویس مورد نظر در سیستم یافت نشد.');
+
+      // Submit order
+      const idempotencyKey = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const orderRes = await fetch('/api/v1/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
+        body: JSON.stringify({ workspaceId, serviceId, quantity: unitQty, parameters: fields }),
+      });
+      if (!orderRes.ok) {
+        const errData = await orderRes.json() as { error?: { message?: string } };
+        throw new Error(errData.error?.message ?? 'خطا در ثبت سفارش. لطفاً دوباره تلاش کنید.');
+      }
+      setSubmitted(true);
+      setTimeout(() => router.push('/orders'), 2000);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'خطا در ثبت سفارش.');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [serviceSlug, unitQty, fields, router]);
 
   if (submitted) {
     return (
@@ -242,8 +279,13 @@ function OrderNewForm() {
                 <span>موجودی کیف پول</span>
                 <span style={{ color: 'var(--success)' }}>۱٬۲۵۰٬۰۰۰ تومان</span>
               </div>
-              <button type="submit" className="button primary" style={{ width: '100%', justifyContent: 'center', marginTop: 4 }}>
-                <Zap size={14} />ثبت و پرداخت سفارش
+              {submitError && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 12px', background: 'rgba(255,113,135,.08)', border: '1px solid rgba(255,113,135,.2)', borderRadius: 10, fontSize: 11, color: 'var(--danger)' }}>
+                  <AlertCircle size={14}/>{submitError}
+                </div>
+              )}
+              <button type="submit" className="button primary" style={{ width: '100%', justifyContent: 'center', marginTop: 4 }} disabled={submitting}>
+                <Zap size={14} />{submitting ? 'در حال ثبت...' : 'ثبت و پرداخت سفارش'}
               </button>
               <Link href="/services" className="button secondary" style={{ width: '100%', justifyContent: 'center', textDecoration: 'none' }}>
                 <ChevronLeft size={14} />بازگشت
