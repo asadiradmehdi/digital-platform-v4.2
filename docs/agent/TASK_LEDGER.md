@@ -1143,3 +1143,4 @@ Security:
 ### Verification gate (2026-10-06)
 - [x] pnpm typecheck — PASS (tsc --noEmit, zero errors)
 - [x] pnpm test — PASS (1245/1245, 148 test files)
+- [x] pnpm build — PASS (next build --webpack, exit 0, 96 routes compiled, 2 warnings in Next.js internals only)
