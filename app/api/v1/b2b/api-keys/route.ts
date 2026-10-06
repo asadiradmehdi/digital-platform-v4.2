@@ -6,6 +6,7 @@ import { createApiKey, listApiKeys, revokeApiKey } from '../../../../../server/b
 import { upsertRateLimit } from '../../../../../server/b2b/rate-limit';
 import { assertSameOrigin } from '../../../../../server/core/security-boundary';
 import { AppError } from '../../../../../server/core/errors';
+import { enforceStepUpPolicy } from '../../../../../server/identity/step-up';
 
 export async function GET(request: NextRequest) {
   const id = correlationId(request);
@@ -43,6 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     await requireWorkspacePermission(userId, workspaceId, 'api_keys.write');
+    await enforceStepUpPolicy(userId, 'API_KEY_CREATE', (body as { stepUpEvidenceId?: string }).stepUpEvidenceId);
 
     const rawKey = await createApiKey(
       workspaceId, name, scopes,
@@ -71,6 +73,7 @@ export async function DELETE(request: NextRequest) {
     if (!workspaceId || !keyId) throw new AppError('VALIDATION_ERROR', 'workspaceId and keyId are required.');
 
     await requireWorkspacePermission(userId, workspaceId, 'api_keys.write');
+    await enforceStepUpPolicy(userId, 'API_KEY_REVOKE', (body as { stepUpEvidenceId?: string }).stepUpEvidenceId);
     const revoked = await revokeApiKey(keyId, workspaceId);
     if (!revoked) throw new AppError('NOT_FOUND', 'Key not found or already revoked.');
     return json({ revoked: true }, { correlationId: id });

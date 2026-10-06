@@ -17,6 +17,7 @@ vi.mock('../../server/b2b/api-keys', () => ({
   resolveApiKey: vi.fn(),
 }));
 vi.mock('../../server/b2b/rate-limit', () => ({ upsertRateLimit: vi.fn() }));
+vi.mock('../../server/identity/step-up', () => ({ enforceStepUpPolicy: vi.fn() }));
 
 import { requireRequestUser } from '../../server/identity/request-user';
 import { requireWorkspacePermission } from '../../server/identity/rbac';

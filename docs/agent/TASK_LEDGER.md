@@ -1366,3 +1366,33 @@ After Sessions 33-37: ~1272 tests across 151 test files (1259 base + 9 renewal/p
 - [ ] Key rotation automation — requires infrastructure + scheduled jobs
 - [ ] Passkey browser integration test — requires Playwright + WebAuthn mock
 - [ ] Independent security audit — external engagement
+
+---
+
+## Session 40 — Stage 12 completion: step-up enforcement, migration 0027, security UI (2026-10-06)
+
+### Task 1 — Migration 0027: step-up policies default inactive
+- [x] `db/migrations/0027_step_up_policies_inactive.sql` — UPDATEs all 6 policies seeded in migration 0016 from `active=true` to `active=false`; prevents step-up from unexpectedly blocking production routes on first deployment; operators explicitly enable each policy when the step-up UI flow is deployed
+
+### Task 2 — Step-up enforcement wired into high-risk routes
+- [x] `app/api/v1/b2b/api-keys/route.ts` — POST calls `enforceStepUpPolicy(userId, 'API_KEY_CREATE', body.stepUpEvidenceId)`; DELETE calls `enforceStepUpPolicy(userId, 'API_KEY_REVOKE', body.stepUpEvidenceId)`
+- [x] `app/api/v1/me/password/route.ts` — PATCH calls `enforceStepUpPolicy(userId, 'SECURITY_SETTINGS_CHANGE', body.stepUpEvidenceId)`; also added `writeAudit(PASSWORD_CHANGE)` on successful change
+- [x] `tests/b2b/api-keys-route.test.ts` — added `vi.mock('../../server/identity/step-up', ...)` so route tests remain isolated from policy enforcement logic
+
+### Task 3 — Security settings UI shows real passkeys + trusted devices
+- [x] `app/settings/security/page.tsx` — parallel-fetches `listPasskeys(userId)` and `listTrustedDevices(userId)` alongside sessions/MFA; renders real passkey list (count badge, label, last-used date) and real trusted device list (name, platform, last-seen); both have empty states; `.catch(() => [])` so DB unavailability doesn't break the page
+
+### Final verification gate (2026-10-06)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm lint — PASS (exit 0)
+- [x] pnpm test — PASS (1336/1336, 156 test files)
+- [x] pnpm build — PASS (next build --webpack exit 0)
+
+### Final audit (2026-10-06)
+- [x] TODO/FIXME scan — none found in server/ or app/
+- [x] console.log leak scan — none found in routes
+- [x] Hardcoded business data scan — none found (all screens use live APIs)
+- [x] API authentication coverage — all v1/ routes properly authenticated
+- [x] CSRF / assertSameOrigin coverage — all mutation routes protected
+- [x] IDOR scan — ownership verified in all user-scoped routes
+- [x] Known INFO items: mock payment gateway (dev only, documented), WebAuthn stub verifier (correctly returns UNAVAILABLE until @simplewebauthn/server installed)

@@ -5,17 +5,21 @@ import { requireRequestUser } from '../../../../../server/identity/request-user'
 import { assertSameOrigin } from '../../../../../server/core/security-boundary';
 import { hashPassword, verifyPassword } from '../../../../../server/identity/password';
 import { AppError } from '../../../../../server/core/errors';
+import { enforceStepUpPolicy } from '../../../../../server/identity/step-up';
+import { writeAudit } from '../../../../../server/core/audit';
 
 export async function PATCH(request: NextRequest) {
   const id = correlationId(request);
   try {
     assertSameOrigin(request);
     const userId = await requireRequestUser(request);
-    const body = await request.json() as { currentPassword?: string; newPassword?: string };
+    const body = await request.json() as { currentPassword?: string; newPassword?: string; stepUpEvidenceId?: string };
     const current = typeof body.currentPassword === 'string' ? body.currentPassword : '';
     const next = typeof body.newPassword === 'string' ? body.newPassword : '';
     if (!current || !next) throw new AppError('VALIDATION_ERROR', 'رمز عبور فعلی و جدید الزامی است.');
     if (next.length < 14) throw new AppError('VALIDATION_ERROR', 'رمز عبور جدید حداقل ۱۴ کاراکتر باشد.');
+
+    await enforceStepUpPolicy(userId, 'SECURITY_SETTINGS_CHANGE', body.stepUpEvidenceId);
 
     const r = await query<{ credential_hash: string }>(
       `SELECT credential_hash FROM user_credentials WHERE user_id=$1 AND credential_type='password'`,
@@ -33,6 +37,7 @@ export async function PATCH(request: NextRequest) {
        ON CONFLICT(user_id, credential_type) DO UPDATE SET credential_hash=EXCLUDED.credential_hash, last_used_at=now()`,
       [userId, newHash],
     );
+    await writeAudit({ actorUserId: userId, action: 'PASSWORD_CHANGE', entityType: 'user_credential', entityId: userId });
     return json({ ok: true }, { correlationId: id });
   } catch (error) { return handleRouteError(error, id); }
 }

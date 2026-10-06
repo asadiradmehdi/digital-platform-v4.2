@@ -8,6 +8,8 @@ import { AppShell } from '../../../components/AppShell';
 import { SystemStrip } from '../../../components/ProductSurface';
 import { requireCurrentUser } from '../../../server/identity/request-user';
 import { query } from '../../../server/core/db';
+import { listPasskeys } from '../../../server/identity/passkey-service';
+import { listTrustedDevices } from '../../../server/identity/trusted-devices';
 import PasswordForm from './PasswordForm';
 import SessionManager from './SessionManager';
 
@@ -29,7 +31,7 @@ export default async function SecuritySettings() {
   const cookieName = process.env.SESSION_COOKIE_NAME ?? (process.env.NODE_ENV === 'production' ? '__Host-dp_session' : 'dp_session');
   const currentTokenHash = store.get(cookieName)?.value ? hashToken(store.get(cookieName)!.value) : null;
 
-  const [sessionsResult, mfaResult] = await Promise.all([
+  const [sessionsResult, mfaResult, passkeys, trustedDevices] = await Promise.all([
     query<{
       id: string; tokenHash: string; clientType: string | null; deviceName: string | null;
       lastUserAgent: string | null; lastSeenAt: string | null; createdAt: string;
@@ -46,6 +48,8 @@ export default async function SecuritySettings() {
       `SELECT method_type AS "methodType", enabled FROM mfa_methods WHERE user_id=$1`,
       [userId],
     ),
+    listPasskeys(userId).catch(() => [] as Awaited<ReturnType<typeof listPasskeys>>),
+    listTrustedDevices(userId).catch(() => [] as Awaited<ReturnType<typeof listTrustedDevices>>),
   ]);
 
   const sessions = sessionsResult.rows;
@@ -102,13 +106,66 @@ export default async function SecuritySettings() {
             })} />
           </article>
           <article className="surface-panel" style={{ padding: 24 }}>
-            <div className="panel-head"><div><span className="panel-kicker">PASSKEY</span><h2>Passkey و دستگاه‌های مورد اعتماد</h2></div></div>
-            <div className="empty-state" style={{ minHeight: 120 }}>
-              <div className="empty-mark"><ShieldCheck size={20}/></div>
-              <h3>Passkey ثبت‌نشده</h3>
-              <p>با ثبت Passkey می‌توانید بدون رمز عبور وارد شوید.</p>
+            <div className="panel-head">
+              <div><span className="panel-kicker">PASSKEY</span><h2>Passkey</h2></div>
+              <span className={`status-pill ${passkeys.length > 0 ? 'success' : 'neutral'}`}>
+                {passkeys.length > 0 ? `${passkeys.length} ثبت‌شده` : 'ثبت‌نشده'}
+              </span>
             </div>
-            <button className="button primary" style={{ width: '100%', marginTop: 8 }} type="button">افزودن Passkey</button>
+            {passkeys.length === 0 ? (
+              <div className="empty-state" style={{ minHeight: 100 }}>
+                <div className="empty-mark"><ShieldCheck size={20}/></div>
+                <h3>Passkey ثبت‌نشده</h3>
+                <p>با ثبت Passkey می‌توانید بدون رمز عبور وارد شوید.</p>
+              </div>
+            ) : (
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {passkeys.map(pk => (
+                  <li key={pk.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--hairline)' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{pk.label ?? 'Passkey'}</div>
+                      <div style={{ fontSize: 11, color: 'var(--subtle)' }}>
+                        {pk.lastUsedAt
+                          ? `آخرین استفاده: ${new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(new Date(pk.lastUsedAt))}`
+                          : `ثبت‌شده: ${new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(new Date(pk.createdAt))}`}
+                      </div>
+                    </div>
+                    <CheckCircle2 size={16} style={{ color: 'var(--success)' }} />
+                  </li>
+                ))}
+              </ul>
+            )}
+            <button className="button primary" style={{ width: '100%', marginTop: 12 }} type="button">افزودن Passkey</button>
+          </article>
+          <article className="surface-panel" style={{ padding: 24 }}>
+            <div className="panel-head">
+              <div><span className="panel-kicker">TRUSTED DEVICES</span><h2>دستگاه‌های مورد اعتماد</h2></div>
+              <span className="status-pill neutral">{trustedDevices.length} دستگاه</span>
+            </div>
+            {trustedDevices.length === 0 ? (
+              <div className="empty-state" style={{ minHeight: 100 }}>
+                <div className="empty-mark"><ShieldCheck size={20}/></div>
+                <h3>دستگاه مورد اعتمادی ثبت نشده</h3>
+                <p>دستگاه‌های تأییدشده برای احراز هویت سریع‌تر استفاده می‌شوند.</p>
+              </div>
+            ) : (
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {trustedDevices.map(d => (
+                  <li key={d.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--hairline)' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{d.deviceName ?? 'دستگاه ناشناس'}</div>
+                      <div style={{ fontSize: 11, color: 'var(--subtle)' }}>
+                        {d.platform ? `${d.platform} · ` : ''}
+                        {d.lastSeenAt
+                          ? `آخرین فعالیت: ${new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(new Date(d.lastSeenAt))}`
+                          : `ثبت‌شده: ${new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(new Date(d.createdAt))}`}
+                      </div>
+                    </div>
+                    <CheckCircle2 size={16} style={{ color: 'var(--accent)' }} />
+                  </li>
+                ))}
+              </ul>
+            )}
           </article>
         </div>
       </main>
