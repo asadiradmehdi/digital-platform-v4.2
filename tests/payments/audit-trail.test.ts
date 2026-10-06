@@ -133,7 +133,8 @@ describe('createRefund — audit trail', () => {
       .mockResolvedValueOnce({ rows: [paymentRow] })     // SELECT payment FOR UPDATE
       .mockResolvedValueOnce({ rows: [{ total: '0' }] }) // existing refunds total
       .mockResolvedValueOnce({ rows: [{ id: 'ref-1', status: 'PENDING' }] }) // INSERT refund
-      .mockResolvedValueOnce({ rows: [] });              // UPDATE refund to PAID
+      .mockResolvedValueOnce({ rows: [] })               // UPDATE refund to PAID
+      .mockResolvedValueOnce({ rows: [] });              // SELECT ledger account (no wallet → skip credit)
 
     mockTx.mockImplementationOnce(async (_wid, _uid, fn) => fn({ query: clientQuery } as never));
     mockWriteAudit.mockResolvedValueOnce(undefined);

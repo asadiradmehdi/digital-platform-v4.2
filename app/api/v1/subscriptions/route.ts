@@ -1,7 +1,12 @@
 import { NextRequest } from 'next/server';
 import { correlationId, handleRouteError, json } from '../../../../server/core/http';
 import { requireRequestUser } from '../../../../server/identity/request-user';
+import { requireWorkspacePermission } from '../../../../server/identity/rbac';
+import { assertSameOrigin } from '../../../../server/core/security-boundary';
+import { requireUuid } from '../../../../server/core/validation';
 import { query, withWorkspaceTransaction } from '../../../../server/core/db';
+import { createSubscription } from '../../../../server/subscriptions/service';
+import { randomUUID } from 'node:crypto';
 
 export async function GET(request: NextRequest) {
   const id = correlationId(request);
@@ -28,6 +33,23 @@ export async function GET(request: NextRequest) {
       items.push(...result.rows);
     }
     return json({ items, nextCursor: null }, { correlationId: id, headers: { 'cache-control': 'private, no-store' } });
+  } catch (error) {
+    return handleRouteError(error, id);
+  }
+}
+
+export async function POST(request: NextRequest) {
+  const id = correlationId(request);
+  try {
+    assertSameOrigin(request);
+    const userId = await requireRequestUser(request);
+    const body = await request.json() as Record<string, unknown>;
+    const workspaceId = requireUuid(body.workspaceId, 'workspaceId');
+    const planId = requireUuid(body.planId, 'planId');
+    await requireWorkspacePermission(userId, workspaceId, 'subscriptions.create');
+    const idempotencyKey = request.headers.get('idempotency-key') ?? randomUUID();
+    const subscription = await createSubscription({ workspaceId, planId, idempotencyKey });
+    return json(subscription, { status: 201, correlationId: id });
   } catch (error) {
     return handleRouteError(error, id);
   }

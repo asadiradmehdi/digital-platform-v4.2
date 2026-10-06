@@ -73,6 +73,28 @@ export async function pollProcessingOrders(
         `UPDATE external_orders SET status=$2, updated_at=now() WHERE external_order_id=$1 AND provider_id=$3`,
         [row.external_order_id, result.status, providerId]
       );
+      // Propagate terminal states to the parent order.
+      if (result.status === 'COMPLETED') {
+        await query(
+          `UPDATE orders SET status='COMPLETED', updated_at=now() WHERE id=$1 AND status IN ('PROCESSING','PROVIDER_SUBMITTED')`,
+          [row.order_id]
+        );
+        await query(
+          `INSERT INTO order_events(order_id, from_status, to_status, metadata)
+           SELECT id, status, 'COMPLETED', $2 FROM orders WHERE id=$1`,
+          [row.order_id, { source: 'provider_poll', externalOrderId: row.external_order_id }]
+        ).catch(() => undefined);
+      } else if (['FAILED', 'CANCELLED'].includes(result.status)) {
+        await query(
+          `UPDATE orders SET status='FAILED', updated_at=now() WHERE id=$1 AND status IN ('PROCESSING','PROVIDER_SUBMITTED')`,
+          [row.order_id]
+        );
+        await query(
+          `INSERT INTO order_events(order_id, from_status, to_status, metadata)
+           SELECT id, status, 'FAILED', $2 FROM orders WHERE id=$1`,
+          [row.order_id, { source: 'provider_poll', externalOrderId: row.external_order_id, providerStatus: result.status }]
+        ).catch(() => undefined);
+      }
       results.push({ orderId: row.order_id, externalOrderId: row.external_order_id, status: result.status });
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Unknown error';
