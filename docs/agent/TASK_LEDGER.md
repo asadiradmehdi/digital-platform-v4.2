@@ -1245,3 +1245,18 @@ Security:
 - [x] pnpm lint — PASS (exit 0)
 - [x] pnpm build — PASS (exit 0)
 - [x] pnpm test tests/commerce/ — PASS (128/128)
+
+---
+
+## Session 36 — Test coverage for plans and renewal queue routes (2026-10-06)
+
+### Task 1 — Tests for GET /api/v1/plans
+- [x] tests/api/plans-route.test.ts — 4 tests: 200 with items, entitlements fetched per plan, each item has entitlements array, 500 on DB error
+
+### Task 2 — Tests for POST /api/internal/queue/renewal
+- [x] tests/queue/renewal-queue-route.test.ts — 5 tests: 401 wrong secret, 200 empty when nothing due, processes each due subscription, includes error in result on FAILED renewal, calls recoverStuckQueuedOrders with correct params and includes recovered in response
+
+### Verification gate (2026-10-06)
+- [x] pnpm typecheck — PASS
+- [x] pnpm lint — PASS
+- [x] new tests: 9/9 pass
