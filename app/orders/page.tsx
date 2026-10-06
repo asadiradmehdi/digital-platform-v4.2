@@ -20,7 +20,7 @@ export default async function Orders() {
   try {
     userId = await requireCurrentUser();
   } catch {
-    redirect('/login');
+    redirect('/auth');
   }
 
   const memberships = await query<{ workspace_id: string }>(

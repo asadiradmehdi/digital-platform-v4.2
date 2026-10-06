@@ -71,7 +71,7 @@ export default async function Dashboard() {
   try {
     userId = await requireCurrentUser();
   } catch {
-    redirect('/login');
+    redirect('/auth');
   }
 
   const [memberships, userRow] = await Promise.all([

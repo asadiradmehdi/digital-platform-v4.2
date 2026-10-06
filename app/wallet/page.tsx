@@ -65,7 +65,7 @@ export default async function Wallet() {
   try {
     userId = await requireCurrentUser();
   } catch {
-    redirect('/login');
+    redirect('/auth');
   }
 
   const memberships = await query<{ workspace_id: string }>(
