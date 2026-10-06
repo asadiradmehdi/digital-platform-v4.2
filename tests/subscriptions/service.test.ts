@@ -61,6 +61,7 @@ describe('createSubscription', () => {
       }) // plan lookup
       .mockResolvedValueOnce({ rows: [{ id: 'sub-new', status: 'TRIALING' }], rowCount: 1 }) // insert
       .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // event insert
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // entitlement snapshot insert
     ;
     const result = await createSubscription({
       workspaceId: 'ws-1',
@@ -68,7 +69,7 @@ describe('createSubscription', () => {
       idempotencyKey: isoKey,
     });
     expect(result).toEqual({ id: 'sub-new', status: 'TRIALING' });
-    expect(mockClientQuery).toHaveBeenCalledTimes(4);
+    expect(mockClientQuery).toHaveBeenCalledTimes(5);
   });
 
   it('throws NOT_FOUND when plan is inactive', async () => {

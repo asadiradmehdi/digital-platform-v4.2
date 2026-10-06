@@ -24,10 +24,18 @@ export async function GET(request: NextRequest) {
                COALESCE(s.price_minor,p.price_minor) AS "priceMinor",
                COALESCE(s.currency,p.currency) AS currency,
                0::integer AS "usagePercent",
-               '{}'::text[] AS entitlements
+               COALESCE(
+                 (SELECT array_agg(ses.entitlement_key)
+                  FROM subscription_entitlement_snapshots ses
+                  WHERE ses.subscription_id = s.id),
+                 (SELECT array_agg(pe.entitlement_key)
+                  FROM plan_entitlements pe
+                  WHERE pe.plan_id = p.id AND (pe.value->>'enabled')::boolean = true),
+                 ARRAY[]::text[]
+               ) AS entitlements
         FROM subscriptions s
         JOIN plans p ON p.id=s.plan_id
-        WHERE s.workspace_id=$1 AND s.status IN ('ACTIVE','PAUSED')
+        WHERE s.workspace_id=$1 AND s.status IN ('ACTIVE','PAUSED','TRIALING')
         ORDER BY s.created_at DESC
       `, [membership.workspaceId]));
       items.push(...result.rows);

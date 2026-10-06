@@ -11,6 +11,12 @@ export async function createSubscription(input: { workspaceId:string; planId:str
     if (!plan.rows[0] || !plan.rows[0].active) throw new AppError('NOT_FOUND','Plan not found or inactive.');
     const result = await client.query<{id:string;status:string}>(`INSERT INTO subscriptions(workspace_id,plan_id,status,current_period_start,current_period_end,trial_ends_at,idempotency_key,price_minor,currency,price_version,pricing_rule_id) VALUES($1,$2,'TRIALING',COALESCE($3,now()),COALESCE($3,now())+interval '30 days',$4,$5,$6,$7,$8,$9) RETURNING id,status`,[input.workspaceId,input.planId,input.startsAt ?? null,input.trialEndsAt ?? null,input.idempotencyKey,plan.rows[0].price_minor,plan.rows[0].currency,plan.rows[0].price_version,plan.rows[0].pricing_rule_id]);
     await client.query(`INSERT INTO subscription_events(subscription_id,event_type,payload) VALUES($1,'CREATED',$2)`,[result.rows[0].id,{source:'api'}]);
+    await client.query(
+      `INSERT INTO subscription_entitlement_snapshots(subscription_id,entitlement_key,value)
+       SELECT $1, pe.entitlement_key, pe.value FROM plan_entitlements pe WHERE pe.plan_id=$2
+       ON CONFLICT(subscription_id,entitlement_key) DO UPDATE SET value=EXCLUDED.value`,
+      [result.rows[0].id, input.planId]
+    );
     return result.rows[0];
   });
 }

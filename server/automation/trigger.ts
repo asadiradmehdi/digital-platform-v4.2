@@ -2,6 +2,48 @@ import { query } from '../core/db';
 import { startWorkflowRun } from './workflow-service';
 import { enqueueWorkflowRun } from './worker';
 
+/** Returns the next Date after `from` that satisfies the 5-field cron expression. */
+function nextCronDate(expression: string, from: Date = new Date()): Date {
+  const parts = expression.trim().split(/\s+/);
+  if (parts.length !== 5) {
+    // Unsupported format — default to 1 hour
+    return new Date(from.getTime() + 3_600_000);
+  }
+  const [minutePart, hourPart, domPart, monthPart, dowPart] = parts;
+
+  function matchField(part: string, value: number, min: number, max: number): boolean {
+    if (part === '*') return true;
+    if (part.startsWith('*/')) {
+      const step = parseInt(part.slice(2), 10);
+      return step > 0 && (value - min) % step === 0;
+    }
+    return part.split(',').some(seg => {
+      if (seg.includes('-')) {
+        const [lo, hi] = seg.split('-').map(Number);
+        return value >= lo && value <= hi;
+      }
+      return parseInt(seg, 10) === value;
+    });
+  }
+
+  const next = new Date(from.getTime() + 60_000); // start at next minute
+  next.setSeconds(0, 0);
+
+  for (let i = 0; i < 527_040; i++) { // max 1 year of minutes
+    const mn = next.getUTCMinutes(), hr = next.getUTCHours(),
+          dom = next.getUTCDate(), mo = next.getUTCMonth() + 1, dow = next.getUTCDay();
+    if (
+      matchField(monthPart, mo, 1, 12) &&
+      matchField(domPart, dom, 1, 31) &&
+      matchField(dowPart, dow, 0, 6) &&
+      matchField(hourPart, hr, 0, 23) &&
+      matchField(minutePart, mn, 0, 59)
+    ) return next;
+    next.setTime(next.getTime() + 60_000);
+  }
+  return new Date(from.getTime() + 3_600_000);
+}
+
 export type TriggerEvent = {
   type: 'webhook' | 'order_event' | 'payment_event' | 'subscription_event';
   workspaceId: string;
@@ -73,8 +115,8 @@ export async function dispatchScheduledTriggers(): Promise<string[]> {
     });
 
     await query(
-      `UPDATE scheduled_triggers SET next_run_at = now() + interval '1 hour' WHERE id=$1`,
-      [row.trigger_id]
+      `UPDATE scheduled_triggers SET next_run_at = $2 WHERE id=$1`,
+      [row.trigger_id, nextCronDate(row.cron_expression)]
     );
     runIds.push(runId);
   }
