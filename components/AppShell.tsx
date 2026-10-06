@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
-import { Activity, Bell, ChevronDown, CircleHelp, Home, LayoutGrid, LogOut, Menu, Package, Settings2, Sparkles, WalletCards, Workflow, X } from 'lucide-react';
+import { Activity, Bell, ChevronDown, CircleHelp, Home, LayoutGrid, LogOut, Menu, Package, Settings2, ShieldCheck, Sparkles, WalletCards, Workflow, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 const primaryNav = [
@@ -54,6 +54,7 @@ function SidebarContent({ pathname, workspaceLabel, onClose }: { pathname: strin
       <nav className="side-nav side-nav-secondary">
         <NavLink href="/support" label="پشتیبانی" icon={CircleHelp} active={pathname === '/support'} />
         <NavLink href="/settings" label="تنظیمات" icon={Settings2} active={pathname.startsWith('/settings')} />
+        <NavLink href="/admin" label="مدیریت" icon={ShieldCheck} active={pathname.startsWith('/admin')} />
       </nav>
       <form action="/api/v1/auth/logout" method="post">
         <button className="side-logout"><LogOut size={17}/>خروج از حساب</button>

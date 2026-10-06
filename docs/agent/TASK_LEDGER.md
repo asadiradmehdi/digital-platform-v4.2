@@ -1212,3 +1212,22 @@ Security:
 - [x] pnpm typecheck — PASS (tsc --noEmit, zero errors)
 - [x] pnpm test — PASS (1259/1259, 149 test files)
 - [x] pnpm build — PASS (exit 0, all routes compiled)
+
+---
+
+## Session 34 — Admin panel, services seed, AppShell admin link (2026-10-06)
+
+### Task 1 — Platform admin dashboard
+- [x] app/admin/page.tsx — platform-admin-only dashboard: KPI tiles (users, active orders, paid payments, active subscriptions); orders by status table; provider health grid; subscriptions by status; operational events (24h severity breakdown); quick-action links to internal endpoints (metrics, health, renewal queue, outbox); requires isPlatformAdmin gate; redirects unauthenticated users
+
+### Task 2 — Services/plans database seed
+- [x] db/seeds/001_catalog.sql — idempotent seed: 6 products (instagram/telegram/tiktok/youtube/ai/automation), 13 services with fixed UUIDs matching frontend static catalog slugs, service_parameters, service_prices (IRT), 4 plans (free/basic/pro/enterprise), plan_entitlements; ON CONFLICT DO NOTHING throughout
+
+### Task 3 — AppShell admin nav link
+- [x] components/AppShell.tsx — added admin link in secondary nav (ShieldCheck icon, /admin route); only visible in nav but guarded server-side by isPlatformAdmin
+
+### Verification gate (2026-10-06)
+- [x] pnpm typecheck — PASS (tsc --noEmit, zero errors)
+- [x] pnpm test — PASS (1259/1259, 149 test files)
+- [x] pnpm build — PASS (exit 0, all routes compiled)
+- [x] pnpm lint — PASS (exit 0)

@@ -1,7 +1,7 @@
 import { query } from '../core/db';
 import { AppError } from '../core/errors';
 import type { Page } from '../core/types';
-export type CatalogService = { id: string; name: string; slug: string; serviceType: string; productName: string; productSlug: string };
+export type CatalogService = { id: string; name: string; slug: string; serviceType: string; productName: string; productSlug: string; description: string | null };
 export type CatalogServiceDetail = CatalogService & { description: string | null; active: boolean; productId: string };
 
 export async function getService(id: string): Promise<CatalogServiceDetail> {
@@ -19,7 +19,7 @@ export async function getService(id: string): Promise<CatalogServiceDetail> {
 
 export async function getServiceBySlug(slug: string): Promise<CatalogService | null> {
   const r = await query<CatalogService>(
-    `SELECT s.id,s.name,s.slug,s.service_type AS "serviceType",p.name AS "productName",p.slug AS "productSlug"
+    `SELECT s.id,s.name,s.slug,s.service_type AS "serviceType",s.description,p.name AS "productName",p.slug AS "productSlug"
      FROM services s JOIN products p ON p.id=s.product_id
      WHERE s.slug=$1 AND s.active=true LIMIT 1`,
     [slug],
@@ -31,6 +31,6 @@ export async function listServices(limit: number, cursor?: string | null, servic
   const params: unknown[] = [cursor ?? null, limit + 1];
   const typeFilter = serviceType ? ` AND s.service_type=$3` : '';
   if (serviceType) params.push(serviceType);
-  const result = await query<CatalogService>(`SELECT s.id,s.name,s.slug,s.service_type AS "serviceType",p.name AS "productName",p.slug AS "productSlug" FROM services s JOIN products p ON p.id=s.product_id WHERE s.active=true AND ($1::uuid IS NULL OR s.id>$1::uuid)${typeFilter} ORDER BY s.id LIMIT $2`, params);
+  const result = await query<CatalogService>(`SELECT s.id,s.name,s.slug,s.service_type AS "serviceType",s.description,p.name AS "productName",p.slug AS "productSlug" FROM services s JOIN products p ON p.id=s.product_id WHERE s.active=true AND ($1::uuid IS NULL OR s.id>$1::uuid)${typeFilter} ORDER BY s.id LIMIT $2`, params);
   const items = result.rows.slice(0, limit); return { items, nextCursor: result.rows.length > limit ? items.at(-1)?.id ?? null : null };
 }
