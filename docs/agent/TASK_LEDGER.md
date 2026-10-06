@@ -1087,7 +1087,21 @@ Security:
 ### Task 3 — AppShell real user/workspace data
 - [x] components/AppShell.tsx — fetches /api/v1/me on mount to populate header account chip (name + initial) and sidebar workspace name with real data
 
+### Task 4 — Automation pages real data
+- [x] app/automation/page.tsx — converted to server component; queries real workflows WHERE workspace_id with version from workflow_versions; shows data table when workflows exist
+- [x] app/automation/new/page.tsx — handleSave now POSTs to /api/v1/automation/workflows with real workspaceId from /api/v1/me; shows submitError; redirects to /automation on success
+
 ### Verification gate (2026-10-06)
 - [x] pnpm typecheck — PASS (tsc --noEmit)
 - [x] pnpm test — PASS (1245/1245, 148 test files)
 - [x] pnpm build — PASS (exit 0, zero errors, all pages compiled)
+
+---
+
+## Session 30 — Workspace page real data (2026-10-06)
+
+### Task 1 — Workspace page connected to real data
+- [x] app/workspace/page.tsx — converted from hardcoded array to server component; auth gate + redirect /auth; queries workspace_members JOIN workspaces with member_count subquery and plan/subscription status; shows real workspace name, slug, member count, plan name, status pill; empty state when no workspaces
+
+### Verification gate (2026-10-06)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)

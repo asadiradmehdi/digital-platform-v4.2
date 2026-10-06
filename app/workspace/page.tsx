@@ -1,13 +1,46 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { ChevronLeft, Plus, Settings2, Sparkles, Users } from 'lucide-react';
 import { AppShell } from '../../components/AppShell';
 import { SystemStrip } from '../../components/ProductSurface';
+import { requireCurrentUser } from '../../server/identity/request-user';
+import { query } from '../../server/core/db';
+
 export const metadata: Metadata = { title: 'Workspace', robots: { index: false, follow: false } };
-const workspaces = [
-  { id: 'ws-1', name: 'فضای کاری اصلی', slug: 'main', members: 1, active: true },
-];
-export default function WorkspacePage() {
+
+export default async function WorkspacePage() {
+  let userId: string;
+  try {
+    userId = await requireCurrentUser();
+  } catch {
+    redirect('/auth');
+  }
+
+  const result = await query<{
+    workspace_id: string;
+    workspace_name: string;
+    workspace_slug: string;
+    member_count: string;
+    plan_name: string | null;
+    sub_status: string | null;
+  }>(
+    `SELECT wm.workspace_id,
+            w.name AS workspace_name,
+            w.slug AS workspace_slug,
+            (SELECT COUNT(*) FROM workspace_members wm2 WHERE wm2.workspace_id=wm.workspace_id AND wm2.status='ACTIVE') AS member_count,
+            p.name AS plan_name,
+            s.status AS sub_status
+     FROM workspace_members wm
+     JOIN workspaces w ON w.id=wm.workspace_id
+     LEFT JOIN subscriptions s ON s.workspace_id=wm.workspace_id AND s.status IN ('ACTIVE','TRIALING')
+     LEFT JOIN plans p ON p.id=s.plan_id
+     WHERE wm.user_id=$1 AND wm.status='ACTIVE'
+     ORDER BY wm.created_at`,
+    [userId],
+  );
+  const workspaces = result.rows;
+
   return (
     <AppShell>
       <main className="workspace-page-content">
@@ -18,20 +51,24 @@ export default function WorkspacePage() {
         <SystemStrip/>
         <div style={{ display: 'grid', gap: 14, maxWidth: 680 }}>
           {workspaces.map(ws => (
-            <article key={ws.id} className="surface-panel" style={{ padding: 20 }}>
+            <article key={ws.workspace_id} className="surface-panel" style={{ padding: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{ width: 46, height: 46, borderRadius: 14, background: 'var(--accent-soft)', color: 'var(--accent-strong)', display: 'grid', placeItems: 'center', fontSize: 20, fontWeight: 800, flex: 'none' }}>
-                  {ws.name.charAt(0)}
+                  {ws.workspace_name.charAt(0)}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <b style={{ fontSize: 14 }}>{ws.name}</b>
-                    {ws.active && <span className="status-pill success" style={{ fontSize: 9 }}>فعال</span>}
-                    <code style={{ fontSize: 10, color: 'var(--muted)', marginInlineStart: 'auto', direction: 'ltr' }}>{ws.slug}</code>
+                    <b style={{ fontSize: 14 }}>{ws.workspace_name}</b>
+                    {ws.sub_status && (
+                      <span className={`status-pill ${ws.sub_status === 'ACTIVE' || ws.sub_status === 'TRIALING' ? 'success' : 'warning'}`} style={{ fontSize: 9 }}>
+                        {ws.sub_status === 'ACTIVE' ? 'فعال' : ws.sub_status === 'TRIALING' ? 'آزمایشی' : ws.sub_status}
+                      </span>
+                    )}
+                    <code style={{ fontSize: 10, color: 'var(--muted)', marginInlineStart: 'auto', direction: 'ltr' }}>{ws.workspace_slug}</code>
                   </div>
                   <div style={{ display: 'flex', gap: 14, marginTop: 6, fontSize: 11, color: 'var(--muted)' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Users size={12}/>{ws.members} عضو</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Sparkles size={12}/>Pro</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Users size={12}/>{ws.member_count} عضو</span>
+                    {ws.plan_name && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Sparkles size={12}/>{ws.plan_name}</span>}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
@@ -41,6 +78,11 @@ export default function WorkspacePage() {
               </div>
             </article>
           ))}
+          {workspaces.length === 0 && (
+            <article className="surface-panel" style={{ padding: 32, textAlign: 'center' }}>
+              <p style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 16 }}>هنوز Workspace‌ای ندارید.</p>
+            </article>
+          )}
           <button type="button" className="ws-new-btn">
             <Plus size={18}/><span>ساخت Workspace جدید</span>
           </button>
