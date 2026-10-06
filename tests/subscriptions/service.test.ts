@@ -89,6 +89,43 @@ describe('createSubscription', () => {
     // Transaction should not have started
     expect(mockWithWorkspaceTransaction).not.toHaveBeenCalled();
   });
+
+  it('uses ACTIVE initial status when no trialEndsAt is provided', async () => {
+    const isoKey = 'activestatus1234567';
+    const sqlCalls: Array<[string, unknown[]]> = [];
+    mockClientQuery.mockImplementation(async (sql: string, params: unknown[]) => {
+      sqlCalls.push([sql, params]);
+      if (sqlCalls.length === 1) return { rows: [], rowCount: 0 };
+      if (sqlCalls.length === 2) return { rows: [{ id: 'plan-1', active: true, price_minor: '0', currency: 'IRT', price_generated_at: new Date(), price_version: 1, pricing_rule_id: null }], rowCount: 1 };
+      return { rows: [{ id: 'sub-new', status: 'ACTIVE' }], rowCount: 1 };
+    });
+    await createSubscription({ workspaceId: 'ws-1', planId: 'plan-1', idempotencyKey: isoKey });
+    const insertCall = sqlCalls.find(([sql]) => sql.includes('INSERT INTO subscriptions'));
+    expect(insertCall).toBeDefined();
+    if (insertCall) {
+      // $10 in the parameterised INSERT is initialStatus; should be 'ACTIVE' when no trialEndsAt
+      expect(insertCall[1]).toContain('ACTIVE');
+      expect(insertCall[1]).not.toContain('TRIALING');
+    }
+  });
+
+  it('uses TRIALING initial status when trialEndsAt is provided', async () => {
+    const isoKey = 'trialstatus1234567a';
+    const sqlCalls: Array<[string, unknown[]]> = [];
+    mockClientQuery.mockImplementation(async (sql: string, params: unknown[]) => {
+      sqlCalls.push([sql, params]);
+      if (sqlCalls.length === 1) return { rows: [], rowCount: 0 };
+      if (sqlCalls.length === 2) return { rows: [{ id: 'plan-1', active: true, price_minor: '0', currency: 'IRT', price_generated_at: new Date(), price_version: 1, pricing_rule_id: null }], rowCount: 1 };
+      return { rows: [{ id: 'sub-new', status: 'TRIALING' }], rowCount: 1 };
+    });
+    const trialEnd = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    await createSubscription({ workspaceId: 'ws-1', planId: 'plan-1', idempotencyKey: isoKey, trialEndsAt: trialEnd });
+    const insertCall = sqlCalls.find(([sql]) => sql.includes('INSERT INTO subscriptions'));
+    expect(insertCall).toBeDefined();
+    if (insertCall) {
+      expect(insertCall[1]).toContain('TRIALING');
+    }
+  });
 });
 
 // ─── cancelSubscription ───────────────────────────────────────────────────────

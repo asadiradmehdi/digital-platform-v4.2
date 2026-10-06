@@ -1,5 +1,6 @@
 import { query } from '../core/db';
 import type { ProviderAdapter } from './contracts';
+import { dispatchOrder } from './dispatch';
 
 /** Records a health check result for a provider. */
 export async function recordProviderHealth(providerId: string, status: 'HEALTHY' | 'DEGRADED' | 'UNHEALTHY', latencyMs: number, error?: string) {
@@ -99,6 +100,47 @@ export async function pollProcessingOrders(
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Unknown error';
       results.push({ orderId: row.order_id, externalOrderId: row.external_order_id, status: 'UNKNOWN', error: errorMsg });
+    }
+  }
+  return results;
+}
+
+/**
+ * Find and re-dispatch orders that have been in QUEUED state for longer than staleMinutes
+ * (default 15) and have no external_order record. This prevents orders from getting stuck
+ * if the outbox processor failed before dispatching.
+ */
+export async function recoverStuckQueuedOrders(staleMinutes = 15, limit = 20): Promise<{ orderId: string; result: string }[]> {
+  const staleOrders = await query<{ order_id: string; workspace_id: string; service_id: string }>(
+    `SELECT o.id AS order_id, o.workspace_id, oi.service_id
+     FROM orders o
+     JOIN order_items oi ON oi.order_id = o.id
+     WHERE o.status = 'QUEUED'
+       AND o.updated_at < now() - ($1 || ' minutes')::interval
+       AND NOT EXISTS (SELECT 1 FROM external_orders eo WHERE eo.order_id = o.id)
+     LIMIT $2`,
+    [staleMinutes, limit],
+  );
+
+  const results: { orderId: string; result: string }[] = [];
+  for (const row of staleOrders.rows) {
+    try {
+      await dispatchOrder({ workspaceId: row.workspace_id, orderId: row.order_id, serviceId: row.service_id });
+      results.push({ orderId: row.order_id, result: 'dispatched' });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'unknown';
+      // Mark as FAILED if all providers exhausted (UNAVAILABLE error).
+      if (msg.includes('UNAVAILABLE') || msg.includes('provider')) {
+        await query(
+          `UPDATE orders SET status='FAILED', updated_at=now() WHERE id=$1 AND status='QUEUED'`,
+          [row.order_id],
+        );
+        await query(
+          `INSERT INTO order_events(order_id,from_status,to_status,metadata) VALUES($1,'QUEUED','FAILED',$2)`,
+          [row.order_id, { source: 'stuck_recovery', error: msg }],
+        );
+      }
+      results.push({ orderId: row.order_id, result: `error: ${msg}` });
     }
   }
   return results;

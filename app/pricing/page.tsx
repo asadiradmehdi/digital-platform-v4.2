@@ -27,7 +27,7 @@ const plans = [
       { label: 'پشتیبانی اولویت‌دار', available: false },
     ],
     cta: 'شروع رایگان',
-    ctaHref: '/auth',
+    ctaHref: '/subscriptions/new',
     highlight: false,
   },
   {
@@ -47,7 +47,7 @@ const plans = [
       { label: 'پشتیبانی اولویت‌دار', available: false },
     ],
     cta: 'شروع با پایه',
-    ctaHref: '/auth',
+    ctaHref: '/subscriptions/new',
     highlight: false,
   },
   {
@@ -67,7 +67,7 @@ const plans = [
       { label: 'پشتیبانی اولویت‌دار', available: true },
     ],
     cta: 'شروع با Pro',
-    ctaHref: '/auth',
+    ctaHref: '/subscriptions/new',
     highlight: true,
   },
   {

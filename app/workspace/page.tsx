@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ChevronLeft, Plus, Settings2, Sparkles, Users } from 'lucide-react';
+import { ChevronLeft, Settings2, Sparkles, Users } from 'lucide-react';
+import { CreateWorkspaceButton } from './CreateWorkspaceButton';
 import { AppShell } from '../../components/AppShell';
 import { SystemStrip } from '../../components/ProductSurface';
 import { requireCurrentUser } from '../../server/identity/request-user';
@@ -46,7 +47,7 @@ export default async function WorkspacePage() {
       <main className="workspace-page-content">
         <header className="page-header">
           <div><span className="eyebrow">WORKSPACE</span><h1>Workspaceها</h1><p>هر Workspace یک محیط جداگانه با wallet، اشتراک، سفارش و تنظیمات مستقل دارد.</p></div>
-          <button className="button primary" type="button"><Plus size={15}/>Workspace جدید</button>
+          <CreateWorkspaceButton/>
         </header>
         <SystemStrip/>
         <div style={{ display: 'grid', gap: 14, maxWidth: 680 }}>
@@ -83,9 +84,9 @@ export default async function WorkspacePage() {
               <p style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 16 }}>هنوز Workspace‌ای ندارید.</p>
             </article>
           )}
-          <button type="button" className="ws-new-btn">
-            <Plus size={18}/><span>ساخت Workspace جدید</span>
-          </button>
+          <div className="ws-new-btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <CreateWorkspaceButton/>
+          </div>
         </div>
       </main>
     </AppShell>

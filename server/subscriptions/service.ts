@@ -9,7 +9,9 @@ export async function createSubscription(input: { workspaceId:string; planId:str
     if (existing.rows[0]) return existing.rows[0];
     const plan = await client.query<{id:string;active:boolean;price_minor:string;currency:string;price_generated_at:Date;price_version:number;pricing_rule_id:string|null}>(`SELECT id,active,price_minor,currency,price_generated_at,price_version,pricing_rule_id FROM plans WHERE id=$1`,[input.planId]);
     if (!plan.rows[0] || !plan.rows[0].active) throw new AppError('NOT_FOUND','Plan not found or inactive.');
-    const result = await client.query<{id:string;status:string}>(`INSERT INTO subscriptions(workspace_id,plan_id,status,current_period_start,current_period_end,trial_ends_at,idempotency_key,price_minor,currency,price_version,pricing_rule_id) VALUES($1,$2,'TRIALING',COALESCE($3,now()),COALESCE($3,now())+interval '30 days',$4,$5,$6,$7,$8,$9) RETURNING id,status`,[input.workspaceId,input.planId,input.startsAt ?? null,input.trialEndsAt ?? null,input.idempotencyKey,plan.rows[0].price_minor,plan.rows[0].currency,plan.rows[0].price_version,plan.rows[0].pricing_rule_id]);
+    // Use TRIALING only when a trial end date is explicitly provided; otherwise start ACTIVE.
+    const initialStatus = input.trialEndsAt ? 'TRIALING' : 'ACTIVE';
+    const result = await client.query<{id:string;status:string}>(`INSERT INTO subscriptions(workspace_id,plan_id,status,current_period_start,current_period_end,trial_ends_at,idempotency_key,price_minor,currency,price_version,pricing_rule_id) VALUES($1,$2,$10,COALESCE($3,now()),COALESCE($3,now())+interval '30 days',$4,$5,$6,$7,$8,$9) RETURNING id,status`,[input.workspaceId,input.planId,input.startsAt ?? null,input.trialEndsAt ?? null,input.idempotencyKey,plan.rows[0].price_minor,plan.rows[0].currency,plan.rows[0].price_version,plan.rows[0].pricing_rule_id,initialStatus]);
     await client.query(`INSERT INTO subscription_events(subscription_id,event_type,payload) VALUES($1,'CREATED',$2)`,[result.rows[0].id,{source:'api'}]);
     await client.query(
       `INSERT INTO subscription_entitlement_snapshots(subscription_id,entitlement_key,value)

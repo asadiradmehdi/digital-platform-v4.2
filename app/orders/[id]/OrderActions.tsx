@@ -1,20 +1,20 @@
 'use client';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Download, RefreshCw } from 'lucide-react';
 
-export function OrderActions({ status }: { status: string }) {
+export function OrderActions({ status, orderId }: { status: string; orderId?: string }) {
   const router = useRouter();
   return (
     <div style={{ display: 'flex', gap: 8 }}>
       {status === 'COMPLETED' && (
-        <a
+        <Link
           className="button secondary"
-          href="#"
+          href={orderId ? `/api/v1/invoices?orderId=${orderId}` : '/settings/billing'}
           style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}
-          onClick={e => { e.preventDefault(); alert('صدور فاکتور به‌زودی فعال می‌شود.'); }}
         >
-          <Download size={14}/>دریافت فاکتور
-        </a>
+          <Download size={14}/>مشاهده فاکتور
+        </Link>
       )}
       {(status === 'PROCESSING' || status === 'QUEUED') && (
         <button

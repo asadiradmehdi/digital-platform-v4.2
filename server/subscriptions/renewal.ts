@@ -1,6 +1,7 @@
 import { query, withWorkspaceTransaction } from '../core/db';
 import { AppError } from '../core/errors';
 import { resetUsagePeriod } from './usage';
+import { randomUUID } from 'node:crypto';
 
 export type RenewalResult =
   | { subscriptionId: string; status: 'RENEWED'; newPeriodStart: Date; newPeriodEnd: Date }
@@ -84,6 +85,57 @@ export async function advanceSubscriptionPeriod(subscriptionId: string): Promise
   });
 
   return { subscriptionId, status: 'RENEWED', newPeriodStart, newPeriodEnd };
+}
+
+/**
+ * Charge the workspace wallet for the subscription renewal price, then advance the period.
+ * Returns RENEWED on success, FAILED on insufficient balance, SKIPPED if not due.
+ * Idempotent: calling twice for the same period end date is safe (advanceSubscriptionPeriod guards).
+ */
+export async function processSubscriptionRenewal(subscriptionId: string): Promise<RenewalResult> {
+  const subRow = await query<{ id: string; workspace_id: string; status: string; price_minor: string; currency: string; auto_renew: boolean; cancel_at_period_end: boolean; current_period_end: Date }>(
+    `SELECT s.id, s.workspace_id, s.status, s.price_minor::text AS price_minor, s.currency,
+            s.auto_renew, s.cancel_at_period_end, s.current_period_end
+     FROM subscriptions s WHERE s.id=$1 FOR UPDATE`,
+    [subscriptionId],
+  );
+  const sub = subRow.rows[0];
+  if (!sub) return { subscriptionId, status: 'FAILED', error: 'Subscription not found.' };
+  if (!['ACTIVE', 'TRIALING'].includes(sub.status)) return { subscriptionId, status: 'SKIPPED', reason: `status=${sub.status}` };
+  if (new Date(sub.current_period_end) > new Date()) return { subscriptionId, status: 'SKIPPED', reason: 'period has not yet ended' };
+
+  const priceMinor = BigInt(sub.price_minor ?? '0');
+  if (priceMinor > 0n) {
+    // Debit wallet for renewal charge (idempotent by subscription+period key).
+    const chargeKey = `renewal:${subscriptionId}:${sub.current_period_end.toISOString()}`;
+    const charged = await withWorkspaceTransaction(sub.workspace_id, undefined, async client => {
+      const acct = await client.query<{ account_id: string; balance: string }>(
+        `SELECT la.id AS account_id,
+                COALESCE(SUM(CASE WHEN le.direction='CREDIT' THEN le.amount_minor ELSE -le.amount_minor END),0)::text AS balance
+         FROM wallets w JOIN ledger_accounts la ON la.wallet_id=w.id
+         LEFT JOIN ledger_entries le ON le.account_id=la.id
+         WHERE w.workspace_id=$1 AND la.account_code='MAIN' GROUP BY la.id`,
+        [sub.workspace_id],
+      );
+      const accountId = acct.rows[0]?.account_id;
+      const balance = BigInt(acct.rows[0]?.balance ?? '0');
+      if (!accountId || balance < priceMinor) return false;
+      await client.query(
+        `INSERT INTO ledger_entries(account_id,direction,amount_minor,currency,reference_type,reference_id,idempotency_key,metadata)
+         VALUES($1,'DEBIT',$2,$3,'SUBSCRIPTION_RENEWAL',$4,$5,$6)
+         ON CONFLICT(account_id,idempotency_key) DO NOTHING`,
+        [accountId, priceMinor, sub.currency, subscriptionId, chargeKey, { label: 'تمدید اشتراک' }],
+      );
+      return true;
+    });
+    if (!charged) {
+      await query(`UPDATE subscriptions SET status='PAST_DUE', updated_at=now() WHERE id=$1 AND status IN ('ACTIVE','TRIALING')`, [subscriptionId]);
+      await query(`INSERT INTO subscription_events(subscription_id,event_type,payload) VALUES($1,'PAST_DUE',$2)`, [subscriptionId, { reason: 'insufficient_balance' }]);
+      return { subscriptionId, status: 'FAILED', error: 'Insufficient wallet balance for renewal.' };
+    }
+  }
+
+  return advanceSubscriptionPeriod(subscriptionId);
 }
 
 /**

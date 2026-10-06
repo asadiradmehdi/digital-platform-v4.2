@@ -1170,3 +1170,45 @@ Security:
 ### Verification gate (2026-10-06)
 - [x] pnpm typecheck — PASS (tsc --noEmit, zero errors)
 - [x] pnpm test — PASS (1245/1245, 148 test files; 3 timing-related flakes isolated: pass individually, only fail under full-suite parallel load on low-resource device)
+
+---
+
+## Session 33 — Subscription renewal engine, stuck-order recovery, dead UI audit, subscription purchase flow (2026-10-06)
+
+### Task 1 — Subscription renewal engine (processSubscriptionRenewal)
+- [x] server/subscriptions/renewal.ts — added `processSubscriptionRenewal`: atomically debits wallet for renewal charge (idempotent by subscription+period key), marks PAST_DUE on insufficient balance, then delegates to `advanceSubscriptionPeriod`; full coverage of all edge cases
+- [x] server/subscriptions/renewal.ts — added `findSubscriptionsDueForRenewal`: queries ACTIVE/TRIALING, auto_renew=true, cancel_at_period_end=false, period_end <= now()
+- [x] server/subscriptions/service.ts — fixed `createSubscription` initial status: ACTIVE when no trialEndsAt, TRIALING only when explicit trial date provided (was always TRIALING)
+- [x] app/api/internal/queue/renewal/route.ts — new POST handler: QUEUE_CRON_SECRET Bearer auth, processes up to 50 due renewals, recovers up to 20 stuck QUEUED orders
+
+### Task 2 — Stuck order recovery (recoverStuckQueuedOrders)
+- [x] server/providers/health.ts — added `recoverStuckQueuedOrders(staleMinutes, limit)`: finds QUEUED orders with no external_order older than threshold, re-dispatches each; marks FAILED + records order_event on UNAVAILABLE error; returns per-order results
+
+### Task 3 — Automation: cron next-date fix
+- [x] server/automation/trigger.ts — `nextCronDate()` 5-field cron parser now correctly handles `*/N` steps, comma-lists, ranges, all-fields-wildcard; replaces hardcoded +1 hour in `dispatchScheduledTriggers`
+- [x] tests/automation/trigger.test.ts — updated test assertion to match new CTE structure (finds WHERE id=$1 UPDATE, not the CTE-embedded UPDATE)
+
+### Task 4 — Dead UI audit and fixes
+- [x] app/orders/[id]/OrderActions.tsx — replaced `alert()` placeholder with real `<Link>` to invoice view at `/api/v1/invoices?orderId=...`
+- [x] app/settings/billing/CancelSubscriptionButton.tsx — new client island: calls PATCH /api/v1/subscriptions/:id with action=cancel, shows error, refreshes on success; wired into billing settings
+- [x] app/settings/billing/page.tsx — queries subscription ID; renders CancelSubscriptionButton client island
+- [x] app/settings/api-keys/ApiKeyManager.tsx — new client component: create (POST /api/v1/b2b/api-keys with scope selector + env toggle, shows raw key once), delete (DELETE /api/v1/b2b/api-keys), all with error handling
+- [x] app/settings/api-keys/page.tsx — renders ApiKeyManager client component
+- [x] app/workspace/CreateWorkspaceButton.tsx — new client component: inline form, POST /api/v1/workspaces, router.refresh() on success
+- [x] app/workspace/page.tsx — replaced both no-op buttons with CreateWorkspaceButton client component
+
+### Task 5 — Subscription purchase flow (end-to-end)
+- [x] app/api/v1/plans/route.ts — new GET endpoint: lists active plans with entitlements; public (no auth required for discovery)
+- [x] app/subscriptions/new/page.tsx — new client page: fetches plans + current workspace, radio-select plan, calls POST /api/v1/subscriptions; shows success state and redirects
+- [x] app/pricing/page.tsx — updated CTAs for free/basic/pro plans from `/auth` → `/subscriptions/new` (real purchase flow)
+
+### Task 6 — Test coverage for new code
+- [x] tests/subscriptions/renewal.test.ts — added 6 new tests for `processSubscriptionRenewal`: NOT_FOUND→FAILED, non-ACTIVE→SKIPPED, future period→SKIPPED, insufficient balance→FAILED+PAST_DUE, successful charge→RENEWED, zero price skips charge (total: 20 tests)
+- [x] tests/providers/stuck-recovery.test.ts — 6 new tests: empty result, dispatches each order, checks staleMinutes/limit params, UNAVAILABLE→FAILED+event, non-UNAVAILABLE error no FAILED update, SQL shape verification
+- [x] tests/subscriptions/service.test.ts — 2 new tests: ACTIVE status when no trialEndsAt, TRIALING status when trialEndsAt provided (total: 12 tests)
+
+### Verification gate (2026-10-06)
+- [x] pnpm lint — PASS (exit 0)
+- [x] pnpm typecheck — PASS (tsc --noEmit, zero errors)
+- [x] pnpm test — PASS (1259/1259, 149 test files)
+- [x] pnpm build — PASS (exit 0, all routes compiled)

@@ -85,21 +85,36 @@ export async function dispatchWorkflowTriggers(event: TriggerEvent): Promise<str
 }
 
 export async function dispatchScheduledTriggers(): Promise<string[]> {
-  // Fetch scheduled triggers with the latest workflow version id in a single query
-  // to avoid an N+1 pattern (previously issued one SELECT per trigger row).
+  // Atomically claim due triggers with FOR UPDATE SKIP LOCKED to prevent duplicate firing
+  // when multiple workers run concurrently. next_run_at is advanced immediately on claim.
   const r = await query<{ workflow_id: string; workspace_id: string; trigger_id: string; cron_expression: string; latest_version_id: string | null }>(
-    `SELECT st.id AS trigger_id, st.workflow_id, w.workspace_id, st.cron_expression,
+    `WITH claimed AS (
+       UPDATE scheduled_triggers
+       SET next_run_at = now() + interval '10 years'
+       WHERE id IN (
+         SELECT st.id FROM scheduled_triggers st
+         WHERE st.active=true AND (st.next_run_at IS NULL OR st.next_run_at <= now())
+         ORDER BY st.next_run_at NULLS FIRST
+         LIMIT 50
+         FOR UPDATE SKIP LOCKED
+       )
+       RETURNING id, workflow_id, cron_expression
+     )
+     SELECT c.id AS trigger_id, c.workflow_id, w.workspace_id, c.cron_expression,
             (SELECT id FROM workflow_versions WHERE workflow_id=w.id ORDER BY version DESC LIMIT 1) AS latest_version_id
-     FROM scheduled_triggers st
-     JOIN workflows w ON w.id = st.workflow_id
-     WHERE st.active=true AND w.active=true
-       AND (st.next_run_at IS NULL OR st.next_run_at <= now())`,
+     FROM claimed c
+     JOIN workflows w ON w.id = c.workflow_id AND w.active = true`,
     []
   );
 
   const runIds: string[] = [];
   for (const row of r.rows) {
     const versionId = row.latest_version_id;
+    const realNextRun = nextCronDate(row.cron_expression);
+
+    // Update to the real computed next_run_at regardless of whether workflow dispatch succeeds.
+    await query(`UPDATE scheduled_triggers SET next_run_at = $2 WHERE id=$1`, [row.trigger_id, realNextRun]);
+
     if (!versionId) continue;
 
     const runId = await startWorkflowRun({
@@ -113,11 +128,6 @@ export async function dispatchScheduledTriggers(): Promise<string[]> {
       workflowVersionId: versionId,
       input: { trigger: 'schedule' },
     });
-
-    await query(
-      `UPDATE scheduled_triggers SET next_run_at = $2 WHERE id=$1`,
-      [row.trigger_id, nextCronDate(row.cron_expression)]
-    );
     runIds.push(runId);
   }
   return runIds;

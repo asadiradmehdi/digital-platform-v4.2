@@ -133,9 +133,12 @@ describe('dispatchScheduledTriggers', () => {
     expect(mockStartRun).toHaveBeenCalledWith(
       expect.objectContaining({ workspaceId: 'ws-1', workflowVersionId: 'ver-1' }),
     );
-    // Should have issued UPDATE to scheduled_triggers
+    // Should have issued the per-trigger UPDATE to set the real next_run_at.
+    // The CTE also has an UPDATE scheduled_triggers inline, so find the separate
+    // parameterised UPDATE (the one with WHERE id=$1).
     const updateCall = mockQuery.mock.calls.find((call) =>
-      (call[0] as string).includes('UPDATE scheduled_triggers'),
+      (call[0] as string).includes('UPDATE scheduled_triggers') &&
+      (call[0] as string).includes('WHERE id=$1'),
     );
     expect(updateCall).toBeDefined();
     if (updateCall) {

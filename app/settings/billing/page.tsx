@@ -7,13 +7,14 @@ import { SystemStrip } from '../../../components/ProductSurface';
 import { formatTomanFromIRR, statusLabel } from '../../../lib/format';
 import { requireCurrentUser } from '../../../server/identity/request-user';
 import { query, withWorkspaceTransaction } from '../../../server/core/db';
+import { CancelSubscriptionButton } from './CancelSubscriptionButton';
 
 export const metadata: Metadata = { title: 'پرداخت و صورتحساب', robots: { index: false, follow: false } };
 
 async function getBillingData(workspaceId: string) {
   return withWorkspaceTransaction(workspaceId, undefined, async client => {
-    const sub = await client.query<{ planName: string; priceMinor: string | null; currentPeriodEnd: string; status: string }>(
-      `SELECT p.name AS "planName", s.price_minor::text AS "priceMinor",
+    const sub = await client.query<{ id: string; planName: string; priceMinor: string | null; currentPeriodEnd: string; status: string }>(
+      `SELECT s.id, p.name AS "planName", s.price_minor::text AS "priceMinor",
               s.current_period_end AS "currentPeriodEnd", s.status
        FROM subscriptions s JOIN plans p ON p.id=s.plan_id
        WHERE s.workspace_id=$1 AND s.status IN ('ACTIVE','TRIALING')
@@ -90,7 +91,7 @@ export default async function BillingSettings() {
             )}
             <div className="hero-actions" style={{ marginTop: 16 }}>
               <Link className="button secondary" href="/pricing">مقایسه پلن‌ها</Link>
-              {sub && <button className="button danger" type="button">لغو اشتراک</button>}
+              {sub && workspaceId && <CancelSubscriptionButton subscriptionId={sub.id} workspaceId={workspaceId}/>}
             </div>
           </article>
 
