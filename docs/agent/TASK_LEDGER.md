@@ -976,3 +976,65 @@ Status: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 - [x] pnpm typecheck — PASS
 - [x] pnpm test — PASS (1009/1009, 114 test files)
 - [x] pnpm build — PASS (.next/BUILD_ID present, completed 2026-10-05 20:07)
+
+---
+
+## Session 24 — Route test coverage expansion, type fixes, security audit (2026-10-06)
+
+### Task 1 — Immediate blocker: register-route.test.ts validation mock
+- [x] Fixed "email field is missing" test: vi.mock factory threw plain object (not AppError), causing handleRouteError to return 500 instead of 400; fix uses mockRequireString.mockImplementationOnce(() => throw new AppError('VALIDATION_ERROR', ...))
+- [x] logout-route.test.ts — replaced require('next/headers').cookies pattern with proper vi.mocked(cookies) import; afterEach re-applies mockResolvedValue for resetAllMocks compatibility
+
+### Task 2 — TypeScript quality: type errors in new route tests
+- [x] tests/identity/login-route.test.ts — mockRateLimit.mockResolvedValueOnce(undefined) → (undefined as never); consumeDistributedRateLimit returns typed result, not void (6 occurrences)
+- [x] tests/identity/register-route.test.ts — same fix (5 occurrences)
+- [x] tests/ai/generate-route.test.ts — mockWithSpan mock missing trace field in SpanResult; added { traceId, spanId, traceFlags } to both withSpan mock returns
+- [x] scripts/run-lint.sh and scripts/run-typecheck.sh — added wrapper scripts for lint and typecheck from Ubuntu proot environment
+
+### Task 3 — Route test coverage: 18 new test files, 108 new tests
+
+Authentication / Identity:
+- [x] tests/identity/register-route.test.ts — 6 tests: 307 redirect, 429 rate-limit, 409 duplicate email, 400 missing email, 400 weak password, 400 invalid email format
+- [x] tests/identity/logout-route.test.ts — 3 tests: 200 with revoke, correct-token binding, graceful no-cookie path
+- [x] tests/identity/notifications-list-route.test.ts — 4 tests: 200 items, 401, 200 empty, user-id SQL binding
+- [x] tests/identity/workspaces-route.test.ts — 8 tests: GET 200/401/user-scoping; POST 201/401/400 empty name/400 missing name/409 slug conflict
+
+Commerce / Orders:
+- [x] tests/commerce/order-cancel-route.test.ts — 6 tests: 200 CANCELLED, 401, 403, 404, 409 bad-state, permission-workspaceId binding
+- [x] tests/commerce/order-detail-route.test.ts — 4 tests: 200 with events, 401, 403, 404 workspace mismatch
+- [x] tests/commerce/orders-route.test.ts — 8 tests: GET 200/401/400/403; POST 201/401/403/409 duplicate
+- [x] tests/commerce/services-route.test.ts — 6 tests: public catalog 200/empty/serviceType filter; detail 200/401/404
+
+Payments / Financial:
+- [x] tests/payments/refund-route.test.ts — 6 tests: 200 success, 401, 403, 404 no-payment, 400 invalid amount, idempotency-key binding
+- [x] tests/payments/invoices-route.test.ts — 8 tests: list 200/401/400/403/empty; detail 200/404/403
+- [x] tests/payments/transactions-route.test.ts — 6 tests: 200 items, 401, 400, 403, permission binding, empty
+- [x] tests/billing/wallet-routes.test.ts — 12 tests: GET wallet 200/401/empty; POST wallet 201/401/403/400 zero/400 bad-currency; GET balance 200/401/400/403
+
+Subscriptions:
+- [x] tests/subscriptions/cancel-route.test.ts — 6 tests: 200 CANCELLED, 401, 400 invalid action, 403, permission binding, 404
+- [x] tests/subscriptions/subscriptions-list-route.test.ts — 4 tests: 200 list, 401, 200 no memberships, 200 no active subs
+
+AI:
+- [x] tests/ai/generate-route.test.ts — 7 tests: 200 non-streaming, 401, 400 missing fields, 403, 404 model not found, 402 quota exhausted, AI cost recording binding
+
+Security:
+- [x] tests/core/webhook-route.test.ts — 7 tests: 202 accepted, 401 invalid sig, 401 unconfigured secret, 413 size limit, 400 missing event-id, 400 invalid JSON, no dispatch on duplicate
+
+### Task 4 — Security audit (all 10 controls verified SECURE)
+- [x] CSRF/Same-origin: assertSameOrigin checks origin header, fallback to referer, requires Authorization for headerless browser mutations
+- [x] Session cookie: __Host-dp_session (production), httpOnly, secure (prod), sameSite=strict, path=/, no Domain
+- [x] Password hashing: Argon2id, memoryCost=19456, timeCost=2 (memory-hard, GPU/ASIC resistant)
+- [x] Rate limiting: login 10/60s per IP, register 5/60s per IP (DB-backed, not Redis-dependent)
+- [x] IDOR on orders: workspace_id AND check in both SQL WHERE and workspaceId comparison
+- [x] SQL injection: all queries parameterized ($1/$2), no string concatenation found
+- [x] Secrets: no .env at root, no hardcoded credentials in server/, all from process.env
+- [x] Admin routes: requirePlatformAdmin on /pricing/rules, /ai/catalog/sync, /content/entities audit paths
+- [x] Checkout price: server-side only via service_prices table; quote hash prevents client tampering
+- [x] Payment idempotency: (workspace_id, idempotency_key) uniqueness; FOR UPDATE lock on markPaymentPaid
+
+### Verification gate (2026-10-06)
+- [x] pnpm lint — PASS (exit 0)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm test — PASS (1117/1117, 131 test files)
+- [x] pnpm build — PASS (exit 0)
