@@ -96,9 +96,9 @@ describe('POST /api/v1/ai/generate', () => {
     mockResolveModel.mockResolvedValueOnce('claude-haiku-4-5-20251001' as never);
     mockCheckEntitlement.mockResolvedValueOnce(undefined as never);
     mockRecordAIRequest.mockResolvedValueOnce('ai-req-1' as never);
-    mockWithSpan.mockImplementationOnce((_name, _meta, fn) => {
-      return Promise.resolve({ value: generateResult, durationMs: 350 });
-    });
+    mockWithSpan.mockImplementationOnce((_name, _meta, fn) =>
+      Promise.resolve({ value: generateResult, durationMs: 350, trace: { traceId: 'a'.repeat(32), spanId: 'b'.repeat(16), traceFlags: '01' } })
+    );
     mockCompleteAIRequest.mockResolvedValueOnce(undefined as never);
     mockGetModelPrice.mockResolvedValueOnce(null as never);
 
@@ -158,7 +158,7 @@ describe('POST /api/v1/ai/generate', () => {
     mockCheckEntitlement.mockResolvedValueOnce(undefined as never);
     mockRecordAIRequest.mockResolvedValueOnce('ai-req-2' as never);
     mockWithSpan.mockImplementationOnce((_name, _meta, fn) =>
-      Promise.resolve({ value: generateResult, durationMs: 200 })
+      Promise.resolve({ value: generateResult, durationMs: 200, trace: { traceId: 'a'.repeat(32), spanId: 'b'.repeat(16), traceFlags: '01' } })
     );
     mockCompleteAIRequest.mockResolvedValueOnce(undefined as never);
     mockGetModelPrice.mockResolvedValueOnce(price as never);

@@ -71,7 +71,7 @@ const registrationResult = { userId: 'user-new', workspaceId: 'ws-new' };
 
 describe('POST /api/v1/auth/register', () => {
   it('redirects to /dashboard on successful registration', async () => {
-    mockRateLimit.mockResolvedValueOnce(undefined);
+    mockRateLimit.mockResolvedValueOnce(undefined as never);
     mockHashPassword.mockResolvedValueOnce('hash-abc' as never);
     mockWithTx.mockResolvedValueOnce(registrationResult as never);
     mockCreateSession.mockResolvedValueOnce('session-tok' as never);
@@ -89,7 +89,7 @@ describe('POST /api/v1/auth/register', () => {
   });
 
   it('returns 409 when email already exists', async () => {
-    mockRateLimit.mockResolvedValueOnce(undefined);
+    mockRateLimit.mockResolvedValueOnce(undefined as never);
     mockHashPassword.mockResolvedValueOnce('hash-abc' as never);
     mockWithTx.mockRejectedValueOnce(new AppError('CONFLICT', 'An account with this email already exists.'));
 
@@ -98,7 +98,7 @@ describe('POST /api/v1/auth/register', () => {
   });
 
   it('returns 400 when email field is missing', async () => {
-    mockRateLimit.mockResolvedValueOnce(undefined);
+    mockRateLimit.mockResolvedValueOnce(undefined as never);
     mockRequireString.mockImplementationOnce(() => {
       throw new AppError('VALIDATION_ERROR', 'email is required');
     });
@@ -108,7 +108,7 @@ describe('POST /api/v1/auth/register', () => {
   });
 
   it('returns 400 when password does not meet strength requirements', async () => {
-    mockRateLimit.mockResolvedValueOnce(undefined);
+    mockRateLimit.mockResolvedValueOnce(undefined as never);
     mockStrongPassword.mockImplementationOnce(() => {
       throw new AppError('VALIDATION_ERROR', 'Password is too weak.');
     });
@@ -118,7 +118,7 @@ describe('POST /api/v1/auth/register', () => {
   });
 
   it('returns 400 when email format is invalid', async () => {
-    mockRateLimit.mockResolvedValueOnce(undefined);
+    mockRateLimit.mockResolvedValueOnce(undefined as never);
 
     const response = await POST(makeRequest({ email: 'not-an-email', password: 'SuperStrong!1234', name: 'Ali' }));
     expect(response.status).toBe(400);

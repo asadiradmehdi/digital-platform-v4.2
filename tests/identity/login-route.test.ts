@@ -78,7 +78,7 @@ const validUser = { id: 'user-1', credentialHash: 'hash123' };
 
 describe('POST /api/v1/auth/login', () => {
   it('returns 200 with ok:true on successful JSON login', async () => {
-    mockRateLimit.mockResolvedValueOnce(undefined);
+    mockRateLimit.mockResolvedValueOnce(undefined as never);
     mockQuery.mockResolvedValueOnce({ rows: [validUser], rowCount: 1 } as never);
     mockLocked.mockResolvedValueOnce(false);
     mockVerify.mockResolvedValueOnce(true);
@@ -93,7 +93,7 @@ describe('POST /api/v1/auth/login', () => {
   });
 
   it('returns 200 with mfaRequired when user has MFA enabled', async () => {
-    mockRateLimit.mockResolvedValueOnce(undefined);
+    mockRateLimit.mockResolvedValueOnce(undefined as never);
     mockQuery.mockResolvedValueOnce({ rows: [validUser], rowCount: 1 } as never);
     mockLocked.mockResolvedValueOnce(false);
     mockVerify.mockResolvedValueOnce(true);
@@ -109,7 +109,7 @@ describe('POST /api/v1/auth/login', () => {
   });
 
   it('returns 401 when password is incorrect', async () => {
-    mockRateLimit.mockResolvedValueOnce(undefined);
+    mockRateLimit.mockResolvedValueOnce(undefined as never);
     mockQuery.mockResolvedValueOnce({ rows: [validUser], rowCount: 1 } as never);
     mockLocked.mockResolvedValueOnce(false);
     mockVerify.mockResolvedValueOnce(false);
@@ -120,7 +120,7 @@ describe('POST /api/v1/auth/login', () => {
   });
 
   it('returns 401 when account is locked', async () => {
-    mockRateLimit.mockResolvedValueOnce(undefined);
+    mockRateLimit.mockResolvedValueOnce(undefined as never);
     mockQuery.mockResolvedValueOnce({ rows: [validUser], rowCount: 1 } as never);
     mockLocked.mockResolvedValueOnce(true);
     mockVerify.mockResolvedValueOnce(true);
@@ -130,7 +130,7 @@ describe('POST /api/v1/auth/login', () => {
   });
 
   it('returns 401 when user is not found', async () => {
-    mockRateLimit.mockResolvedValueOnce(undefined);
+    mockRateLimit.mockResolvedValueOnce(undefined as never);
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as never);
 
     const response = await POST(makeRequest({ identifier: 'unknown@example.com', password: 'ValidPassword1' }));
@@ -145,7 +145,7 @@ describe('POST /api/v1/auth/login', () => {
   });
 
   it('records login success event on successful authentication', async () => {
-    mockRateLimit.mockResolvedValueOnce(undefined);
+    mockRateLimit.mockResolvedValueOnce(undefined as never);
     mockQuery.mockResolvedValueOnce({ rows: [validUser], rowCount: 1 } as never);
     mockLocked.mockResolvedValueOnce(false);
     mockVerify.mockResolvedValueOnce(true);
