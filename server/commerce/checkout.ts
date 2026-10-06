@@ -78,9 +78,12 @@ export async function redeemCheckoutCoupon(input: { checkoutSessionId: string; w
     if (!checkout.rows[0]) throw new AppError('NOT_FOUND', 'Checkout session not found.');
     if (!checkout.rows[0].coupon_code || BigInt(checkout.rows[0].discount_minor) === 0n) return { redeemed: false };
     if (checkout.rows[0].status !== 'PAID') throw new AppError('CONFLICT', 'Coupon can only be redeemed after payment.');
-    const existing = await client.query(`SELECT id FROM coupon_redemptions WHERE coupon_code=$1 AND workspace_id=$2`, [checkout.rows[0].coupon_code,input.workspaceId]);
-    if (existing.rows[0]) return { redeemed: false, duplicate: true };
-    await client.query(`INSERT INTO coupon_redemptions(coupon_code,workspace_id,discount_minor) VALUES($1,$2,$3)`, [checkout.rows[0].coupon_code,input.workspaceId,checkout.rows[0].discount_minor]);
+    const inserted = await client.query<{id:string}>(
+      `INSERT INTO coupon_redemptions(coupon_code,workspace_id,discount_minor) VALUES($1,$2,$3)
+       ON CONFLICT (coupon_code,workspace_id) DO NOTHING RETURNING id`,
+      [checkout.rows[0].coupon_code,input.workspaceId,checkout.rows[0].discount_minor]
+    );
+    if (!inserted.rows[0]) return { redeemed: false, duplicate: true };
     await client.query(`UPDATE coupons SET redeemed_count=redeemed_count+1 WHERE code=$1`, [checkout.rows[0].coupon_code]);
     return { redeemed: true };
   });

@@ -64,4 +64,28 @@ export async function beginCheckout(input: { workspaceId: string; orderId?: stri
   return { paymentId: payment.id, checkoutUrl: checkout.checkoutUrl, gatewayReference: checkout.gatewayReference ?? null };
 }
 
+/**
+ * Verify payment status directly with the gateway.
+ * Call this as a fallback when a webhook has not arrived within the expected window,
+ * or to confirm status before fulfilling an order.
+ */
+export async function verifyPayment(input: { paymentId: string; workspaceId: string; gateway: PaymentGateway }) {
+  const r = await withWorkspaceTransaction(input.workspaceId, undefined, async client =>
+    client.query<{ id: string; status: string; gateway_reference: string | null }>(
+      `SELECT id, status, gateway_reference FROM payments WHERE id=$1 FOR UPDATE`,
+      [input.paymentId],
+    )
+  );
+  const payment = r.rows[0];
+  if (!payment) throw new AppError('NOT_FOUND', 'Payment not found.');
+  if (payment.status === 'PAID') return { verified: true, alreadyPaid: true };
+  if (!payment.gateway_reference) return { verified: false, alreadyPaid: false };
+  const result = await input.gateway.verify({ paymentId: input.paymentId, gatewayReference: payment.gateway_reference });
+  if (result.paid) {
+    await markPaymentPaid({ paymentId: input.paymentId, workspaceId: input.workspaceId, gatewayReference: payment.gateway_reference, raw: result.raw });
+    return { verified: true, alreadyPaid: false };
+  }
+  return { verified: false, alreadyPaid: false };
+}
+
 export function newPaymentIdempotencyKey() { return randomUUID(); }

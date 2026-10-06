@@ -17,8 +17,13 @@ export async function createSubscription(input: { workspaceId:string; planId:str
 
 export async function cancelSubscription(subscriptionId:string, workspaceId:string) {
   return withWorkspaceTransaction(workspaceId, undefined, async client => {
-    const result = await client.query<{id:string;status:string}>(`UPDATE subscriptions SET status='CANCELLED',cancelled_at=now(),updated_at=now() WHERE id=$1 AND workspace_id=$2 AND status NOT IN ('CANCELLED','EXPIRED') RETURNING id,status`,[subscriptionId,workspaceId]);
-    if (!result.rows[0]) throw new AppError('NOT_FOUND','Active subscription not found.');
+    // Lock the row to prevent concurrent cancellations.
+    const current = await client.query<{id:string;status:string}>(`SELECT id,status FROM subscriptions WHERE id=$1 AND workspace_id=$2 FOR UPDATE`,[subscriptionId,workspaceId]);
+    if (!current.rows[0]) throw new AppError('NOT_FOUND','Subscription not found.');
+    // Idempotent: already cancelled is a success, not an error.
+    if (current.rows[0].status === 'CANCELLED') return current.rows[0];
+    if (current.rows[0].status === 'EXPIRED') throw new AppError('CONFLICT','Cannot cancel an expired subscription.');
+    const result = await client.query<{id:string;status:string}>(`UPDATE subscriptions SET status='CANCELLED',cancelled_at=now(),updated_at=now() WHERE id=$1 RETURNING id,status`,[subscriptionId]);
     await client.query(`INSERT INTO subscription_events(subscription_id,event_type,payload) VALUES($1,'CANCELLED',$2)`,[subscriptionId,{source:'api'}]);
     return result.rows[0];
   });

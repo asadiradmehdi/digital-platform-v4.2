@@ -80,7 +80,8 @@ export async function dispatchOrder(input: DispatchInput): Promise<DispatchResul
   const candidates = await loadCandidates(input.serviceId);
   if (!candidates.length) throw new AppError('UNAVAILABLE', 'No active provider routes for this service.');
 
-  const available = candidates.filter(c => c.available && c.balanceHealthy && hasAdapter(c.providerId) || true);
+  const available = candidates.filter(c => c.available && c.balanceHealthy && hasAdapter(c.providerId));
+  if (!available.length) throw new AppError('UNAVAILABLE', 'No available providers with configured adapters for this service.');
   const ranked = [...available].sort((a, b) => scoreProvider(b) - scoreProvider(a));
 
   const maxAttempts = Math.min(input.maxFailoverAttempts ?? 3, ranked.length);

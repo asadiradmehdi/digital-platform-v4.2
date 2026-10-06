@@ -95,16 +95,31 @@ describe('createSubscription', () => {
 describe('cancelSubscription', () => {
   it('cancels an active subscription and inserts event', async () => {
     mockClientQuery
-      .mockResolvedValueOnce({ rows: [{ id: 'sub-1', status: 'CANCELLED' }], rowCount: 1 }) // update
-      .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // event
+      .mockResolvedValueOnce({ rows: [{ id: 'sub-1', status: 'ACTIVE' }], rowCount: 1 }) // SELECT FOR UPDATE
+      .mockResolvedValueOnce({ rows: [{ id: 'sub-1', status: 'CANCELLED' }], rowCount: 1 }) // UPDATE
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // event INSERT
     ;
     const result = await cancelSubscription('sub-1', 'ws-1');
     expect(result.status).toBe('CANCELLED');
-    expect(mockClientQuery).toHaveBeenCalledTimes(2);
+    expect(mockClientQuery).toHaveBeenCalledTimes(3);
   });
 
-  it('throws NOT_FOUND when subscription is already cancelled or not found', async () => {
-    mockClientQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 }); // nothing updated
+  it('is idempotent — returns success when subscription is already cancelled', async () => {
+    mockClientQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'sub-1', status: 'CANCELLED' }], rowCount: 1 }) // SELECT FOR UPDATE
+    ;
+    const result = await cancelSubscription('sub-1', 'ws-1');
+    expect(result.status).toBe('CANCELLED');
+    expect(mockClientQuery).toHaveBeenCalledTimes(1);
+  });
+
+  it('throws CONFLICT when subscription is expired', async () => {
+    mockClientQuery.mockResolvedValueOnce({ rows: [{ id: 'sub-1', status: 'EXPIRED' }], rowCount: 1 });
+    await expect(cancelSubscription('sub-expired', 'ws-1')).rejects.toMatchObject({ code: 'CONFLICT' });
+  });
+
+  it('throws NOT_FOUND when subscription does not exist', async () => {
+    mockClientQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 }); // SELECT returns nothing
     await expect(cancelSubscription('sub-ghost', 'ws-1')).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
 });
