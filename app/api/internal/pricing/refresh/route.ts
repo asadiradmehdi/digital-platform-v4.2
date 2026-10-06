@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { env } from '@/server/core/config';
-import { refreshPricing } from '@/server/pricing/service';
-import { HttpFxProvider } from '@/server/pricing/providers';
+import { env } from '../../../../../server/core/config';
+import { refreshPricing } from '../../../../../server/pricing/service';
+import { HttpFxProvider } from '../../../../../server/pricing/providers';
 
 function assertCron(request: Request) {
   const expected = env('PRICING_CRON_SECRET');
