@@ -8,6 +8,7 @@ import { AppShell } from '../../../components/AppShell';
 import { SystemStrip } from '../../../components/ProductSurface';
 import { requireCurrentUser } from '../../../server/identity/request-user';
 import { query } from '../../../server/core/db';
+import PasswordForm from './PasswordForm';
 
 export const metadata: Metadata = { title: 'امنیت', robots: { index: false, follow: false } };
 
@@ -79,13 +80,7 @@ export default async function SecuritySettings() {
         <div className="settings-layout">
           <article className="surface-panel" style={{ padding: 24 }}>
             <div className="panel-head"><div><span className="panel-kicker">PASSWORD</span><h2>تغییر رمز عبور</h2></div></div>
-            <form className="settings-form">
-              <label>رمز عبور فعلی<input name="currentPassword" type="password" autoComplete="current-password"/></label>
-              <label>رمز عبور جدید<input name="newPassword" type="password" autoComplete="new-password"/></label>
-              <label>تکرار رمز عبور جدید<input name="confirmPassword" type="password" autoComplete="new-password"/></label>
-              <p style={{ fontSize: 10, color: 'var(--muted)', margin: 0 }}>حداقل ۱۴ کاراکتر — ترکیب حروف بزرگ، کوچک، عدد و نماد.</p>
-              <div className="form-actions"><button className="button primary" type="submit">تغییر رمز عبور</button></div>
-            </form>
+            <PasswordForm />
           </article>
           <article className="surface-panel" style={{ padding: 24 }}>
             <div className="panel-head">
