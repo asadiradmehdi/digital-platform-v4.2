@@ -18,9 +18,12 @@ export async function submitQueuedOrder(input: { workspaceId: string; orderId: s
     if (!['QUEUED','PROCESSING'].includes(orderRow.status)) return { skipped: true as const, reason: orderRow.status };
     const existing = await client.query<{ external_order_id:string }>(`SELECT external_order_id FROM external_orders WHERE order_id=$1 AND provider_id=$2 LIMIT 1`,[input.orderId,input.providerId]);
     if (existing.rows[0]) return { skipped: true, externalOrderId: existing.rows[0].external_order_id };
-    const correlationId = randomUUID();
+    const freshCorrelationId = randomUUID();
     const attemptKey = `provider:${input.providerId}:order:${input.orderId}`;
-    await client.query(`INSERT INTO order_attempts(order_id,provider_id,status,correlation_id,idempotency_key) VALUES($1,$2,'PENDING',$3,$4) ON CONFLICT(order_id,idempotency_key) DO NOTHING`,[input.orderId,input.providerId,correlationId,attemptKey]);
+    await client.query(`INSERT INTO order_attempts(order_id,provider_id,status,correlation_id,idempotency_key) VALUES($1,$2,'PENDING',$3,$4) ON CONFLICT(order_id,idempotency_key) DO NOTHING`,[input.orderId,input.providerId,freshCorrelationId,attemptKey]);
+    // Resolve the canonical correlationId — may differ on retry if the INSERT was skipped by ON CONFLICT.
+    const attemptRow = await client.query<{correlation_id:string}>(`SELECT correlation_id FROM order_attempts WHERE order_id=$1 AND idempotency_key=$2`,[input.orderId,attemptKey]);
+    const correlationId = attemptRow.rows[0]?.correlation_id ?? freshCorrelationId;
     await client.query(`UPDATE orders SET status='PROCESSING',updated_at=now() WHERE id=$1`,[input.orderId]);
     // External I/O must happen outside this DB transaction in a production queue runner.
     return { skipped: false as const, correlationId, quantity: BigInt(orderRow.quantity), parameters: orderRow.parameters };
