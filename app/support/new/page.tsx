@@ -31,6 +31,8 @@ function NewTicketForm() {
   const [message, setMessage] = useState('');
   const [orderRef, setOrderRef] = useState(prefillOrder);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   if (submitted) {
     return (
@@ -57,7 +59,33 @@ function NewTicketForm() {
 
       <form
         className="support-form"
-        onSubmit={(e) => { e.preventDefault(); setSubmitted(true); }}
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setSubmitting(true);
+          setSubmitError(null);
+          try {
+            const meRes = await fetch('/api/v1/me', { credentials: 'same-origin' });
+            if (!meRes.ok) throw new Error('خطا در احراز هویت');
+            const me = await meRes.json() as { workspaces?: Array<{ id: string }> };
+            const workspaceId = me.workspaces?.[0]?.id;
+            if (!workspaceId) throw new Error('فضای کاری یافت نشد');
+            const res = await fetch('/api/v1/support/tickets', {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: { 'Content-Type': 'application/json', 'Origin': window.location.origin },
+              body: JSON.stringify({ workspaceId, subject, category, priority, message }),
+            });
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({})) as { error?: { message?: string } };
+              throw new Error(err.error?.message ?? 'خطا در ثبت تیکت');
+            }
+            setSubmitted(true);
+          } catch (err) {
+            setSubmitError(err instanceof Error ? err.message : 'خطای ناشناخته');
+          } finally {
+            setSubmitting(false);
+          }
+        }}
       >
         <fieldset style={{ border: 'none', padding: 0, margin: '0 0 20px' }}>
           <legend style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, display: 'block' }}>دسته‌بندی</legend>
@@ -139,8 +167,13 @@ function NewTicketForm() {
           </span>
         </label>
 
+        {submitError && (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', color: 'var(--danger)', fontSize: 11, padding: '8px 12px', background: 'rgba(255,113,135,.08)', borderRadius: 8 }}>
+            {submitError}
+          </div>
+        )}
         <div className="hero-actions">
-          <button className="button primary" type="submit">ثبت تیکت</button>
+          <button className="button primary" type="submit" disabled={submitting}>{submitting ? 'در حال ثبت...' : 'ثبت تیکت'}</button>
           <Link className="button secondary" href="/support">انصراف</Link>
         </div>
       </form>
