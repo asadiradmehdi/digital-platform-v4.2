@@ -1103,5 +1103,13 @@ Security:
 ### Task 1 — Workspace page connected to real data
 - [x] app/workspace/page.tsx — converted from hardcoded array to server component; auth gate + redirect /auth; queries workspace_members JOIN workspaces with member_count subquery and plan/subscription status; shows real workspace name, slug, member count, plan name, status pill; empty state when no workspaces
 
+### Task 2 — Support page connected to real tickets
+- [x] app/support/page.tsx — converted from pure marketing to server component; auth gate + redirect; queries support_tickets WHERE workspace_id; shows real table with status/priority pills; empty state with "new ticket" CTA
+
+### Task 3 — Notification preferences: migration + API + UI
+- [x] db/migrations/0024_notification_preferences.sql — new table: (user_id, channel, category, enabled) UNIQUE(user_id, channel, category)
+- [x] app/api/v1/notifications/preferences/route.ts — GET returns current prefs for user; PUT upserts all prefs with ON CONFLICT DO UPDATE
+- [x] app/settings/notifications/page.tsx — converted to client component; loads real prefs from GET on mount; saves all prefs via PUT; shows saved confirmation; defaults from hardcoded map when no DB record yet
+
 ### Verification gate (2026-10-06)
 - [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
