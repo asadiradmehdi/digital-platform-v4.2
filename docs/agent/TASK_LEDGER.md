@@ -1231,3 +1231,17 @@ Security:
 - [x] pnpm test — PASS (1259/1259, 149 test files)
 - [x] pnpm build — PASS (exit 0, all routes compiled)
 - [x] pnpm lint — PASS (exit 0)
+
+---
+
+## Session 35 — DB-backed services catalog (2026-10-06)
+
+### Task 1 — Services catalog: DB-first with static fallback
+- [x] app/services/page.tsx — converted to async server component; calls `listServices(50)` directly (no HTTP hop); passes `dbServices` prop to ServicesCatalog; on DB error (unavailable in dev) silently returns null for static fallback
+- [x] app/services/ServicesCatalog.tsx — refactored to accept `dbServices?: CatalogService[] | null`; when DB returns services, maps via slug→(icon,badge,unit) lookup table and productSlug→category map; static array remains as fallback when DB unavailable; removed hardcoded priceMinor (prices now on /orders/new via service registry)
+
+### Verification gate (2026-10-06)
+- [x] pnpm typecheck — PASS (tsc --noEmit, zero errors)
+- [x] pnpm lint — PASS (exit 0)
+- [x] pnpm build — PASS (exit 0)
+- [x] pnpm test tests/commerce/ — PASS (128/128)
