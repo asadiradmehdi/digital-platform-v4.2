@@ -1,8 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
-  ArrowRight, CheckCircle2, GitBranch, Globe, Mail,
+  AlertCircle, ArrowRight, CheckCircle2, GitBranch, Globe, Mail,
   MessageSquare, Plus, Timer, Trash2, Webhook, Zap,
 } from 'lucide-react';
 import { AppShell } from '../../../components/AppShell';
@@ -25,10 +26,13 @@ const actionTypes = [
 type Step = { id: string; type: string; label: string };
 
 export default function NewWorkflow() {
+  const router = useRouter();
   const [name, setName] = useState('');
   const [trigger, setTrigger] = useState('webhook');
   const [steps, setSteps] = useState<Step[]>([]);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const addStep = (type: string, label: string) => {
     setSteps(prev => [...prev, { id: `step-${Date.now()}`, type, label }]);
@@ -37,6 +41,42 @@ export default function NewWorkflow() {
   const removeStep = (id: string) => {
     setSteps(prev => prev.filter(s => s.id !== id));
   };
+
+  const handleSave = useCallback(async () => {
+    if (!name.trim()) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      // Get workspace ID
+      const meRes = await fetch('/api/v1/me', { credentials: 'same-origin' });
+      if (!meRes.ok) throw new Error('خطا در احراز هویت');
+      const me = await meRes.json() as { workspaces?: Array<{ id: string }> };
+      const workspaceId = me.workspaces?.[0]?.id;
+      if (!workspaceId) throw new Error('فضای کاری یافت نشد');
+
+      const definition = {
+        trigger: { type: trigger },
+        steps: steps.map(s => ({ id: s.id, type: s.type })),
+      };
+
+      const res = await fetch('/api/v1/automation/workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Origin': window.location.origin },
+        credentials: 'same-origin',
+        body: JSON.stringify({ workspaceId, name: name.trim(), definition }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({})) as { error?: { message?: string } };
+        throw new Error(err.error?.message ?? 'ذخیره workflow با خطا مواجه شد');
+      }
+      setSubmitted(true);
+      setTimeout(() => router.push('/automation'), 2000);
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : 'خطای ناشناخته');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [name, trigger, steps, router]);
 
   if (submitted) {
     return (
@@ -194,14 +234,19 @@ export default function NewWorkflow() {
             </article>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {submitError && (
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', color: 'var(--danger)', fontSize: 11, padding: '8px 12px', background: 'rgba(255,113,135,.08)', borderRadius: 8 }}>
+                  <AlertCircle size={14}/>{submitError}
+                </div>
+              )}
               <button
                 type="button"
                 className="button primary"
                 style={{ width: '100%', justifyContent: 'center' }}
-                onClick={() => setSubmitted(true)}
-                disabled={!name.trim()}
+                onClick={handleSave}
+                disabled={!name.trim() || submitting}
               >
-                ذخیره Workflow
+                {submitting ? 'در حال ذخیره...' : 'ذخیره Workflow'}
               </button>
               <Link href="/automation" className="button secondary" style={{ width: '100%', justifyContent: 'center', textAlign: 'center' }}>
                 انصراف

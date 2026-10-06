@@ -1090,4 +1090,4 @@ Security:
 ### Verification gate (2026-10-06)
 - [x] pnpm typecheck — PASS (tsc --noEmit)
 - [x] pnpm test — PASS (1245/1245, 148 test files)
-- [ ] pnpm build — IN PROGRESS
+- [x] pnpm build — PASS (exit 0, zero errors, all pages compiled)
