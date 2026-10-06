@@ -3,12 +3,13 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createHash } from 'node:crypto';
-import { ArrowRight, CheckCircle2, Laptop2, LogOut, ShieldCheck, Smartphone } from 'lucide-react';
+import { ArrowRight, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { AppShell } from '../../../components/AppShell';
 import { SystemStrip } from '../../../components/ProductSurface';
 import { requireCurrentUser } from '../../../server/identity/request-user';
 import { query } from '../../../server/core/db';
 import PasswordForm from './PasswordForm';
+import SessionManager from './SessionManager';
 
 export const metadata: Metadata = { title: 'امنیت', robots: { index: false, follow: false } };
 
@@ -50,25 +51,6 @@ export default async function SecuritySettings() {
   const sessions = sessionsResult.rows;
   const hasMfa = mfaResult.rows.some(m => m.enabled);
 
-  function sessionLabel(s: typeof sessions[0]) {
-    if (s.deviceName) return s.deviceName;
-    const ua = s.lastUserAgent ?? '';
-    if (/iPhone|iPad/.test(ua)) return `Safari — iOS`;
-    if (/Android/.test(ua)) return `Chrome — Android`;
-    if (/Chrome/.test(ua)) return `Chrome — Desktop`;
-    if (/Firefox/.test(ua)) return `Firefox — Desktop`;
-    if (/Safari/.test(ua)) return `Safari — Desktop`;
-    if (s.clientType === 'IOS') return 'iOS App';
-    if (s.clientType === 'ANDROID') return 'Android App';
-    return 'مرورگر وب';
-  }
-
-  function sessionIcon(s: typeof sessions[0]) {
-    const ua = s.lastUserAgent ?? '';
-    if (/iPhone|iPad|Android/.test(ua) || s.clientType === 'IOS' || s.clientType === 'ANDROID') return Smartphone;
-    return Laptop2;
-  }
-
   return (
     <AppShell>
       <main className="workspace-page-content">
@@ -99,38 +81,25 @@ export default async function SecuritySettings() {
           </article>
           <article className="surface-panel" style={{ padding: 24 }}>
             <div className="panel-head"><div><span className="panel-kicker">SESSIONS</span><h2>نشست‌های فعال</h2></div></div>
-            <div style={{ display: 'grid', gap: 10, marginTop: 6 }}>
-              {sessions.length === 0 ? (
-                <p style={{ fontSize: 12, color: 'var(--muted)' }}>نشست فعالی یافت نشد.</p>
-              ) : (
-                sessions.map(s => {
-                  const isCurrent = s.tokenHash === currentTokenHash;
-                  const Icon = sessionIcon(s);
-                  const label = sessionLabel(s);
-                  const lastSeen = s.lastSeenAt
-                    ? new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(s.lastSeenAt))
-                    : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(new Date(s.createdAt));
-                  return (
-                    <div key={s.id} className="session-row">
-                      <span className="session-icon"><Icon size={17}/></span>
-                      <div style={{ flex: 1 }}>
-                        <b style={{ fontSize: 12 }}>{label}</b>
-                        <small style={{ display: 'block', color: 'var(--muted)', fontSize: 10, marginTop: 2 }}>
-                          آخرین فعالیت: {lastSeen}
-                        </small>
-                      </div>
-                      {isCurrent
-                        ? <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--success)' }}><CheckCircle2 size={13}/>این دستگاه</span>
-                        : <button className="button secondary" style={{ padding: '0 12px', height: 32, fontSize: 10 }} type="button"><LogOut size={12}/>خروج</button>
-                      }
-                    </div>
-                  );
-                })
-              )}
-            </div>
-            {sessions.length > 1 && (
-              <button className="button danger" style={{ marginTop: 16, width: '100%' }} type="button">خروج از همه دستگاه‌ها به جز این</button>
-            )}
+            <SessionManager sessions={sessions.map(s => {
+              const isCurrent = s.tokenHash === currentTokenHash;
+              const ua = s.lastUserAgent ?? '';
+              let label = s.deviceName ?? '';
+              if (!label) {
+                if (/iPhone|iPad/.test(ua)) label = 'Safari — iOS';
+                else if (/Android/.test(ua)) label = 'Chrome — Android';
+                else if (/Chrome/.test(ua)) label = 'Chrome — Desktop';
+                else if (/Firefox/.test(ua)) label = 'Firefox — Desktop';
+                else if (/Safari/.test(ua)) label = 'Safari — Desktop';
+                else if (s.clientType === 'IOS') label = 'iOS App';
+                else if (s.clientType === 'ANDROID') label = 'Android App';
+                else label = 'مرورگر وب';
+              }
+              const lastSeen = s.lastSeenAt
+                ? new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(s.lastSeenAt))
+                : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(new Date(s.createdAt));
+              return { ...s, isCurrent, label, lastSeen };
+            })} />
           </article>
           <article className="surface-panel" style={{ padding: 24 }}>
             <div className="panel-head"><div><span className="panel-kicker">PASSKEY</span><h2>Passkey و دستگاه‌های مورد اعتماد</h2></div></div>

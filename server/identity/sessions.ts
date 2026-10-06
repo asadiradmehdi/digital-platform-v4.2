@@ -22,6 +22,12 @@ export async function createSession(userId: string, ttlSeconds = DEFAULT_SESSION
   return raw;
 }
 export async function revokeSession(rawToken: string) { await query(`UPDATE sessions SET revoked_at=now() WHERE token_hash=$1`, [hash(rawToken)]); }
+export async function revokeSessionById(sessionId: string, userId: string) {
+  await query(`UPDATE sessions SET revoked_at=now() WHERE id=$1 AND user_id=$2 AND revoked_at IS NULL`, [sessionId, userId]);
+}
+export async function revokeAllOtherSessions(userId: string, currentTokenHash: string) {
+  await query(`UPDATE sessions SET revoked_at=now() WHERE user_id=$1 AND token_hash<>$2 AND revoked_at IS NULL`, [userId, currentTokenHash]);
+}
 export async function resolveSession(rawToken: string) {
   const result = await query<{ user_id: string }>(`SELECT user_id FROM sessions WHERE token_hash=$1 AND revoked_at IS NULL AND expires_at>now()`, [hash(rawToken)]);
   return result.rows[0]?.user_id ?? null;

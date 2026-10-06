@@ -1,16 +1,15 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowDownLeft, ArrowUpLeft, CreditCard, Plus, ShieldCheck, TrendingUp, WalletCards } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpLeft, Plus, ShieldCheck, TrendingUp, WalletCards } from 'lucide-react';
 import { AppShell } from '../../components/AppShell';
 import { SystemStrip } from '../../components/ProductSurface';
 import { formatTomanFromIRR } from '../../lib/format';
 import { requireCurrentUser } from '../../server/identity/request-user';
 import { query, withWorkspaceTransaction } from '../../server/core/db';
+import WalletTopup from './WalletTopup';
 
 export const metadata: Metadata = { title: 'کیف پول', robots: { index: false, follow: false } };
-
-const topupAmounts = [50_000_000, 100_000_000, 200_000_000, 500_000_000];
 
 const referenceTypeLabel: Record<string, string> = {
   DEPOSIT: 'افزایش موجودی',
@@ -180,22 +179,7 @@ export default async function Wallet() {
                   <h2>افزایش موجودی</h2>
                 </div>
               </div>
-              <div style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
-                {topupAmounts.map(a => (
-                  <button
-                    key={a}
-                    type="button"
-                    className="button secondary"
-                    style={{ justifyContent: 'space-between', width: '100%' }}
-                  >
-                    <span>{formatTomanFromIRR(a)}</span>
-                    <CreditCard size={14} />
-                  </button>
-                ))}
-              </div>
-              <p style={{ fontSize: 10, color: 'var(--muted)', lineHeight: 1.9 }}>
-                پرداخت از طریق درگاه بانکی امن. موجودی بلافاصله پس از تأیید بانک به کیف پول اضافه می‌شود.
-              </p>
+              <WalletTopup />
             </article>
 
             <article className="surface-panel">

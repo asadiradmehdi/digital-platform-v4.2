@@ -100,7 +100,10 @@
       "Bash(chmod +x /data/data/com.termux/files/home/digital-platform-v4.2/scripts/run-single-test.sh)",
       "Bash(chmod +x /data/data/com.termux/files/home/digital-platform-v4.2/scripts/run-lint.sh /data/data/com.termux/files/home/digital-platform-v4.2/scripts/run-typecheck.sh)",
       "Bash(wait)",
-      "Bash(find *)"
+      "Bash(find *)",
+      "Bash(npm run *)",
+      "Bash(mount)",
+      "Bash(sh node_modules/.bin/vitest run --reporter=dot)"
     ]
   }
 }
