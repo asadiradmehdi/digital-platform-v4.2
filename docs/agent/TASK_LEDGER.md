@@ -1038,3 +1038,56 @@ Security:
 - [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
 - [x] pnpm test — PASS (1117/1117, 131 test files)
 - [x] pnpm build — PASS (exit 0)
+
+---
+
+## Session 28 — UI connectivity, order-worker idempotency fix (2026-10-06)
+
+### Task 1 — Order worker correlationId orphan bug fix
+- [x] server/queue/order-worker.ts — fixed ON CONFLICT DO NOTHING retry path: inserted correlationId was fresh UUID not matching DB row; fix: SELECT canonical correlationId after upsert
+
+### Task 2 — Auth redirect fix
+- [x] app/orders/page.tsx, app/wallet/page.tsx, app/analytics/page.tsx, app/subscriptions/page.tsx, app/dashboard/page.tsx — fixed redirect('/login') → redirect('/auth') (6 files)
+
+### Task 3 — UI connectivity (removed all fixture data)
+- [x] app/orders/page.tsx — connected to real listOrders() server-side function
+- [x] app/orders/[id]/page.tsx — connected to real order detail + order_events + external_orders queries
+- [x] app/wallet/page.tsx — connected to real ledger_entries for balance + transaction list
+- [x] app/subscriptions/page.tsx — connected to real subscriptions + plan_entitlements
+- [x] app/analytics/page.tsx — connected to real orders/subscriptions/workspace_members queries
+- [x] app/dashboard/page.tsx — connected to real wallet balance, active orders, subscription, recent events
+
+### Task 4 — Order form real API submission
+- [x] app/orders/new/page.tsx — handleSubmit now performs real API calls: workspace lookup → slug-to-UUID service resolution → POST /api/v1/orders
+- [x] server/commerce/catalog.ts — added getServiceBySlug() function
+- [x] app/api/v1/services/route.ts — added ?slug= query parameter for slug-based service lookup
+
+### Task 5 — Outbox processor
+- [x] app/api/internal/queue/outbox/route.ts — created POST handler that claims outbox_events, dispatches order.paid events via dispatchOrder(), marks events published/failed
+
+### Verification gate (2026-10-06)
+- [x] pnpm typecheck — PASS (tsc --noEmit)
+- [x] pnpm test — PASS (1245/1245, 148 test files)
+- [x] pnpm build — PASS (production build clean, all pages compiled)
+
+---
+
+## Session 29 — Payment→ledger bridge, settings pages real data (2026-10-06)
+
+### Task 1 — Payment→ledger bridge
+- [x] server/payments/service.ts (markPaymentPaid) — now writes ledger_entries in-transaction: CREDIT for top-up payments (no order_id), DEBIT SERVICE_CHARGE for order payments; idempotent via ON CONFLICT(account_id,idempotency_key) DO NOTHING; graceful skip when no wallet MAIN account
+- [x] Fixed test mocks in tests/payments/audit-trail.test.ts and tests/payments/double-charge.test.ts to include amount_minor/currency and new query calls
+
+### Task 2 — Settings pages real data
+- [x] app/settings/profile/page.tsx — connected to real users table (display_name, email, phone); auth gate + redirect
+- [x] app/settings/billing/page.tsx — connected to real subscriptions + wallet balance + invoices; auth gate + redirect
+- [x] app/settings/api-keys/page.tsx — connected to real api_keys table; empty state when no keys; auth gate + redirect
+- [x] app/settings/security/page.tsx — connected to real sessions table (active non-revoked) + mfa_methods; identifies current session by hashing session cookie; auth gate + redirect
+
+### Task 3 — AppShell real user/workspace data
+- [x] components/AppShell.tsx — fetches /api/v1/me on mount to populate header account chip (name + initial) and sidebar workspace name with real data
+
+### Verification gate (2026-10-06)
+- [x] pnpm typecheck — PASS (tsc --noEmit)
+- [x] pnpm test — PASS (1245/1245, 148 test files)
+- [ ] pnpm build — IN PROGRESS
