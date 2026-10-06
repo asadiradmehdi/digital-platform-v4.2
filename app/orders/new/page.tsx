@@ -1,8 +1,7 @@
 'use client';
-import { Suspense, useCallback } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useState } from 'react';
 import { ArrowRight, ChevronLeft, Info, ShoppingBag, Zap, AlertCircle } from 'lucide-react';
 import { AppShell } from '../../../components/AppShell';
 
@@ -100,6 +99,20 @@ function OrderNewForm() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/v1/wallet', { credentials: 'same-origin' })
+      .then(r => r.ok ? r.json() : null)
+      .then((data: { items?: Array<{ balanceMinor: string; currency: string }> } | null) => {
+        const item = data?.items?.[0];
+        if (item) {
+          const toman = Math.round(Number(item.balanceMinor) / 10);
+          setWalletBalance(new Intl.NumberFormat('fa-IR').format(toman) + ' تومان');
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   if (!service) {
     return (
@@ -277,7 +290,7 @@ function OrderNewForm() {
             <div style={{ display: 'grid', gap: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--muted)', padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
                 <span>موجودی کیف پول</span>
-                <span style={{ color: 'var(--success)' }}>۱٬۲۵۰٬۰۰۰ تومان</span>
+                <span style={{ color: 'var(--success)' }}>{walletBalance ?? '...'}</span>
               </div>
               {submitError && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 12px', background: 'rgba(255,113,135,.08)', border: '1px solid rgba(255,113,135,.2)', borderRadius: 10, fontSize: 11, color: 'var(--danger)' }}>

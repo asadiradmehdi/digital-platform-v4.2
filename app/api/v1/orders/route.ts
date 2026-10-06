@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createOrder, listOrders } from '../../../../server/commerce/orders';
+import { payOrderFromWallet } from '../../../../server/payments/service';
 import { correlationId, handleRouteError, json } from '../../../../server/core/http';
 import { requireUuid, safePositiveInteger } from '../../../../server/core/validation';
 import { requireRequestUser } from '../../../../server/identity/request-user';
@@ -30,11 +31,14 @@ export async function POST(request: NextRequest) {
     await requireWorkspacePermission(userId,workspaceId,'orders.create');
     const key=request.headers.get('idempotency-key') ?? '';
     const parentTrace = parseTraceparent(request.headers.get('traceparent'));
-    const { value: result } = await withSpan(
+    const { value: order } = await withSpan(
       'order.create',
       { correlationId: id, workspaceId, trace: parentTrace },
       async () => createOrder({ workspaceId, serviceId:requireUuid(body.serviceId,'serviceId'), quantity:BigInt(safePositiveInteger(body.quantity,'quantity')), parameters:(body.parameters && typeof body.parameters==='object'?body.parameters:{}) as Record<string,unknown>, idempotencyKey:key }),
     );
-    return json(result,{status:201,correlationId:id});
+    // Immediately fund the order from wallet balance (prepaid wallet model).
+    const paymentKey = `pay:${key}`;
+    const payment = await payOrderFromWallet({ workspaceId, orderId: order.id, idempotencyKey: paymentKey });
+    return json({ ...order, payment }, { status: 201, correlationId: id });
   } catch(error){ return handleRouteError(error,id); }
 }

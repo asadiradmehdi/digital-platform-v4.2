@@ -27,12 +27,16 @@ vi.mock('../../server/commerce/orders', () => ({
   listOrders: vi.fn(),
   createOrder: vi.fn(),
 }));
+vi.mock('../../server/payments/service', () => ({
+  payOrderFromWallet: vi.fn(),
+}));
 
 import { requireRequestUser } from '../../server/identity/request-user';
 import { requireWorkspacePermission } from '../../server/identity/rbac';
 import { requireUuid, safePositiveInteger } from '../../server/core/validation';
 import { withSpan } from '../../server/observability/tracing';
 import { listOrders, createOrder } from '../../server/commerce/orders';
+import { payOrderFromWallet } from '../../server/payments/service';
 import { AppError } from '../../server/core/errors';
 
 const mockRequireUser = vi.mocked(requireRequestUser);
@@ -42,6 +46,7 @@ const mockSafeInt = vi.mocked(safePositiveInteger);
 const mockWithSpan = vi.mocked(withSpan);
 const mockListOrders = vi.mocked(listOrders);
 const mockCreateOrder = vi.mocked(createOrder);
+const mockPayFromWallet = vi.mocked(payOrderFromWallet);
 
 beforeEach(() => vi.resetAllMocks());
 
@@ -128,6 +133,7 @@ describe('POST /api/v1/orders', () => {
     mockWithSpan.mockImplementationOnce((_name, _meta, fn) =>
       Promise.resolve({ value: sampleOrder, durationMs: 50, trace: { traceId: 'a'.repeat(32), spanId: 'b'.repeat(16), traceFlags: '01' } })
     );
+    mockPayFromWallet.mockResolvedValueOnce({ id: 'pay-1', status: 'PAID' } as never);
 
     const response = await POST(makePostRequest({
       workspaceId: 'ws-1', serviceId: 'svc-1', quantity: 1000, parameters: {},

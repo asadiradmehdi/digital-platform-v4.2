@@ -83,6 +83,81 @@ export async function markPaymentPaid(input: { paymentId: string; workspaceId: s
   });
 }
 
+/**
+ * Fund an order directly from the workspace wallet balance.
+ * Idempotent: if a PAID payment with the same idempotency key exists, returns it unchanged.
+ * Throws PAYMENT_REQUIRED (402) when balance is insufficient.
+ */
+export async function payOrderFromWallet(input: {
+  workspaceId: string;
+  orderId: string;
+  idempotencyKey: string;
+}) {
+  requireIdempotencyKey(input.idempotencyKey);
+  return withWorkspaceTransaction(input.workspaceId, undefined, async client => {
+    // Idempotency guard.
+    const existing = await client.query<{ id: string; status: string }>(
+      `SELECT id,status FROM payments WHERE workspace_id=$1 AND idempotency_key=$2`,
+      [input.workspaceId, input.idempotencyKey],
+    );
+    if (existing.rows[0]) return existing.rows[0];
+
+    // Lock order and validate it is payable.
+    const order = await client.query<{ id: string; status: string; total_minor: string; currency: string }>(
+      `SELECT id,status,total_minor::text AS total_minor,currency FROM orders WHERE id=$1 AND workspace_id=$2 FOR UPDATE`,
+      [input.orderId, input.workspaceId],
+    );
+    if (!order.rows[0]) throw new AppError('NOT_FOUND', 'Order not found.');
+    if (order.rows[0].status !== 'PAYMENT_PENDING') return { id: null, status: order.rows[0].status };
+    const amountMinor = BigInt(order.rows[0].total_minor);
+    const currency = order.rows[0].currency;
+
+    // Check wallet balance.
+    const acct = await client.query<{ account_id: string; balance: string }>(
+      `SELECT la.id AS account_id,
+              COALESCE(SUM(CASE WHEN le.direction='CREDIT' THEN le.amount_minor ELSE -le.amount_minor END),0)::text AS balance
+       FROM wallets w
+       JOIN ledger_accounts la ON la.wallet_id=w.id
+       LEFT JOIN ledger_entries le ON le.account_id=la.id
+       WHERE w.workspace_id=$1 AND la.account_code='MAIN'
+       GROUP BY la.id`,
+      [input.workspaceId],
+    );
+    const accountId = acct.rows[0]?.account_id;
+    const balance = BigInt(acct.rows[0]?.balance ?? '0');
+    if (!accountId) throw new AppError('CONFLICT', 'Wallet not found for this workspace.');
+    if (balance < amountMinor) throw new AppError('PAYMENT_REQUIRED', 'موجودی کافی نیست. لطفاً کیف پول خود را شارژ کنید.');
+
+    // Debit wallet.
+    await client.query(
+      `INSERT INTO ledger_entries(account_id,direction,amount_minor,currency,reference_type,reference_id,idempotency_key,metadata)
+       VALUES($1,'DEBIT',$2,$3,'SERVICE_CHARGE',$4,$5,$6)
+       ON CONFLICT(account_id,idempotency_key) DO NOTHING`,
+      [accountId, amountMinor, currency, input.orderId, `charge:${input.idempotencyKey}`, { label: 'هزینه سرویس' }],
+    );
+
+    // Create PAID payment record.
+    const payment = await client.query<{ id: string; status: string }>(
+      `INSERT INTO payments(workspace_id,order_id,amount_minor,currency,status,gateway,idempotency_key,gateway_reference)
+       VALUES($1,$2,$3,$4,'PAID','wallet',$5,'wallet') RETURNING id,status`,
+      [input.workspaceId, input.orderId, amountMinor, currency, input.idempotencyKey],
+    );
+    const paymentId = payment.rows[0].id;
+    await client.query(`INSERT INTO payment_attempts(payment_id,status,gateway_reference) VALUES($1,'PAID','wallet')`, [paymentId]);
+
+    // Transition order PAYMENT_PENDING → PAID.
+    await client.query(`UPDATE orders SET status='PAID',updated_at=now() WHERE id=$1 AND status='PAYMENT_PENDING'`, [input.orderId]);
+    await client.query(`INSERT INTO order_events(order_id,from_status,to_status,metadata) VALUES($1,'PAYMENT_PENDING','PAID',$2)`, [input.orderId, { source: 'wallet' }]);
+    await client.query(
+      `INSERT INTO outbox_events(aggregate_type,aggregate_id,event_type,payload) VALUES('order',$1,'order.paid',$2)`,
+      [input.orderId, { orderId: input.orderId, paymentId, workspaceId: input.workspaceId }],
+    );
+
+    await writeAudit({ workspaceId: input.workspaceId, action: 'payment.paid', entityType: 'payment', entityId: paymentId, metadata: { gateway: 'wallet', orderId: input.orderId } });
+    return payment.rows[0];
+  });
+}
+
 export async function beginCheckout(input: { workspaceId: string; orderId?: string; amountMinor: bigint; currency: string; gateway: PaymentGateway; callbackUrl: string; idempotencyKey: string }) {
   const payment = await createPayment({ workspaceId: input.workspaceId, orderId: input.orderId, amountMinor: input.amountMinor, currency: input.currency, gateway: input.gateway.name, idempotencyKey: input.idempotencyKey });
   // Guard: if this payment was already completed, do not invoke the gateway a second time.

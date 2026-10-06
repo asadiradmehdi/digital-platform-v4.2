@@ -1,7 +1,7 @@
 import { AppError } from '../core/errors';
 
 export type ProviderCandidate = {
-  providerId:string; successRate:number; refundRate:number; latencyMs:number; qualityScore:number;
+  providerId:string; providerType:string; successRate:number; refundRate:number; latencyMs:number; qualityScore:number;
   costMinor:number; balanceHealthy:boolean; available:boolean;
 };
 export type RoutingWeights = { quality:number; reliability:number; latency:number; cost:number; refund:number };

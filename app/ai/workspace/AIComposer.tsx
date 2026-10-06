@@ -29,18 +29,30 @@ export default function AIComposer() {
     setMessages(newMessages);
     setLoading(true);
     try {
+      // Resolve workspace for AI entitlement check.
+      const wsRes = await fetch('/api/v1/workspaces', { credentials: 'same-origin' });
+      if (!wsRes.ok) throw new Error('لطفاً ابتدا وارد حساب کاربری شوید.');
+      const wsData = await wsRes.json() as { items: Array<{ id: string }> };
+      const workspaceId = wsData.items[0]?.id;
+      if (!workspaceId) throw new Error('فضای کاری یافت نشد.');
+
       const res = await fetch('/api/v1/ai/generate', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', 'Origin': window.location.origin },
-        body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', prompt: text, stream: false }),
+        body: JSON.stringify({
+          workspaceId,
+          model: 'claude-haiku-4-5-20251001',
+          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+          stream: false,
+        }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({})) as { error?: { message?: string; code?: string } };
         throw new Error(err.error?.message ?? `خطا ${res.status}`);
       }
-      const data = await res.json() as { response?: { content?: string } };
-      const reply = data.response?.content ?? '—';
+      const data = await res.json() as { text?: string };
+      const reply = data.text ?? '—';
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'خطای ناشناخته');

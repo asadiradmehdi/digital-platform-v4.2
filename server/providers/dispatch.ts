@@ -55,6 +55,7 @@ async function loadCandidates(serviceId: string): Promise<ProviderCandidate[]> {
 
   return r.rows.map(row => ({
     providerId: row.provider_id,
+    providerType: row.provider_type,
     successRate: parseFloat(row.success_rate ?? '0.9'),
     refundRate: parseFloat(row.refund_rate ?? '0.05'),
     latencyMs: parseInt(row.latency_ms ?? '500', 10),
@@ -80,7 +81,7 @@ export async function dispatchOrder(input: DispatchInput): Promise<DispatchResul
   const candidates = await loadCandidates(input.serviceId);
   if (!candidates.length) throw new AppError('UNAVAILABLE', 'No active provider routes for this service.');
 
-  const available = candidates.filter(c => c.available && c.balanceHealthy && hasAdapter(c.providerId));
+  const available = candidates.filter(c => c.available && c.balanceHealthy && hasAdapter(c.providerType));
   if (!available.length) throw new AppError('UNAVAILABLE', 'No available providers with configured adapters for this service.');
   const ranked = [...available].sort((a, b) => scoreProvider(b) - scoreProvider(a));
 

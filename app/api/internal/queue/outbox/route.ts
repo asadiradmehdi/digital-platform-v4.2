@@ -1,6 +1,7 @@
 import { env } from '../../../../../server/core/config';
 import { claimOutboxBatch, markOutboxPublished, markOutboxFailed } from '../../../../../server/queue/outbox-dispatch';
 import { dispatchOrder } from '../../../../../server/providers/dispatch';
+import { transitionOrder } from '../../../../../server/commerce/orders';
 import { query } from '../../../../../server/core/db';
 
 function assertCron(request: Request) {
@@ -35,6 +36,11 @@ async function handleOrderPaid(event: OutboxRow) {
   if (!row) return;
   // Only dispatch if order is in a dispatchable state.
   if (!['PAID', 'QUEUED'].includes(row.status)) return;
+
+  // Transition PAID → QUEUED so the order worker can process it.
+  if (row.status === 'PAID') {
+    await transitionOrder(orderId, workspaceId, 'QUEUED');
+  }
 
   await dispatchOrder({ workspaceId, orderId, serviceId: row.service_id });
 }

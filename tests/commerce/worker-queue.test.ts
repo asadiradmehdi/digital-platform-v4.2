@@ -89,7 +89,7 @@ describe('providerRetryDecision', () => {
 
 describe('providerRouting', () => {
   const baseCandidate = {
-    providerId: 'p1', successRate: 0.95, refundRate: 0.01, latencyMs: 200,
+    providerId: 'p1', providerType: 'mock', successRate: 0.95, refundRate: 0.01, latencyMs: 200,
     qualityScore: 0.9, costMinor: 1000, balanceHealthy: true, available: true,
   };
 

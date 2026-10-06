@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
-import { Activity, Bell, CheckCircle2, ChevronDown, CircleHelp, Home, LayoutGrid, LogOut, Menu, Package, Settings2, Sparkles, WalletCards, Workflow, X, Zap } from 'lucide-react';
+import { Activity, Bell, ChevronDown, CircleHelp, Home, LayoutGrid, LogOut, Menu, Package, Settings2, Sparkles, WalletCards, Workflow, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 const primaryNav = [
@@ -62,11 +62,6 @@ function SidebarContent({ pathname, workspaceLabel, onClose }: { pathname: strin
   );
 }
 
-const sampleNotifications = [
-  { id: 'n1', icon: CheckCircle2, color: 'var(--success)', text: 'سفارش #DP-10482 تکمیل شد', time: '۲ دقیقه پیش', read: false },
-  { id: 'n2', icon: Zap, color: 'var(--accent)', text: 'مصرف AI به ۶۸٪ رسید', time: '۲ ساعت پیش', read: false },
-  { id: 'n3', icon: CheckCircle2, color: 'var(--subtle)', text: 'اشتراک Pro تمدید شد', time: 'دیروز', read: true },
-];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -155,12 +150,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                     <span>اعلان‌ها</span>
                     <button type="button" onClick={() => setNotifOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--subtle)', padding: 0 }}><X size={15}/></button>
                   </div>
-                  {sampleNotifications.map(({ id, icon: Icon, color, text, time, read }) => (
-                    <div key={id} className={`notif-item${read ? ' read' : ''}`}>
-                      <span style={{ color, flexShrink: 0 }}><Icon size={15}/></span>
-                      <span className="notif-body"><b>{text}</b><small>{time}</small></span>
-                    </div>
-                  ))}
+                  <div className="notif-item read" style={{ justifyContent: 'center', color: 'var(--muted)', fontSize: 11 }}>
+                    اعلان جدیدی وجود ندارد
+                  </div>
                   <Link href="/dashboard" className="notif-footer" onClick={() => setNotifOpen(false)}>
                     مشاهده همه
                   </Link>

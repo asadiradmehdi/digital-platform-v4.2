@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowRight, CheckCircle2, Circle, Clock, Download, Package, RefreshCw, ShoppingBag } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Circle, Clock, Package, ShoppingBag } from 'lucide-react';
+import { OrderActions } from './OrderActions';
 import { AppShell } from '../../../components/AppShell';
 import { formatTomanFromIRR, statusLabel } from '../../../lib/format';
 import { requireCurrentUser } from '../../../server/identity/request-user';
@@ -125,18 +126,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             </div>
             <p>{item?.serviceName ?? '—'} · {item?.quantity ?? '—'} واحد</p>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {order.status === 'COMPLETED' && (
-              <button className="button secondary" type="button" style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-                <Download size={14}/>دریافت فاکتور
-              </button>
-            )}
-            {(order.status === 'PROCESSING' || order.status === 'QUEUED') && (
-              <button className="button secondary" type="button" style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-                <RefreshCw size={14}/>بروزرسانی وضعیت
-              </button>
-            )}
-          </div>
+          <OrderActions status={order.status} />
         </header>
 
         <div className="order-detail-grid">
