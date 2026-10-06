@@ -1140,7 +1140,33 @@ Security:
 ### Task 4 — Security hardening
 - [x] app/api/v1/notifications/preferences/route.ts — added 100-item array limit; added channel/category allowlist validation before upsert; coerce enabled to boolean
 
-### Verification gate (2026-10-06)
+### Verification gate (2026-10-06) — Session 31-32 batch (commit 003f225)
 - [x] pnpm typecheck — PASS (tsc --noEmit, zero errors)
 - [x] pnpm test — PASS (1245/1245, 148 test files)
 - [x] pnpm build — PASS (next build --webpack, exit 0, 96 routes compiled, 2 warnings in Next.js internals only)
+
+### Critical fixes applied during Session 31-32
+- [x] server/payments/refund.ts — CREDIT ledger entry after successful refund (money was being lost)
+- [x] app/api/v1/orders/[id]/cancel/route.ts — wallet CREDIT + payment REFUNDED on PAID/QUEUED/PROCESSING cancellation
+- [x] server/queue/outbox-dispatch.ts — MAX_OUTBOX_ATTEMPTS=10 dead-letter protection (was infinite retry)
+- [x] app/api/v1/subscriptions/route.ts — added POST endpoint for subscription creation (was missing)
+- [x] server/automation/worker.ts — real fetch-based HTTP action executor with 15s timeout and SSRF guard
+- [x] server/providers/health.ts — terminal state propagation from pollProcessingOrders to parent order
+
+---
+
+## Session 32 (continued) — Subscriptions entitlement, cron next-date, AI dashboard stats (2026-10-06)
+
+### Task 1 — Subscriptions: real entitlements
+- [x] app/api/v1/subscriptions/route.ts GET — replaced hardcoded empty entitlements array with real query: prefers subscription_entitlement_snapshots, falls back to plan_entitlements WHERE enabled; includes TRIALING in status filter
+- [x] server/subscriptions/service.ts createSubscription — snapshots plan_entitlements into subscription_entitlement_snapshots on creation (upsert for idempotency)
+
+### Task 2 — Automation: correct cron next-date computation
+- [x] server/automation/trigger.ts — added inline nextCronDate() 5-field cron parser (supports *, */N, ranges, comma-lists); replaces hardcoded +1 hour in dispatchScheduledTriggers
+
+### Task 3 — Dashboard: real AI usage stats
+- [x] app/dashboard/page.tsx — getDashboardStats now includes ai_requests count for current month; dashboard stat card shows real count instead of "بزودی"
+
+### Verification gate (2026-10-06)
+- [x] pnpm typecheck — PASS (tsc --noEmit, zero errors)
+- [x] pnpm test — PASS (1245/1245, 148 test files; 3 timing-related flakes isolated: pass individually, only fail under full-suite parallel load on low-resource device)

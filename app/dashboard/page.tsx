@@ -39,6 +39,13 @@ async function getDashboardStats(workspaceId: string, userId: string) {
       [workspaceId],
     );
 
+    // AI requests this month
+    const aiUsage = await client.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM ai_requests
+       WHERE workspace_id=$1 AND created_at >= date_trunc('month', now())`,
+      [workspaceId],
+    );
+
     // Recent order events
     const recentEvents = await client.query<{
       orderId: string; toStatus: string; createdAt: string;
@@ -57,6 +64,7 @@ async function getDashboardStats(workspaceId: string, userId: string) {
       processingOrders: Number(orders.rows[0]?.processing ?? '0'),
       planName: sub.rows[0]?.planName ?? null,
       planRenewal: sub.rows[0]?.currentPeriodEnd ?? null,
+      aiRequestsThisMonth: Number(aiUsage.rows[0]?.count ?? '0'),
       recentEvents: recentEvents.rows,
     };
   });
@@ -114,8 +122,8 @@ export default async function Dashboard() {
     },
     {
       label: 'هوش مصنوعی',
-      value: '—',
-      meta: 'بزودی',
+      value: stats ? new Intl.NumberFormat('fa-IR').format(stats.aiRequestsThisMonth) : '—',
+      meta: stats ? 'درخواست این ماه' : '',
       Icon: Bot,
     },
   ] as const;
