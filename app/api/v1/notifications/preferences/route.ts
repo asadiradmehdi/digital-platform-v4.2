@@ -26,13 +26,19 @@ export async function PUT(req: NextRequest) {
   if (!Array.isArray(body.preferences)) {
     return NextResponse.json({ error: { code: 'VALIDATION_ERROR', message: 'preferences must be an array' } }, { status: 400 });
   }
+  if (body.preferences.length > 100) {
+    return NextResponse.json({ error: { code: 'VALIDATION_ERROR', message: 'Too many preferences in one request.' } }, { status: 400 });
+  }
 
+  const VALID_CHANNELS = new Set(['email', 'sms', 'push', 'in_app']);
+  const VALID_CATEGORIES = new Set(['orders', 'billing', 'security', 'ai', 'automation', 'system']);
   for (const pref of body.preferences) {
+    if (!VALID_CHANNELS.has(pref.channel) || !VALID_CATEGORIES.has(pref.category)) continue;
     await query(
       `INSERT INTO notification_preferences(user_id, channel, category, enabled, updated_at)
        VALUES($1,$2,$3,$4,now())
        ON CONFLICT(user_id,channel,category) DO UPDATE SET enabled=EXCLUDED.enabled, updated_at=now()`,
-      [userId, pref.channel, pref.category, pref.enabled],
+      [userId, pref.channel, pref.category, Boolean(pref.enabled)],
     );
   }
 
