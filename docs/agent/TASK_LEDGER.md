@@ -1452,6 +1452,40 @@ After Sessions 33-37: ~1272 tests across 151 test files (1259 base + 9 renewal/p
 - [x] Playwright @1.55.0 installed, playwright.config.ts present, `e2e/foundation.spec.ts` exists with 3 smoke tests
 - [x] E2E infrastructure is ready; foundation covers RTL direction, auth surface, SEO
 
+---
+
+## Session 44 — Test coverage: regression tests, route tests, cron parser (2026-10-07)
+
+### Task 1 — Wallet deposit rate-limit regression tests
+- [x] `tests/billing/wallet-routes.test.ts` — added `consumeDistributedRateLimit` mock; fixed 3 broken POST tests; added 429 rate-limited test and scope/params assertion test (wallet:deposit, 3600s, 20)
+
+### Task 2 — FOR UPDATE OF la SQL verification
+- [x] `tests/subscriptions/renewal.test.ts` — new test verifies `processSubscriptionRenewal` wallet balance query includes `FOR UPDATE OF la` to prevent concurrent double-debit
+
+### Task 3 — Password change route tests (8 tests)
+- [x] `tests/identity/password-change-route.test.ts` — new: 200 success, 401, 400 missing fields, 400 short password, 403 step-up rejected, 403 wrong current password, enforceStepUpPolicy called with SECURITY_SETTINGS_CHANGE, writeAudit PASSWORD_CHANGE
+
+### Task 4 — Step-up enforcement assertions in API keys tests
+- [x] `tests/b2b/api-keys-route.test.ts` — 4 new tests: POST enforces API_KEY_CREATE policy, POST 403 on rejection, DELETE enforces API_KEY_REVOKE policy, DELETE 403 on rejection
+
+### Task 5 — Cron parser unit tests (12 tests)
+- [x] `server/automation/trigger.ts` — exported `nextCronDate` so it can be tested
+- [x] `tests/automation/cron-parser.test.ts` — new: `* * * * *`, `0 * * * *`, `30 * * * *`, `*/5`, `*/2 hours`, midnight daily, weekly Monday, monthly 1st, comma-list, range, bad expression fallback, result strictly after base
+
+### Task 6 — Previously untested route tests (27 new tests across 5 files)
+- [x] `tests/identity/audit-events-route.test.ts` — 4 tests: GET /api/v1/me/audit-events (200/200-empty/401/SQL-LIMIT-20)
+- [x] `tests/identity/support-tickets-route.test.ts` — 8 tests: GET (200/400/401/403); POST (201/400-no-workspace/400-no-subject/NORMAL-default)
+- [x] `tests/identity/sessions-route.test.ts` — 7 tests: GET (200/200-empty/401/SHA-256-hash); DELETE (200/401/userId-hash)
+- [x] `tests/security/passkey-revoke-route.test.ts` — 4 tests: DELETE /api/v1/me/passkeys/[id] (200/401/404/params)
+- [x] `tests/security/trusted-device-revoke-route.test.ts` — 4 tests: DELETE /api/v1/me/trusted-devices/[id] (200/401/404/params)
+
+### Verification gate (2026-10-07)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm lint — PASS (exit 0)
+- [x] pnpm test — PASS (1400/1400, 164 test files)
+
+---
+
 ### Session 43 continued — two critical concurrency/rate-limit gaps found and fixed
 - [x] `server/subscriptions/renewal.ts` — added `FOR UPDATE OF la` to wallet balance SELECT in `processSubscriptionRenewal` (same pattern as payOrderFromWallet; prevents double-debit under concurrent renewals)
 - [x] `app/api/v1/wallet/route.ts` — POST deposit now calls `consumeDistributedRateLimit` (20 deposits/hour per user) to prevent abuse
