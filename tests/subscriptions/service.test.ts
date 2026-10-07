@@ -126,6 +126,26 @@ describe('createSubscription', () => {
       expect(insertCall[1]).toContain('TRIALING');
     }
   });
+
+  it('5th query inserts entitlement snapshot for the new subscription id', async () => {
+    const isoKey = 'snapshotkey12345678';
+    const sqlCalls: Array<[string, unknown[]]> = [];
+    mockClientQuery.mockImplementation(async (sql: string, params: unknown[]) => {
+      sqlCalls.push([sql, params]);
+      if (sqlCalls.length === 1) return { rows: [], rowCount: 0 };
+      if (sqlCalls.length === 2) return { rows: [{ id: 'plan-snap', active: true, price_minor: '1000', currency: 'IRT', price_generated_at: new Date(), price_version: 1, pricing_rule_id: null }], rowCount: 1 };
+      if (sqlCalls.length === 3) return { rows: [{ id: 'sub-snap', status: 'ACTIVE' }], rowCount: 1 };
+      return { rows: [], rowCount: 1 };
+    });
+    await createSubscription({ workspaceId: 'ws-1', planId: 'plan-snap', idempotencyKey: isoKey });
+    const snapshotCall = sqlCalls.find(([sql]) => sql.includes('subscription_entitlement_snapshots'));
+    expect(snapshotCall).toBeDefined();
+    if (snapshotCall) {
+      const [sql, params] = snapshotCall;
+      expect(sql.toLowerCase()).toContain('insert');
+      expect(params).toContain('sub-snap');
+    }
+  });
 });
 
 // ─── cancelSubscription ───────────────────────────────────────────────────────

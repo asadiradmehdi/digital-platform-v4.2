@@ -1479,10 +1479,16 @@ After Sessions 33-37: ~1272 tests across 151 test files (1259 base + 9 renewal/p
 - [x] `tests/security/passkey-revoke-route.test.ts` — 4 tests: DELETE /api/v1/me/passkeys/[id] (200/401/404/params)
 - [x] `tests/security/trusted-device-revoke-route.test.ts` — 4 tests: DELETE /api/v1/me/trusted-devices/[id] (200/401/404/params)
 
+### Task 7 — Notifications preferences route tests (8 tests)
+- [x] `tests/api/notifications-preferences-route.test.ts` — new: GET (200/200-empty/SQL-user_id=$1); PUT (200/400-not-array/400-over-100/skips-invalid-channel/ON-CONFLICT-DO-UPDATE)
+
+### Task 8 — Subscription entitlement snapshot SQL verification
+- [x] `tests/subscriptions/service.test.ts` — new test: 5th query in `createSubscription` targets `subscription_entitlement_snapshots` with correct subscription_id (INSERT + params contain new sub id)
+
 ### Verification gate (2026-10-07)
 - [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
 - [x] pnpm lint — PASS (exit 0)
-- [x] pnpm test — PASS (1400/1400, 164 test files)
+- [x] pnpm test — PASS (1408/1408, 165 test files)
 
 ---
 
