@@ -49,7 +49,8 @@ async function loadCandidates(serviceId: string): Promise<ProviderCandidate[]> {
      ) pm ON true
      LEFT JOIN provider_services ps ON ps.provider_id = pr.provider_id AND ps.service_id = pr.service_id
      WHERE pr.service_id = $1 AND pr.active = true
-     ORDER BY pr.priority ASC, pr.weight DESC`,
+     ORDER BY pr.priority ASC, pr.weight DESC
+     LIMIT 50`,
     [serviceId]
   );
 

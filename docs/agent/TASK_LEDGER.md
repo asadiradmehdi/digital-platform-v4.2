@@ -1421,6 +1421,39 @@ After Sessions 33-37: ~1272 tests across 151 test files (1259 base + 9 renewal/p
 
 ---
 
+## Session 43 — Release hardening: Phase 4/5/6/7/9/11 gaps (2026-10-07)
+
+### Phase 4 — Secrets/key management
+- [x] `assertProductionConfig()` was defined but never called — created `instrumentation.ts` (Next.js 16 startup hook) that calls it; validates DATABASE_URL, SECRETS_MASTER_KEY, NEXT_PUBLIC_SITE_URL on production startup
+- [x] Audit confirmed: no hardcoded secrets, strong AES-256-GCM envelope encryption via secret-box.ts
+
+### Phase 5 — Concurrency/DB race conditions
+- [x] Provider routes query in `dispatchOrder` (`server/providers/dispatch.ts`) — added `LIMIT 50` to prevent unbounded scan at scale
+- [x] Provider routes are intentionally platform-wide (no workspace filter required — isolation is at order level)
+- [x] `advanceSubscriptionPeriod` uses `FOR UPDATE` on subscription row — race-safe
+- [x] DbJobQueue uses `FOR UPDATE SKIP LOCKED` — race-safe
+
+### Phase 6 — Observability gaps
+- [x] `app/api/internal/queue/renewal/route.ts` — added `logger.warn('subscription_renewal_failed', ...)` for FAILED renewals with structured data (subscriptionId, status, error)
+
+### Phase 7 — Migration safety
+- [x] All 28 migrations (0000–0027) verified idempotent-safe or runner-guarded
+- [x] Migration runner tracks applied versions via `schema_migrations` table; no re-run risk
+- [x] Zero destructive operations (no DROP TABLE, no DELETE FROM, no TRUNCATE)
+
+### Phase 9 — Revenue/scale
+- [x] `server/providers/dispatch.ts` `loadCandidates` — added LIMIT 50 on provider routes query
+
+### Phase 11 — Dead/placeholder audit
+- [x] `app/orders/new/page.tsx` — replaced `Math.random().toString(36)` idempotency key with `crypto.randomUUID()` (cryptographically secure)
+- [x] No `console.log`, `alert()`, TODO/FIXME, or hardcoded business data found in server/ or app/
+
+### Verification gate (2026-10-07)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm lint — PASS (exit 0)
+
+---
+
 ## Session 42 — Release hardening: security gap fixes (2026-10-06)
 
 ### Task 1 — Wallet balance race condition fix

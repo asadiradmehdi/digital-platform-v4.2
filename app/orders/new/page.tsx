@@ -141,7 +141,7 @@ function OrderNewForm() {
       const serviceId = svcData.item?.id;
       if (!serviceId) throw new Error('سرویس مورد نظر در سیستم یافت نشد.');
 
-      const idempotencyKey = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const idempotencyKey = crypto.randomUUID();
       const orderRes = await fetch('/api/v1/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },

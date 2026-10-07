@@ -1,6 +1,7 @@
 import { env } from '../../../../../server/core/config';
 import { findSubscriptionsDueForRenewal, processSubscriptionRenewal } from '../../../../../server/subscriptions/renewal';
 import { recoverStuckQueuedOrders } from '../../../../../server/providers/health';
+import { logger } from '../../../../../server/observability/logger';
 
 function assertCron(request: Request) {
   const expected = env('QUEUE_CRON_SECRET');
@@ -17,7 +18,11 @@ export async function POST(request: Request) {
     const renewals: Array<{ subscriptionId: string; status: string; error?: string }> = [];
     for (const subscriptionId of due) {
       const result = await processSubscriptionRenewal(subscriptionId);
-      renewals.push({ subscriptionId, status: result.status, error: 'error' in result ? result.error : undefined });
+      const error = 'error' in result ? result.error : undefined;
+      renewals.push({ subscriptionId, status: result.status, error });
+      if (result.status === 'FAILED') {
+        logger.warn('subscription_renewal_failed', {}, { subscriptionId, status: result.status, error });
+      }
     }
 
     // Recover stuck QUEUED orders (no external_order after 15 min).
