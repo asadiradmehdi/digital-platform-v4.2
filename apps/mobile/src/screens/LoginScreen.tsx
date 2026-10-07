@@ -35,13 +35,13 @@ export function LoginScreen() {
           <View style={styles.brandMark}>
             <Text style={styles.brandIcon}>◆</Text>
           </View>
-          <Text style={styles.brandName}>Digital Platform</Text>
-          <Text style={styles.brandTagline}>پلتفرم دیجیتال پیشرفته</Text>
+          <Text style={styles.brandName}>ZOHALPAY</Text>
+          <Text style={styles.brandTagline}>خدمات دیجیتال</Text>
         </View>
 
         {/* Form */}
         <Card>
-          <Title eyebrow="DIGITAL PLATFORM" description="ورود امن به Workspace شما">
+          <Title eyebrow="ZOHALPAY" description="ورود امن به Workspace شما">
             ورود
           </Title>
 

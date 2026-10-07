@@ -107,7 +107,7 @@ export default function AI() {
                   <div className="product-card-copy">
                     <div className="product-card-title">
                       <div>
-                        <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.08em', color: 'var(--accent)', marginBottom: 3, textTransform: 'uppercase' }}>
+                        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.08em', color: 'var(--accent)', marginBottom: 3, textTransform: 'uppercase' }}>
                           {cat.eyebrow}
                         </div>
                         <h2 style={{ margin: 0 }}>{cat.title}</h2>
@@ -116,14 +116,14 @@ export default function AI() {
                     </div>
                     <p>{cat.description}</p>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
-                      <span style={{ fontSize: 8, color: 'var(--subtle)' }}>{cat.meta}</span>
+                      <span style={{ fontSize: 11, color: 'var(--subtle)' }}>{cat.meta}</span>
                       <div style={{ display: 'flex', gap: 4 }}>
                         {cat.models.slice(0, 2).map((m) => (
                           <span
                             key={m}
                             className="text-ltr"
                             style={{
-                              fontSize: 8,
+                              fontSize: 11,
                               padding: '2px 6px',
                               borderRadius: 5,
                               background: 'var(--surface-2)',

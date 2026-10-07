@@ -146,7 +146,7 @@ export default function AIComposer() {
                   <Bot size={12} />
                   <span
                     className="text-ltr"
-                    style={{ fontSize: 9, fontFamily: 'var(--font-latin)', letterSpacing: '.02em' }}
+                    style={{ fontSize: 11, fontFamily: 'var(--font-latin)', letterSpacing: '.02em' }}
                   >
                     {modelLabel}
                   </span>

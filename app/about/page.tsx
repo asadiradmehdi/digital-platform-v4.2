@@ -5,7 +5,7 @@ import { PublicPage } from '../../components/seo/PublicPage';
 
 export const metadata: Metadata = {
   title: 'درباره ما',
-  description: 'معرفی Digital Platform — معماری محصول، اصول امنیت و ارزش‌های تیم.',
+  description: 'معرفی ZOHALPAY — معماری محصول، اصول امنیت و ارزش‌های تیم.',
   alternates: { canonical: '/about' },
 };
 
@@ -47,7 +47,7 @@ export default function About() {
   return (
     <PublicPage
       eyebrow="ABOUT"
-      title="Digital Platform چیست؟"
+      title="ZOHALPAY چیست؟"
       description="یک پلتفرم یکپارچه برای خدمات دیجیتال، AI، اتوماسیون و عملیات کسب‌وکار — با معماری مدولار، امنیت پیش‌فرض و رابط فارسی‌محور."
     >
       <div className="public-info-card" style={{ marginBottom: 24 }}>

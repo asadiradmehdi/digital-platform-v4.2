@@ -183,7 +183,7 @@ export default async function AdminPage() {
           borderBottom: '1px solid var(--line)',
         }}>
           <div>
-            <span style={{ display: 'block', fontSize: 9, fontWeight: 800, letterSpacing: '.1em', color: 'var(--accent)', fontFamily: 'var(--font-latin)', marginBottom: 3 }}>
+            <span style={{ display: 'block', fontSize: 11, fontWeight: 800, letterSpacing: '.1em', color: 'var(--accent)', fontFamily: 'var(--font-latin)', marginBottom: 3 }}>
               ADMIN · OPERATIONS
             </span>
             <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-.03em', margin: '0 0 3px', color: 'var(--ink)' }}>
@@ -272,7 +272,7 @@ export default async function AdminPage() {
               fontVariantNumeric: 'tabular-nums',
               color: activeOrders > 0 ? 'var(--accent-strong)' : undefined,
             }}>{fmt(queueTotal)}</strong>
-            <small style={{ fontSize: 9, fontFamily: 'var(--font-latin)' }}>QUEUED · PROCESSING · SUBMITTED</small>
+            <small style={{ fontSize: 11, fontFamily: 'var(--font-latin)' }}>QUEUED · PROCESSING · SUBMITTED</small>
           </div>
 
           {/* Providers health */}
@@ -597,7 +597,7 @@ export default async function AdminPage() {
                   </span>
                   <div>
                     <b style={{ display: 'block', fontSize: 11 }}>Metrics JSON</b>
-                    <small style={{ display: 'block', fontSize: 9, color: 'var(--muted)', marginTop: 2, fontFamily: 'var(--font-latin)', direction: 'ltr' }}>
+                    <small style={{ display: 'block', fontSize: 11, color: 'var(--muted)', marginTop: 2, fontFamily: 'var(--font-latin)', direction: 'ltr' }}>
                       GET /api/internal/metrics
                     </small>
                   </div>
@@ -626,7 +626,7 @@ export default async function AdminPage() {
                   </span>
                   <div>
                     <b style={{ display: 'block', fontSize: 11 }}>Health Check</b>
-                    <small style={{ display: 'block', fontSize: 9, color: 'var(--muted)', marginTop: 2, fontFamily: 'var(--font-latin)', direction: 'ltr' }}>
+                    <small style={{ display: 'block', fontSize: 11, color: 'var(--muted)', marginTop: 2, fontFamily: 'var(--font-latin)', direction: 'ltr' }}>
                       GET /api/v1/health
                     </small>
                   </div>
@@ -649,7 +649,7 @@ export default async function AdminPage() {
                   </span>
                   <div>
                     <b style={{ display: 'block', fontSize: 11, color: 'var(--muted)' }}>تمدید اشتراک‌ها</b>
-                    <small style={{ display: 'block', fontSize: 9, color: 'var(--subtle)', marginTop: 2, fontFamily: 'var(--font-latin)', direction: 'ltr' }}>
+                    <small style={{ display: 'block', fontSize: 11, color: 'var(--subtle)', marginTop: 2, fontFamily: 'var(--font-latin)', direction: 'ltr' }}>
                       POST /api/internal/queue/renewal
                     </small>
                   </div>
@@ -671,7 +671,7 @@ export default async function AdminPage() {
                   </span>
                   <div>
                     <b style={{ display: 'block', fontSize: 11, color: 'var(--muted)' }}>پردازش صف خروجی</b>
-                    <small style={{ display: 'block', fontSize: 9, color: 'var(--subtle)', marginTop: 2, fontFamily: 'var(--font-latin)', direction: 'ltr' }}>
+                    <small style={{ display: 'block', fontSize: 11, color: 'var(--subtle)', marginTop: 2, fontFamily: 'var(--font-latin)', direction: 'ltr' }}>
                       POST /api/internal/queue/outbox
                     </small>
                   </div>

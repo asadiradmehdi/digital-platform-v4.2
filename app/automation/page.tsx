@@ -73,7 +73,7 @@ export default async function Automation() {
                 padding: '16px 20px',
               }}
             >
-              <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 8, textTransform: 'uppercase' }}>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 8, textTransform: 'uppercase' }}>
                 کل Workflow
               </div>
               <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-.04em', color: 'var(--ink)' }}>
@@ -88,7 +88,7 @@ export default async function Automation() {
                 padding: '16px 20px',
               }}
             >
-              <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 8, textTransform: 'uppercase' }}>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 8, textTransform: 'uppercase' }}>
                 فعال
               </div>
               <div
@@ -110,7 +110,7 @@ export default async function Automation() {
                 padding: '16px 20px',
               }}
             >
-              <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 8, textTransform: 'uppercase' }}>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 8, textTransform: 'uppercase' }}>
                 پیش‌نویس
               </div>
               <div
@@ -202,7 +202,7 @@ export default async function Automation() {
               <div>
                 <span
                   style={{
-                    fontSize: 9,
+                    fontSize: 11,
                     fontWeight: 800,
                     letterSpacing: '.1em',
                     color: 'var(--accent)',

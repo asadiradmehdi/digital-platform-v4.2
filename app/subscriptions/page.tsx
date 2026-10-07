@@ -217,7 +217,7 @@ export default async function Subscriptions() {
                   <span
                     style={{
                       display: 'block',
-                      fontSize: 9,
+                      fontSize: 11,
                       fontWeight: 800,
                       letterSpacing: '.1em',
                       color: 'var(--accent)',
@@ -359,7 +359,7 @@ export default async function Subscriptions() {
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: 4,
-                          fontSize: 9,
+                          fontSize: 11,
                           color: 'var(--success)',
                           marginTop: 4,
                         }}

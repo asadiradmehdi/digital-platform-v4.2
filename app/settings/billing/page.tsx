@@ -84,7 +84,7 @@ export default async function BillingSettings() {
                 <span
                   style={{
                     display: 'block',
-                    fontSize: 9,
+                    fontSize: 11,
                     fontWeight: 800,
                     letterSpacing: '.07em',
                     color: 'var(--accent)',
@@ -178,7 +178,7 @@ export default async function BillingSettings() {
                 <span
                   style={{
                     display: 'block',
-                    fontSize: 9,
+                    fontSize: 11,
                     fontWeight: 800,
                     letterSpacing: '.07em',
                     color: 'var(--accent)',
@@ -248,7 +248,7 @@ export default async function BillingSettings() {
                 <span
                   style={{
                     display: 'block',
-                    fontSize: 9,
+                    fontSize: 11,
                     fontWeight: 800,
                     letterSpacing: '.07em',
                     color: 'var(--accent)',

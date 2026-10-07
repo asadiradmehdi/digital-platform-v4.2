@@ -135,7 +135,7 @@ export default function SecurityCenter() {
           borderBottom: '1px solid var(--line)',
         }}>
           <div>
-            <span style={{ display: 'block', fontSize: 9, fontWeight: 800, letterSpacing: '.1em', color: 'var(--accent)', fontFamily: 'var(--font-latin)', marginBottom: 3 }}>
+            <span style={{ display: 'block', fontSize: 11, fontWeight: 800, letterSpacing: '.1em', color: 'var(--accent)', fontFamily: 'var(--font-latin)', marginBottom: 3 }}>
               SECURITY ARCHITECTURE
             </span>
             <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-.03em', margin: '0 0 4px', color: 'var(--ink)' }}>
@@ -211,7 +211,7 @@ export default function SecurityCenter() {
                   <div style={{ flex: 1 }}>
                     <span style={{
                       display: 'block',
-                      fontSize: 9,
+                      fontSize: 11,
                       fontWeight: 800,
                       letterSpacing: '.07em',
                       color: 'var(--accent)',
@@ -235,7 +235,7 @@ export default function SecurityCenter() {
                   </div>
                   <span style={{
                     display: 'inline-block',
-                    fontSize: 9,
+                    fontSize: 11,
                     color: 'var(--subtle)',
                     fontFamily: 'var(--font-latin)',
                     letterSpacing: '.03em',
@@ -275,7 +275,7 @@ export default function SecurityCenter() {
                     <Icon size={16} />
                   </span>
                   <div>
-                    <span style={{ display: 'block', fontSize: 8, fontWeight: 800, letterSpacing: '.08em', color: 'var(--subtle)', fontFamily: 'var(--font-latin)', marginBottom: 2 }}>
+                    <span style={{ display: 'block', fontSize: 11, fontWeight: 800, letterSpacing: '.08em', color: 'var(--subtle)', fontFamily: 'var(--font-latin)', marginBottom: 2 }}>
                       {label}
                     </span>
                     <strong style={{ fontSize: 13, color: 'var(--ink)', letterSpacing: '-.02em' }}>{title}</strong>

@@ -129,7 +129,7 @@ export function SettingsScreen() {
         </Action>
       </View>
 
-      <Text style={styles.versionText}>نسخه ۴.۲.۰ · Digital Platform</Text>
+      <Text style={styles.versionText}>نسخه ۴.۲.۰ · ZOHALPAY</Text>
     </Screen>
   );
 }

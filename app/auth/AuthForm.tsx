@@ -68,7 +68,7 @@ export default function AuthForm() {
             ✦
           </span>
           <span>
-            <b>پلتفرم</b>
+            <b>ZOHALPAY</b>
             <small>خدمات دیجیتال</small>
           </span>
         </Link>

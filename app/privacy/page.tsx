@@ -3,7 +3,7 @@ import { PublicPage } from '../../components/seo/PublicPage';
 
 export const metadata: Metadata = {
   title: 'حریم خصوصی',
-  description: 'سیاست حریم خصوصی Digital Platform — جمع‌آوری، پردازش، نگهداری و حقوق داده.',
+  description: 'سیاست حریم خصوصی ZOHALPAY — جمع‌آوری، پردازش، نگهداری و حقوق داده.',
   alternates: { canonical: '/privacy' },
   robots: { index: false, follow: true },
 };
@@ -70,7 +70,7 @@ export default function Privacy() {
     <PublicPage
       eyebrow="LEGAL"
       title="حریم خصوصی"
-      description="چارچوب کلی سیاست حریم خصوصی Digital Platform — نسخه نهایی قبل از عرضه عمومی بازبینی حقوقی خواهد شد."
+      description="چارچوب کلی سیاست حریم خصوصی ZOHALPAY — نسخه نهایی قبل از عرضه عمومی بازبینی حقوقی خواهد شد."
     >
       <div className="public-info-card" style={{ marginBottom: 16 }}>
         <p style={{ margin: 0, fontSize: 13, color: 'var(--subtle)' }}>

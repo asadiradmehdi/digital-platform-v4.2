@@ -33,7 +33,7 @@ function SidebarContent({ pathname, workspaceLabel, onClose }: { pathname: strin
     <>
       <Link href="/dashboard" className="side-brand" onClick={onClose}>
         <span className="logo">✦</span>
-        <span><b>پلتفرم</b><small>نسخه حرفه‌ای</small></span>
+        <span><b>ZOHALPAY</b><small>خدمات دیجیتال</small></span>
       </Link>
       <div className="workspace-switch">
         <span className="workspace-avatar">{wsInitial}</span>

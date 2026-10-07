@@ -208,7 +208,7 @@ export default function NewWorkflow() {
             >
               <div
                 style={{
-                  fontSize: 9,
+                  fontSize: 11,
                   fontWeight: 800,
                   letterSpacing: '.1em',
                   color: 'var(--accent)',
@@ -252,7 +252,7 @@ export default function NewWorkflow() {
             >
               <div
                 style={{
-                  fontSize: 9,
+                  fontSize: 11,
                   fontWeight: 800,
                   letterSpacing: '.1em',
                   color: 'var(--accent)',
@@ -337,7 +337,7 @@ export default function NewWorkflow() {
               >
                 <div
                   style={{
-                    fontSize: 9,
+                    fontSize: 11,
                     fontWeight: 800,
                     letterSpacing: '.1em',
                     color: 'var(--accent)',
@@ -426,7 +426,7 @@ export default function NewWorkflow() {
                   >
                     <span
                       style={{
-                        fontSize: 9,
+                        fontSize: 11,
                         fontWeight: 800,
                         color: 'var(--subtle)',
                         minWidth: 18,
@@ -471,7 +471,7 @@ export default function NewWorkflow() {
             >
               <div
                 style={{
-                  fontSize: 9,
+                  fontSize: 11,
                   fontWeight: 800,
                   letterSpacing: '.1em',
                   color: 'var(--accent)',
@@ -526,7 +526,7 @@ export default function NewWorkflow() {
                       <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)' }}>
                         {a.label}
                       </div>
-                      <div style={{ fontSize: 9, color: 'var(--muted)' }}>{a.desc}</div>
+                      <div style={{ fontSize: 11, color: 'var(--muted)' }}>{a.desc}</div>
                     </div>
                     <Plus size={12} style={{ color: 'var(--subtle)', flexShrink: 0 }} />
                   </button>

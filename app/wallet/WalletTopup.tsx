@@ -110,7 +110,7 @@ export default function WalletTopup() {
       {/* Divider */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
-        <span style={{ fontSize: 9, color: 'var(--subtle)', fontWeight: 700 }}>یا</span>
+        <span style={{ fontSize: 11, color: 'var(--subtle)', fontWeight: 700 }}>یا</span>
         <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
       </div>
 

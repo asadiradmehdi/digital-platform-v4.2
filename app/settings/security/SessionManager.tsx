@@ -88,7 +88,7 @@ export default function SessionManager({ sessions }: { sessions: Session[] }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <b style={{ fontSize: 13, color: 'var(--ink)' }}>{s.label}</b>
                   {s.isCurrent && (
-                    <span className="status-pill success" style={{ fontSize: 8 }}>
+                    <span className="status-pill success" style={{ fontSize: 11 }}>
                       این دستگاه
                     </span>
                   )}

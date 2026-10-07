@@ -110,7 +110,7 @@ export default async function SecuritySettings() {
                 <span
                   style={{
                     display: 'block',
-                    fontSize: 9,
+                    fontSize: 11,
                     fontWeight: 800,
                     letterSpacing: '.07em',
                     color: 'var(--accent)',
@@ -133,7 +133,7 @@ export default async function SecuritySettings() {
                 <span
                   style={{
                     display: 'block',
-                    fontSize: 9,
+                    fontSize: 11,
                     fontWeight: 800,
                     letterSpacing: '.07em',
                     color: 'var(--accent)',
@@ -173,7 +173,7 @@ export default async function SecuritySettings() {
                 <span
                   style={{
                     display: 'block',
-                    fontSize: 9,
+                    fontSize: 11,
                     fontWeight: 800,
                     letterSpacing: '.07em',
                     color: 'var(--accent)',
@@ -258,7 +258,7 @@ export default async function SecuritySettings() {
                 <span
                   style={{
                     display: 'block',
-                    fontSize: 9,
+                    fontSize: 11,
                     fontWeight: 800,
                     letterSpacing: '.07em',
                     color: 'var(--accent)',
@@ -270,7 +270,7 @@ export default async function SecuritySettings() {
                 </span>
                 <h2>نشست‌های فعال</h2>
               </div>
-              <span className="status-pill info" style={{ fontSize: 9 }}>
+              <span className="status-pill info" style={{ fontSize: 11 }}>
                 {sessions.length} نشست
               </span>
             </div>
@@ -305,7 +305,7 @@ export default async function SecuritySettings() {
                   <span
                     style={{
                       display: 'block',
-                      fontSize: 9,
+                      fontSize: 11,
                       fontWeight: 800,
                       letterSpacing: '.07em',
                       color: 'var(--accent)',

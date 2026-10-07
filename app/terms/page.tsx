@@ -3,7 +3,7 @@ import { PublicPage } from '../../components/seo/PublicPage';
 
 export const metadata: Metadata = {
   title: 'شرایط استفاده',
-  description: 'شرایط استفاده از Digital Platform — قوانین سرویس، محدودیت‌ها و تعهدات.',
+  description: 'شرایط استفاده از ZOHALPAY — قوانین سرویس، محدودیت‌ها و تعهدات.',
   alternates: { canonical: '/terms' },
   robots: { index: false, follow: true },
 };
@@ -74,7 +74,7 @@ export default function Terms() {
     <PublicPage
       eyebrow="LEGAL"
       title="شرایط استفاده"
-      description="چارچوب کلی شرایط استفاده از Digital Platform — نسخه نهایی قبل از عرضه عمومی بازبینی حقوقی خواهد شد."
+      description="چارچوب کلی شرایط استفاده از ZOHALPAY — نسخه نهایی قبل از عرضه عمومی بازبینی حقوقی خواهد شد."
     >
       <div className="public-info-card" style={{ marginBottom: 16 }}>
         <p style={{ margin: 0, fontSize: 13, color: 'var(--subtle)' }}>

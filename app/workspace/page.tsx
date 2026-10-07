@@ -61,7 +61,7 @@ export default async function WorkspacePage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <b style={{ fontSize: 14 }}>{ws.workspace_name}</b>
                     {ws.sub_status && (
-                      <span className={`status-pill ${ws.sub_status === 'ACTIVE' || ws.sub_status === 'TRIALING' ? 'success' : 'warning'}`} style={{ fontSize: 9 }}>
+                      <span className={`status-pill ${ws.sub_status === 'ACTIVE' || ws.sub_status === 'TRIALING' ? 'success' : 'warning'}`} style={{ fontSize: 11 }}>
                         {ws.sub_status === 'ACTIVE' ? 'فعال' : ws.sub_status === 'TRIALING' ? 'آزمایشی' : ws.sub_status}
                       </span>
                     )}

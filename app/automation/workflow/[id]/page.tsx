@@ -236,7 +236,7 @@ export default async function WorkflowDetailPage({ params }: { params: Promise<{
             <div>
               <span
                 style={{
-                  fontSize: 9,
+                  fontSize: 11,
                   fontWeight: 800,
                   letterSpacing: '.1em',
                   color: 'var(--accent)',

@@ -1,6 +1,6 @@
 export const siteConfig = {
-  name: 'پلتفرم دیجیتال',
-  shortName: 'پلتفرم',
+  name: 'ZOHALPAY',
+  shortName: 'ZOHALPAY',
   description: 'پلتفرم یکپارچه خدمات دیجیتال، هوش مصنوعی، اتوماسیون و ابزارهای رشد برای افراد، برندها و کسب‌وکارها.',
   locale: 'fa_IR',
   language: 'fa',

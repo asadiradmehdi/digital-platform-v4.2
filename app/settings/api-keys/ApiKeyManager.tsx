@@ -360,7 +360,7 @@ export function ApiKeyManager({ initialKeys, workspaceId }: { initialKeys: ApiKe
                       <b style={{ fontSize: 13, color: 'var(--ink)' }}>{k.name}</b>
                       <span
                         className={`status-pill ${k.environment === 'live' ? 'success' : 'info'}`}
-                        style={{ fontSize: 8 }}
+                        style={{ fontSize: 11 }}
                       >
                         {k.environment === 'live' ? 'Live' : 'Test'}
                       </span>
@@ -383,7 +383,7 @@ export function ApiKeyManager({ initialKeys, workspaceId }: { initialKeys: ApiKe
                           <span
                             key={s}
                             style={{
-                              fontSize: 9,
+                              fontSize: 11,
                               background: 'var(--surface-3)',
                               border: '1px solid var(--line)',
                               borderRadius: 5,

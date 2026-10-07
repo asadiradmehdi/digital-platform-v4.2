@@ -21,7 +21,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       if (!deviceId) { deviceId = Crypto.randomUUID(); await SecureStore.setItemAsync(DEVICE_KEY, deviceId, { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY }); }
       const result = await apiFetch<{ ok: true; accessToken: string; tokenType: 'Bearer' }>('/api/v1/auth/mobile/session', {
         method: 'POST',
-        body: JSON.stringify({ identifier, password, platform: Platform.OS === 'ios' ? 'IOS' : 'ANDROID', deviceId, deviceName: 'Digital Platform Mobile' }),
+        body: JSON.stringify({ identifier, password, platform: Platform.OS === 'ios' ? 'IOS' : 'ANDROID', deviceId, deviceName: 'ZOHALPAY Mobile' }),
       });
       await setAccessToken(result.accessToken);
       setAuthenticated(true);

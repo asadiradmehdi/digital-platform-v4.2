@@ -20,7 +20,7 @@ export default function MarketingHome() {
       <header className="marketing-header">
         <Link href="/" className="brand" aria-label={siteConfig.name}>
           <span className="logo" aria-hidden="true">✦</span>
-          <span><b>پلتفرم</b><small>خدمات دیجیتال</small></span>
+          <span><b>ZOHALPAY</b><small>خدمات دیجیتال</small></span>
         </Link>
         <nav aria-label="ناوبری اصلی">
           <Link href="/services">خدمات</Link>
