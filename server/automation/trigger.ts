@@ -3,7 +3,7 @@ import { startWorkflowRun } from './workflow-service';
 import { enqueueWorkflowRun } from './worker';
 
 /** Returns the next Date after `from` that satisfies the 5-field cron expression. */
-function nextCronDate(expression: string, from: Date = new Date()): Date {
+export function nextCronDate(expression: string, from: Date = new Date()): Date {
   const parts = expression.trim().split(/\s+/);
   if (parts.length !== 5) {
     // Unsupported format — default to 1 hour

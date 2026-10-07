@@ -289,6 +289,22 @@ describe('processSubscriptionRenewal', () => {
     expect(result.status).toBe('RENEWED');
   });
 
+  it('wallet balance query uses FOR UPDATE OF la to prevent concurrent double-debit', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [renewalSubscription], rowCount: 1 } as never);
+    let capturedSql = '';
+    mockTx.mockImplementationOnce(async (_ws, _uid, fn) => {
+      const clientQuery = vi.fn().mockImplementationOnce((sql: string) => {
+        capturedSql = sql;
+        return Promise.resolve({ rows: [{ account_id: 'acct-1', balance: '100' }] }); // balance < price
+      });
+      return fn({ query: clientQuery } as never);
+    });
+    mockQuery.mockResolvedValue({ rows: [], rowCount: 1 } as never);
+
+    await processSubscriptionRenewal('sub-1');
+    expect(capturedSql).toContain('FOR UPDATE OF la');
+  });
+
   it('skips wallet charge and goes straight to advance when price_minor is 0', async () => {
     mockQuery.mockResolvedValueOnce({
       rows: [{ ...renewalSubscription, price_minor: '0' }], rowCount: 1,

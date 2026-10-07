@@ -16,12 +16,14 @@ vi.mock('../../server/core/security-boundary', () => ({
 }));
 vi.mock('../../server/core/validation', () => ({ requireUuid: vi.fn() }));
 vi.mock('../../server/billing/ledger', () => ({ postLedgerEntry: vi.fn() }));
+vi.mock('../../server/core/distributed-rate-limit', () => ({ consumeDistributedRateLimit: vi.fn() }));
 
 import { query, withWorkspaceTransaction } from '../../server/core/db';
 import { requireRequestUser } from '../../server/identity/request-user';
 import { requireWorkspacePermission } from '../../server/identity/rbac';
 import { requireUuid } from '../../server/core/validation';
 import { postLedgerEntry } from '../../server/billing/ledger';
+import { consumeDistributedRateLimit } from '../../server/core/distributed-rate-limit';
 import { AppError } from '../../server/core/errors';
 
 const mockQuery = vi.mocked(query);
@@ -30,6 +32,7 @@ const mockRequireUser = vi.mocked(requireRequestUser);
 const mockRequirePermission = vi.mocked(requireWorkspacePermission);
 const mockRequireUuid = vi.mocked(requireUuid);
 const mockPostLedger = vi.mocked(postLedgerEntry);
+const mockRateLimit = vi.mocked(consumeDistributedRateLimit);
 
 beforeEach(() => vi.resetAllMocks());
 
@@ -101,6 +104,7 @@ describe('POST /api/v1/wallet', () => {
       .mockReturnValueOnce('ws-1' as never)
       .mockReturnValueOnce('w-1' as never);
     mockRequirePermission.mockResolvedValueOnce(undefined as never);
+    mockRateLimit.mockResolvedValueOnce(undefined as never);
     mockPostLedger.mockResolvedValueOnce({ id: 'entry-1' } as never);
     mockTx.mockResolvedValueOnce({ rows: [{ balanceMinor: '600000', currency: 'IRR' }] } as never);
 
@@ -131,12 +135,41 @@ describe('POST /api/v1/wallet', () => {
     expect(response.status).toBe(403);
   });
 
+  it('returns 429 when rate limit is exceeded', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    mockRequireUuid
+      .mockReturnValueOnce('ws-1' as never)
+      .mockReturnValueOnce('w-1' as never);
+    mockRequirePermission.mockResolvedValueOnce(undefined as never);
+    mockRateLimit.mockRejectedValueOnce(new AppError('RATE_LIMITED', 'Rate limit exceeded'));
+
+    const response = await POST_WALLET(makePostRequest({ workspaceId: 'ws-1', walletId: 'w-1', amountMinor: 100000, currency: 'IRR' }));
+    expect(response.status).toBe(429);
+  });
+
+  it('calls rate limit with correct scope before deposit', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    mockRequireUuid
+      .mockReturnValueOnce('ws-1' as never)
+      .mockReturnValueOnce('w-1' as never);
+    mockRequirePermission.mockResolvedValueOnce(undefined as never);
+    mockRateLimit.mockResolvedValueOnce(undefined as never);
+    mockPostLedger.mockResolvedValueOnce({ id: 'entry-1' } as never);
+    mockTx.mockResolvedValueOnce({ rows: [{ balanceMinor: '600000', currency: 'IRR' }] } as never);
+
+    await POST_WALLET(makePostRequest({ workspaceId: 'ws-1', walletId: 'w-1', amountMinor: 100000, currency: 'IRR' }));
+    expect(mockRateLimit).toHaveBeenCalledWith(
+      expect.objectContaining({ scope: 'wallet:deposit', windowSeconds: 3600, maxRequests: 20 }),
+    );
+  });
+
   it('returns 400 when amountMinor is zero or negative', async () => {
     mockRequireUser.mockResolvedValueOnce('user-1' as never);
     mockRequireUuid
       .mockReturnValueOnce('ws-1' as never)
       .mockReturnValueOnce('w-1' as never);
     mockRequirePermission.mockResolvedValueOnce(undefined as never);
+    mockRateLimit.mockResolvedValueOnce(undefined as never);
 
     const response = await POST_WALLET(makePostRequest({ workspaceId: 'ws-1', walletId: 'w-1', amountMinor: 0, currency: 'IRR' }));
     expect(response.status).toBe(400);
@@ -148,6 +181,7 @@ describe('POST /api/v1/wallet', () => {
       .mockReturnValueOnce('ws-1' as never)
       .mockReturnValueOnce('w-1' as never);
     mockRequirePermission.mockResolvedValueOnce(undefined as never);
+    mockRateLimit.mockResolvedValueOnce(undefined as never);
 
     const response = await POST_WALLET(makePostRequest({ workspaceId: 'ws-1', walletId: 'w-1', amountMinor: 100000, currency: 'INVALID' }));
     expect(response.status).toBe(400);

@@ -23,6 +23,7 @@ import { requireRequestUser } from '../../server/identity/request-user';
 import { requireWorkspacePermission } from '../../server/identity/rbac';
 import { createApiKey, listApiKeys, revokeApiKey, resolveApiKey } from '../../server/b2b/api-keys';
 import { upsertRateLimit } from '../../server/b2b/rate-limit';
+import { enforceStepUpPolicy } from '../../server/identity/step-up';
 import { AppError } from '../../server/core/errors';
 
 const mockRequireUser = vi.mocked(requireRequestUser);
@@ -32,6 +33,7 @@ const mockListApiKeys = vi.mocked(listApiKeys);
 const mockRevokeApiKey = vi.mocked(revokeApiKey);
 const mockResolveApiKey = vi.mocked(resolveApiKey);
 const mockUpsertRateLimit = vi.mocked(upsertRateLimit);
+const mockEnforceStepUp = vi.mocked(enforceStepUpPolicy);
 
 beforeEach(() => vi.resetAllMocks());
 
@@ -212,5 +214,45 @@ describe('DELETE /api/v1/b2b/api-keys', () => {
 
     const response = await DELETE(makeDeleteRequest({ workspaceId: 'ws-1' }));
     expect(response.status).toBe(400);
+  });
+});
+
+describe('Step-up enforcement', () => {
+  it('POST enforces API_KEY_CREATE step-up policy', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    mockRequirePermission.mockResolvedValueOnce(undefined as never);
+    mockEnforceStepUp.mockResolvedValueOnce(undefined as never);
+    mockCreateApiKey.mockResolvedValueOnce('dp_live_key' as never);
+
+    await POST(makePostRequest({ workspaceId: 'ws-1', name: 'Key', scopes: ['orders.read'], stepUpEvidenceId: 'ev-1' }));
+    expect(mockEnforceStepUp).toHaveBeenCalledWith('user-1', 'API_KEY_CREATE', 'ev-1');
+  });
+
+  it('POST returns 403 when step-up policy rejects', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    mockRequirePermission.mockResolvedValueOnce(undefined as never);
+    mockEnforceStepUp.mockRejectedValueOnce(new AppError('FORBIDDEN', 'Step-up required'));
+
+    const response = await POST(makePostRequest({ workspaceId: 'ws-1', name: 'Key', scopes: ['orders.read'] }));
+    expect(response.status).toBe(403);
+  });
+
+  it('DELETE enforces API_KEY_REVOKE step-up policy', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    mockRequirePermission.mockResolvedValueOnce(undefined as never);
+    mockEnforceStepUp.mockResolvedValueOnce(undefined as never);
+    mockRevokeApiKey.mockResolvedValueOnce(true as never);
+
+    await DELETE(makeDeleteRequest({ workspaceId: 'ws-1', keyId: 'key-1', stepUpEvidenceId: 'ev-2' }));
+    expect(mockEnforceStepUp).toHaveBeenCalledWith('user-1', 'API_KEY_REVOKE', 'ev-2');
+  });
+
+  it('DELETE returns 403 when step-up policy rejects', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    mockRequirePermission.mockResolvedValueOnce(undefined as never);
+    mockEnforceStepUp.mockRejectedValueOnce(new AppError('FORBIDDEN', 'Step-up required'));
+
+    const response = await DELETE(makeDeleteRequest({ workspaceId: 'ws-1', keyId: 'key-1' }));
+    expect(response.status).toBe(403);
   });
 });
