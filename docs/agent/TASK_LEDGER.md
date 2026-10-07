@@ -1448,9 +1448,19 @@ After Sessions 33-37: ~1272 tests across 151 test files (1259 base + 9 renewal/p
 - [x] `app/orders/new/page.tsx` — replaced `Math.random().toString(36)` idempotency key with `crypto.randomUUID()` (cryptographically secure)
 - [x] No `console.log`, `alert()`, TODO/FIXME, or hardcoded business data found in server/ or app/
 
+### Phase 8 — E2E readiness
+- [x] Playwright @1.55.0 installed, playwright.config.ts present, `e2e/foundation.spec.ts` exists with 3 smoke tests
+- [x] E2E infrastructure is ready; foundation covers RTL direction, auth surface, SEO
+
+### Session 43 continued — two critical concurrency/rate-limit gaps found and fixed
+- [x] `server/subscriptions/renewal.ts` — added `FOR UPDATE OF la` to wallet balance SELECT in `processSubscriptionRenewal` (same pattern as payOrderFromWallet; prevents double-debit under concurrent renewals)
+- [x] `app/api/v1/wallet/route.ts` — POST deposit now calls `consumeDistributedRateLimit` (20 deposits/hour per user) to prevent abuse
+
 ### Verification gate (2026-10-07)
 - [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
 - [x] pnpm lint — PASS (exit 0)
+- [x] pnpm test — PASS (1346/1346, 157 test files)
+- [x] pnpm build — PASS (next build --webpack exit 0)
 
 ---
 

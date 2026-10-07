@@ -3,6 +3,7 @@ import { query, withWorkspaceTransaction } from '../../../../server/core/db';
 import { requireRequestUser } from '../../../../server/identity/request-user';
 import { requireWorkspacePermission } from '../../../../server/identity/rbac';
 import { assertSameOrigin } from '../../../../server/core/security-boundary';
+import { consumeDistributedRateLimit } from '../../../../server/core/distributed-rate-limit';
 import { correlationId, handleRouteError, json } from '../../../../server/core/http';
 import { requireUuid } from '../../../../server/core/validation';
 import { postLedgerEntry } from '../../../../server/billing/ledger';
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
     const workspaceId = requireUuid(body.workspaceId, 'workspaceId');
     const walletId = requireUuid(body.walletId, 'walletId');
     await requireWorkspacePermission(userId, workspaceId, 'wallet.deposit');
+    await consumeDistributedRateLimit({ key: userId, scope: 'wallet:deposit', windowSeconds: 3600, maxRequests: 20 });
 
     const rawAmount = body.amountMinor;
     if (rawAmount == null || isNaN(Number(rawAmount)) || Number(rawAmount) <= 0) {

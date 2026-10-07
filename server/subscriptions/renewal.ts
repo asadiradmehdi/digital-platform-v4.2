@@ -114,7 +114,8 @@ export async function processSubscriptionRenewal(subscriptionId: string): Promis
                 COALESCE(SUM(CASE WHEN le.direction='CREDIT' THEN le.amount_minor ELSE -le.amount_minor END),0)::text AS balance
          FROM wallets w JOIN ledger_accounts la ON la.wallet_id=w.id
          LEFT JOIN ledger_entries le ON le.account_id=la.id
-         WHERE w.workspace_id=$1 AND la.account_code='MAIN' GROUP BY la.id`,
+         WHERE w.workspace_id=$1 AND la.account_code='MAIN' GROUP BY la.id
+         FOR UPDATE OF la`,
         [sub.workspace_id],
       );
       const accountId = acct.rows[0]?.account_id;
