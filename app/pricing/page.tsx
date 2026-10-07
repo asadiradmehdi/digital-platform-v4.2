@@ -146,7 +146,7 @@ export default function Pricing() {
                 )}
                 <h2 style={{ margin: 0, fontSize: 18, letterSpacing: '-.03em' }}>{plan.name}</h2>
               </div>
-              <p style={{ margin: 0, fontSize: 11, color: 'var(--muted)', lineHeight: 1.6 }}>{plan.description}</p>
+              <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>{plan.description}</p>
             </div>
 
             <div className="pricing-price">
@@ -194,11 +194,11 @@ export default function Pricing() {
 
       {/* Service pricing note */}
       <div className="pricing-note" style={{ marginBottom: 48 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: 240 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 20, alignItems: 'start' }}>
+          <div>
             <p className="panel-kicker" style={{ marginBottom: 6 }}>خدمات دیجیتال</p>
             <h2 style={{ margin: '0 0 10px', fontSize: 18, letterSpacing: '-.03em' }}>قیمت سفارش‌های شبکه‌های اجتماعی</h2>
-            <p style={{ margin: '0 0 16px', lineHeight: 2 }}>
+            <p style={{ margin: '0 0 16px', lineHeight: 2, fontSize: 12, color: 'var(--muted)' }}>
               قیمت فالوور، لایک، ویو و ممبر از کاتالوگ خدمات به‌صورت لحظه‌ای محاسبه می‌شود و با کیف پول پرداخت می‌گردد.
               تمام قیمت‌ها از Pricing Engine سمت سرور تأمین می‌شوند و هیچ محاسبه‌ای سمت کلاینت انجام نمی‌شود.
             </p>
@@ -207,7 +207,17 @@ export default function Pricing() {
               <ArrowLeft size={13} />
             </Link>
           </div>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '14px 18px', background: 'var(--surface-2)', borderRadius: 14 }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 10,
+            padding: '14px 16px',
+            background: 'var(--accent-soft)',
+            border: '1px solid rgba(26,86,219,.12)',
+            borderRadius: 14,
+            maxWidth: 280,
+            flexShrink: 0,
+          }}>
             <span style={{ marginTop: 2, color: 'var(--accent)', flexShrink: 0 }}><Info size={14} /></span>
             <p style={{ margin: 0, fontSize: 11, color: 'var(--muted)', lineHeight: 1.8 }}>
               قیمت دقیق هر خدمت از کاتالوگ زنده محاسبه می‌شود و پیش از ثبت سفارش به شما نشان داده می‌شود.

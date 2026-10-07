@@ -51,7 +51,7 @@ export default async function WorkflowDetailPage({ params }: { params: Promise<{
     s === 'COMPLETED' ? 'success' : s === 'FAILED' ? 'danger' : s === 'RUNNING' ? 'info' : 'warning';
 
   const runStatusLabel = (s: string) =>
-    ({ COMPLETED: 'تکمیل', FAILED: 'ناموفق', RUNNING: 'در حال اجرا', QUEUED: 'در صف' }[s] ?? s);
+    ({ COMPLETED: 'موفق', FAILED: 'ناموفق', RUNNING: 'در حال اجرا', QUEUED: 'در صف' }[s] ?? s);
 
   const runStatusIcon = (s: string) => {
     if (s === 'COMPLETED') return <CheckCircle2 size={13} />;
@@ -142,11 +142,11 @@ export default async function WorkflowDetailPage({ params }: { params: Promise<{
                   }}
                 >
                   <span className={`status-pill ${wf.active ? 'success' : 'warning'}`}>
-                    {wf.active ? 'فعال' : 'Draft'}
+                    {wf.active ? 'فعال' : 'پیش‌نویس'}
                   </span>
                   {wf.triggerType && (
                     <span style={{ fontSize: 10, color: 'var(--muted)' }}>
-                      Trigger: <span className="text-ltr" style={{ fontFamily: 'var(--font-latin)' }}>{wf.triggerType}</span>
+                      نقطه شروع: <span className="text-ltr" style={{ fontFamily: 'var(--font-latin)' }}>{wf.triggerType}</span>
                     </span>
                   )}
                   <span style={{ fontSize: 10, color: 'var(--subtle)' }}>
@@ -243,10 +243,10 @@ export default async function WorkflowDetailPage({ params }: { params: Promise<{
                   textTransform: 'uppercase',
                 }}
               >
-                Run History
+                تاریخچه
               </span>
               <h2 style={{ fontSize: 15, margin: '3px 0 0', fontWeight: 700, letterSpacing: '-.02em' }}>
-                تاریخچه اجرا
+                اجراهای اخیر
               </h2>
             </div>
             {runs.length > 0 && (
@@ -284,7 +284,7 @@ export default async function WorkflowDetailPage({ params }: { params: Promise<{
                 هنوز اجرایی ثبت نشده
               </h3>
               <p style={{ color: 'var(--muted)', fontSize: 11, lineHeight: 1.9, maxWidth: 340, margin: 0 }}>
-                هرگاه این Workflow اجرا شود، رکورد کامل آن اینجا نمایش داده می‌شود.
+                هر بار که این فرآیند اجرا شود، وضعیت، زمان و نتیجه آن اینجا ثبت می‌شود.
               </p>
             </div>
           ) : (

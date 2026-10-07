@@ -32,10 +32,10 @@ export default function AIWorkspace() {
                 <span style={{ fontSize: 11, color: 'var(--ink)', fontWeight: 600 }}>محیط اجرا</span>
               </div>
               <h1 style={{ fontSize: 'clamp(26px,3vw,36px)', letterSpacing: '-.04em', margin: 0, lineHeight: 1.2 }}>
-                مسئله را وارد کن.
+                چه کمکی می‌توانم بکنم؟
               </h1>
               <p style={{ margin: '6px 0 0', color: 'var(--muted)', fontSize: 11 }}>
-                مدل، context، فایل‌ها و مصرف در همین محیط کنترل می‌شوند.
+                درخواست خود را بنویسید — مدل انتخاب می‌شود و هزینه از کیف پول کسر می‌گردد.
               </p>
             </div>
             <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>

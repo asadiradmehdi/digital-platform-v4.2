@@ -226,7 +226,7 @@ function OrderNewForm() {
         <article className="surface-panel">
           <div className="panel-head" style={{ marginBottom: 20 }}>
             <div>
-              <p className="panel-kicker" style={{ margin: '0 0 2px' }}>CONFIGURATION</p>
+              <p className="panel-kicker" style={{ margin: '0 0 2px' }}>تنظیمات</p>
               <h2 style={{ margin: 0 }}>پیکربندی سفارش</h2>
             </div>
           </div>
@@ -281,7 +281,7 @@ function OrderNewForm() {
           <article className="surface-panel">
             <div className="panel-head" style={{ marginBottom: 16 }}>
               <div>
-                <p className="panel-kicker" style={{ margin: '0 0 2px' }}>SUMMARY</p>
+                <p className="panel-kicker" style={{ margin: '0 0 2px' }}>خلاصه</p>
                 <h2 style={{ margin: 0 }}>خلاصه سفارش</h2>
               </div>
             </div>
@@ -311,7 +311,7 @@ function OrderNewForm() {
           <article className="surface-panel">
             <div className="panel-head" style={{ marginBottom: 14 }}>
               <div>
-                <p className="panel-kicker" style={{ margin: '0 0 2px' }}>PAYMENT</p>
+                <p className="panel-kicker" style={{ margin: '0 0 2px' }}>پرداخت</p>
                 <h2 style={{ margin: 0 }}>پرداخت از کیف پول</h2>
               </div>
             </div>

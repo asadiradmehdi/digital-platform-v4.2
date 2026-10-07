@@ -66,7 +66,7 @@ export default async function Orders() {
           <div>
             <span className="eyebrow">خرید و مالی · سفارش‌ها</span>
             <h1>سفارش‌ها</h1>
-            <p>وضعیت، هزینه و timeline هر سفارش از یک منبع server-side.</p>
+            <p>همه سفارش‌های شما با وضعیت و هزینه لحظه‌ای.</p>
           </div>
           <Link className="button primary" href="/services">
             <Plus size={15} />سفارش جدید
@@ -117,7 +117,7 @@ export default async function Orders() {
             <article className="surface-panel data-panel" style={{ padding: 0, overflow: 'hidden' }}>
               <div style={{ padding: '20px 22px 0', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', paddingBottom: 16 }}>
                 <div>
-                  <p className="panel-kicker" style={{ margin: '0 0 2px' }}>ORDERS</p>
+                  <p className="panel-kicker" style={{ margin: '0 0 2px' }}>سفارش‌ها</p>
                   <h2 style={{ margin: 0, fontSize: 15, letterSpacing: '-.02em' }}>تمام سفارش‌ها</h2>
                 </div>
                 <Link href="/services" className="button secondary" style={{ textDecoration: 'none', fontSize: 11 }}>

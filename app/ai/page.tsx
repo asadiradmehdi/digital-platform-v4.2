@@ -10,7 +10,7 @@ const MODEL_CATEGORIES = [
   {
     eyebrow: 'زبان',
     title: 'نوشتن و محتوا',
-    description: 'بازنویسی، خلاصه‌سازی، ترجمه و تولید محتوای ساختاریافته با مدل‌های زبانی.',
+    description: 'کپشن، مقاله، ایمیل و هر متن فارسی یا انگلیسی را با مدل‌های زبانی بنویسید، بازنویسی یا خلاصه کنید.',
     icon: Sparkles,
     models: ['GPT-4o', 'Claude 3.5', 'Gemini Pro'],
     href: '/ai/workspace',
@@ -19,7 +19,7 @@ const MODEL_CATEGORIES = [
   {
     eyebrow: 'تصویر',
     title: 'تولید تصویر',
-    description: 'ساخت و ویرایش تصویر با کنترل مدل، سبک و میزان مصرف.',
+    description: 'از توضیح متنی به تصویر برسید؛ برای محتوا، محصول یا بازاریابی.',
     icon: Image,
     models: ['DALL·E 3', 'Stable Diffusion', 'Midjourney'],
     href: '/ai/workspace',
@@ -28,7 +28,7 @@ const MODEL_CATEGORIES = [
   {
     eyebrow: 'ویدیو',
     title: 'پردازش ویدیو',
-    description: 'تولید، خلاصه‌سازی و پردازش ویدیو با usage metering دقیق.',
+    description: 'ویدیو بسازید یا متن آن را استخراج کنید؛ مصرف به‌صورت لحظه‌ای محاسبه می‌شود.',
     icon: Video,
     models: ['Sora', 'Runway', 'Pika'],
     href: '/ai/workspace',
@@ -37,7 +37,7 @@ const MODEL_CATEGORIES = [
   {
     eyebrow: 'صدا',
     title: 'صدا و گفتار',
-    description: 'تبدیل متن به صدا، تشخیص گفتار و voice workflow با کیفیت حرفه‌ای.',
+    description: 'متن را به صدای طبیعی تبدیل کنید یا فایل صوتی را به متن دربیاورید.',
     icon: AudioLines,
     models: ['Whisper', 'ElevenLabs', 'TTS-1'],
     href: '/ai/workspace',
@@ -45,8 +45,8 @@ const MODEL_CATEGORIES = [
   },
   {
     eyebrow: 'کد',
-    title: 'کدنویسی و تحقیق',
-    description: 'تحلیل، کدنویسی و تحقیق با context کنترل‌شده و خروجی ساختاریافته.',
+    title: 'کدنویسی و تحلیل',
+    description: 'کد بنویسید، باگ پیدا کنید یا داده را با یک مدل تخصصی تحلیل کنید.',
     icon: Code2,
     models: ['Claude 3.5', 'GPT-4o', 'Gemini'],
     href: '/ai/workspace',
@@ -54,8 +54,8 @@ const MODEL_CATEGORIES = [
   },
   {
     eyebrow: 'عامل',
-    title: 'Agent و RAG',
-    description: 'دانش سازمانی، ابزارها و Agentهای قابل audit با policy کنترل‌شده.',
+    title: 'هوش مصنوعی خودکار',
+    description: 'عامل‌هایی بسازید که با ابزارها کار کنند، به پایگاه دانش دسترسی داشته باشند و قابل ردیابی باشند.',
     icon: Bot,
     models: ['GPT-4o', 'Claude 3 Opus', 'LangChain'],
     href: '/ai/workspace',
@@ -68,11 +68,11 @@ export default function AI() {
     <AppShell>
       <main className="workspace-page-content">
         <SurfaceHero
-          eyebrow="هوش مصنوعی · مرکز مدل‌ها"
-          title="AI که برای اجرا ساخته شده."
-          description="یک محیط واحد برای ساخت، اجرای کنترل‌شده، اندازه‌گیری مصرف و مدیریت هزینه مدل‌های هوش مصنوعی."
+          eyebrow="هوش مصنوعی"
+          title="یک محیط، همه مدل‌ها."
+          description="متن بنویسید، تصویر بسازید، کد تحلیل کنید یا فرآیند خودکار راه‌اندازی کنید — همه از یک جا، با کنترل کامل هزینه."
           primaryHref="/ai/workspace"
-          primaryLabel="باز کردن محیط"
+          primaryLabel="شروع کار"
           secondaryHref="/pricing"
           secondaryLabel="مشاهده پلن‌ها"
         />
@@ -84,7 +84,7 @@ export default function AI() {
             <div>
               <span className="eyebrow">دسته‌بندی مدل‌ها</span>
               <h2 style={{ fontSize: 18, fontWeight: 700, margin: '4px 0 0', letterSpacing: '-.02em' }}>
-                مدل مناسب کار خود را انتخاب کنید
+                چه کاری می‌خواهید انجام دهید؟
               </h2>
             </div>
             <Link
@@ -170,10 +170,10 @@ export default function AI() {
               >
                 <Zap size={16} />
               </div>
-              <span style={{ fontSize: 12, fontWeight: 700 }}>مسیریابی هوشمند</span>
+              <span style={{ fontSize: 12, fontWeight: 700 }}>انتخاب خودکار مدل</span>
             </div>
             <p style={{ fontSize: 10, color: 'var(--muted)', lineHeight: 1.9, margin: 0 }}>
-              انتخاب خودکار بهترین مدل بر اساس نوع درخواست، هزینه و سرعت مورد نیاز.
+              سیستم بر اساس نوع درخواست، بهترین مدل را با کمترین هزینه انتخاب می‌کند.
             </p>
           </article>
           <article
@@ -201,10 +201,10 @@ export default function AI() {
               >
                 <Sparkles size={16} />
               </div>
-              <span style={{ fontSize: 12, fontWeight: 700 }}>محاسبه لحظه‌ای مصرف</span>
+              <span style={{ fontSize: 12, fontWeight: 700 }}>هزینه هر درخواست</span>
             </div>
             <p style={{ fontSize: 10, color: 'var(--muted)', lineHeight: 1.9, margin: 0 }}>
-              شمارش token و هزینه برای هر درخواست با گزارش شفاف در کیف پول.
+              مصرف هر بار از کیف پول کسر می‌شود و در تاریخچه قابل مشاهده است.
             </p>
           </article>
           <article
@@ -232,10 +232,10 @@ export default function AI() {
               >
                 <Bot size={16} />
               </div>
-              <span style={{ fontSize: 12, fontWeight: 700 }}>تاریخچه و Audit</span>
+              <span style={{ fontSize: 12, fontWeight: 700 }}>تاریخچه مکالمات</span>
             </div>
             <p style={{ fontSize: 10, color: 'var(--muted)', lineHeight: 1.9, margin: 0 }}>
-              ثبت کامل هر مکالمه، هزینه و وضعیت برای بررسی و گزارش‌گیری.
+              هر مکالمه با هزینه و وضعیت ثبت می‌شود و همیشه قابل بررسی است.
             </p>
           </article>
         </section>

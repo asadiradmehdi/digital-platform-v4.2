@@ -75,15 +75,15 @@ export default function AuthForm() {
 
         {/* Heading */}
         <span className="eyebrow" style={{ marginTop: 4 }}>
-          {mode === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT'}
+          {mode === 'login' ? 'ورود به حساب' : 'ثبت‌نام'}
         </span>
         <h1 style={{ margin: '6px 0 0' }}>
-          {mode === 'login' ? 'ورود به Workspace' : 'ساخت حساب جدید'}
+          {mode === 'login' ? 'خوش آمدید' : 'ساخت حساب جدید'}
         </h1>
         <p>
           {mode === 'login'
             ? 'برای دسترسی به داشبورد، سفارش‌ها، کیف پول و پروژه‌های AI وارد شوید.'
-            : 'حساب رایگان بسازید و پلتفرم را کشف کنید.'}
+            : 'یک حساب رایگان بسازید و به تمام امکانات پلتفرم دسترسی پیدا کنید.'}
         </p>
 
         {/* Error */}
@@ -98,40 +98,42 @@ export default function AuthForm() {
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
           {mode === 'register' && (
             <label>
-              نام
+              نام و نام خانوادگی
               <input
                 name="name"
                 autoComplete="name"
                 required
                 minLength={2}
                 maxLength={120}
-                placeholder="نام شما"
               />
             </label>
           )}
 
           <label>
-            ایمیل
+            آدرس ایمیل
             <input
               name="email"
               type="email"
               autoComplete="email"
               required
-              placeholder="your@email.com"
               dir="ltr"
             />
           </label>
 
           <label>
-            رمز عبور
+            {mode === 'login' ? 'رمز عبور' : 'رمز عبور جدید'}
             <input
               name="password"
               type="password"
               autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               required
               minLength={mode === 'register' ? 14 : 8}
-              placeholder={mode === 'register' ? 'حداقل ۱۴ کاراکتر' : '••••••••'}
             />
+            {mode === 'register' && (
+              <span style={{ fontSize: 10, color: 'var(--subtle)', lineHeight: 1.7, marginTop: -2 }}>
+                حداقل ۱۴ کاراکتر — ترکیب حروف بزرگ، کوچک، عدد و نماد.
+              </span>
+            )}
           </label>
 
           {mode === 'login' && (
@@ -179,7 +181,7 @@ export default function AuthForm() {
         <div className="auth-divider">
           {mode === 'login' ? (
             <>
-              <span>حساب ندارید؟</span>
+              <span>حساب کاربری ندارید؟</span>
               <button
                 type="button"
                 className="auth-switch"

@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { CheckCircle2, Laptop2, Loader2, LogOut, Smartphone } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Laptop2, Loader2, LogOut, Smartphone, X } from 'lucide-react';
 
 interface Session {
   id: string;
@@ -20,6 +20,7 @@ export default function SessionManager({ sessions }: { sessions: Session[] }) {
   const [revoking, setRevoking] = useState<string | null>(null);
   const [revokingAll, setRevokingAll] = useState(false);
   const [allRevoked, setAllRevoked] = useState(false);
+  const [confirmRevokeAll, setConfirmRevokeAll] = useState(false);
 
   const revokeOne = async (sessionId: string) => {
     setRevoking(sessionId);
@@ -126,23 +127,72 @@ export default function SessionManager({ sessions }: { sessions: Session[] }) {
         })}
       </div>
 
-      {list.length > 1 && !allRevoked && (
+      {list.length > 1 && !allRevoked && !confirmRevokeAll && (
         <button
           className="button danger"
           style={{ marginTop: 16, width: '100%' }}
           type="button"
           disabled={revokingAll}
-          onClick={() => void revokeAll()}
+          onClick={() => setConfirmRevokeAll(true)}
         >
-          {revokingAll ? (
-            <>
-              <Loader2 size={14} className="spin-icon" />
-              در حال خروج...
-            </>
-          ) : (
-            'خروج از همه دستگاه‌ها به جز این'
-          )}
+          خروج از همه دستگاه‌ها به جز این
         </button>
+      )}
+
+      {confirmRevokeAll && !allRevoked && (
+        <div
+          style={{
+            marginTop: 16,
+            padding: '16px 18px',
+            background: 'var(--warning-soft)',
+            border: '1px solid rgba(217,119,6,.22)',
+            borderRadius: 13,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 11, marginBottom: 14 }}>
+            <AlertTriangle size={16} style={{ color: 'var(--warning)', flex: 'none', marginTop: 1 }} />
+            <div>
+              <strong style={{ display: 'block', fontSize: 13, color: 'var(--ink)', marginBottom: 3 }}>
+                خروج از همه دستگاه‌ها
+              </strong>
+              <span style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.7 }}>
+                تمام نشست‌های فعال به جز دستگاه جاری فوراً بسته می‌شوند. این عمل قابل بازگشت نیست.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setConfirmRevokeAll(false)}
+              style={{ background: 'none', color: 'var(--subtle)', display: 'flex', padding: 2, flex: 'none', marginTop: -2 }}
+              aria-label="انصراف"
+            >
+              <X size={14} />
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              className="button danger"
+              type="button"
+              disabled={revokingAll}
+              onClick={() => { setConfirmRevokeAll(false); void revokeAll(); }}
+            >
+              {revokingAll ? (
+                <>
+                  <Loader2 size={14} className="spin-icon" />
+                  در حال خروج...
+                </>
+              ) : (
+                'تأیید و خروج'
+              )}
+            </button>
+            <button
+              className="button secondary"
+              type="button"
+              onClick={() => setConfirmRevokeAll(false)}
+            >
+              انصراف
+            </button>
+          </div>
+        </div>
       )}
 
       {allRevoked && (

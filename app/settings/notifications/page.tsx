@@ -115,7 +115,7 @@ export default function NotificationSettings() {
               </div>
             </div>
             <p style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.8, margin: '0 0 20px' }}>
-              کانال‌هایی که می‌خواهید اعلان‌ها را از طریق آن‌ها دریافت کنید.
+              روش‌های ارسال اعلان را انتخاب کنید. غیرفعال کردن یک کانال، همه دسته‌های آن را متوقف می‌کند.
             </p>
             <div style={{ display: 'grid', gap: 2 }}>
               {CHANNELS.map(ch => {

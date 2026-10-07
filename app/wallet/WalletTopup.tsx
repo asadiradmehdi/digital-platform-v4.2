@@ -1,15 +1,15 @@
 'use client';
 import { useState } from 'react';
-import { CheckCircle2, CreditCard, Loader2, AlertCircle, Zap } from 'lucide-react';
+import { CheckCircle2, CreditCard, Loader2, AlertCircle, ShieldCheck } from 'lucide-react';
 import { formatTomanFromIRR } from '../../lib/format';
 
 const QUICK_AMOUNTS = [50_000_000, 100_000_000, 200_000_000, 500_000_000];
 
 const AMOUNT_LABELS: Record<number, string> = {
-  50_000_000:  '۵,۰۰۰ تومان',
-  100_000_000: '۱۰,۰۰۰ تومان',
-  200_000_000: '۲۰,۰۰۰ تومان',
-  500_000_000: '۵۰,۰۰۰ تومان',
+  50_000_000:  '۵٬۰۰۰ تومان',
+  100_000_000: '۱۰٬۰۰۰ تومان',
+  200_000_000: '۲۰٬۰۰۰ تومان',
+  500_000_000: '۵۰٬۰۰۰ تومان',
 };
 
 export default function WalletTopup() {
@@ -99,11 +99,8 @@ export default function WalletTopup() {
               <span style={{ fontSize: 13, fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: selected === a && loading ? 'var(--accent-strong)' : 'var(--ink)' }}>
                 {AMOUNT_LABELS[a] ?? formatTomanFromIRR(a)}
               </span>
-              <span style={{ fontSize: 9, color: 'var(--subtle)', fontVariantNumeric: 'tabular-nums' }}>
-                {new Intl.NumberFormat('fa-IR').format(Math.round(a / 10))} تومان
-              </span>
               {selected === a && loading && (
-                <Loader2 size={12} style={{ color: 'var(--accent)', alignSelf: 'flex-end', position: 'absolute' }} />
+                <Loader2 size={12} style={{ color: 'var(--accent)', alignSelf: 'flex-end' }} />
               )}
             </button>
           ))}
@@ -144,8 +141,8 @@ export default function WalletTopup() {
 
       {/* Trust note */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, padding: '10px 13px', background: 'var(--success-soft)', borderRadius: 12 }}>
-        <Zap size={12} style={{ color: 'var(--success)', flexShrink: 0, marginTop: 1 }} />
-        <p style={{ margin: 0, fontSize: 10, color: 'var(--success)', lineHeight: 1.7 }}>
+        <ShieldCheck size={12} style={{ color: 'var(--success)', flexShrink: 0, marginTop: 1 }} />
+        <p style={{ margin: 0, fontSize: 11, color: 'var(--success)', lineHeight: 1.7 }}>
           موجودی بلافاصله پس از تأیید به کیف پول اضافه می‌شود.
         </p>
       </div>

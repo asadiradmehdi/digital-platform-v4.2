@@ -103,6 +103,9 @@ export default function PasswordForm() {
             {showNext ? <EyeOff size={15} /> : <Eye size={15} />}
           </button>
         </div>
+        <span style={{ fontSize: 10, color: 'var(--subtle)', lineHeight: 1.7, marginTop: -2 }}>
+          حداقل ۱۴ کاراکتر — ترکیب حروف بزرگ، کوچک، عدد و نماد توصیه می‌شود.
+        </span>
       </label>
 
       <label>
@@ -117,20 +120,6 @@ export default function PasswordForm() {
           minLength={14}
         />
       </label>
-
-      <p
-        style={{
-          fontSize: 11,
-          color: 'var(--subtle)',
-          margin: '-4px 0 0',
-          lineHeight: 1.8,
-          padding: '8px 12px',
-          background: 'var(--surface-2)',
-          borderRadius: 8,
-        }}
-      >
-        حداقل ۱۴ کاراکتر — ترکیب حروف بزرگ، کوچک، عدد و نماد.
-      </p>
 
       {error && (
         <div

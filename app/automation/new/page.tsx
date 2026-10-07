@@ -9,18 +9,18 @@ import {
 import { AppShell } from '../../../components/AppShell';
 
 const triggerTypes = [
-  { id: 'webhook', icon: Webhook, label: 'Webhook', desc: 'درخواست HTTP ورودی از سرویس خارجی' },
-  { id: 'schedule', icon: Timer, label: 'زمان‌بندی', desc: 'اجرای دوره‌ای (هر N دقیقه/ساعت/روز)' },
-  { id: 'order', icon: Zap, label: 'رویداد سفارش', desc: 'هنگام ثبت، تکمیل یا لغو سفارش' },
-  { id: 'manual', icon: Globe, label: 'دستی', desc: 'اجرا از طریق API یا داشبورد' },
+  { id: 'webhook', icon: Webhook, label: 'Webhook', desc: 'هنگامی که یک سرویس خارجی درخواست HTTP ارسال کند' },
+  { id: 'schedule', icon: Timer, label: 'زمان‌بندی', desc: 'به‌صورت دوره‌ای؛ مثلاً هر روز صبح یا هر ساعت یک‌بار' },
+  { id: 'order', icon: Zap, label: 'رویداد سفارش', desc: 'هنگام ثبت، تکمیل یا لغو هر سفارش در پلتفرم' },
+  { id: 'manual', icon: Globe, label: 'اجرای دستی', desc: 'با کلیک از داشبورد یا فراخوانی مستقیم از API' },
 ];
 
 const actionTypes = [
-  { id: 'http', icon: Globe, label: 'HTTP Request', desc: 'فراخوانی URL خارجی' },
-  { id: 'message', icon: MessageSquare, label: 'ارسال پیام', desc: 'ارسال پیام به کانال یا کاربر' },
-  { id: 'email', icon: Mail, label: 'ارسال ایمیل', desc: 'ارسال ایمیل قالب‌بندی‌شده' },
-  { id: 'condition', icon: GitBranch, label: 'شرط (Branch)', desc: 'مسیریابی بر اساس شرط' },
-  { id: 'delay', icon: Timer, label: 'تأخیر', desc: 'انتظار برای مدت مشخص' },
+  { id: 'http', icon: Globe, label: 'درخواست HTTP', desc: 'ارسال درخواست به یک URL خارجی' },
+  { id: 'message', icon: MessageSquare, label: 'ارسال پیام', desc: 'ارسال پیام به کانال یا کاربر مشخص' },
+  { id: 'email', icon: Mail, label: 'ارسال ایمیل', desc: 'ایمیل با قالب آماده ارسال کنید' },
+  { id: 'condition', icon: GitBranch, label: 'شرط و انشعاب', desc: 'مسیر اجرا را بر اساس یک شرط تقسیم کنید' },
+  { id: 'delay', icon: Timer, label: 'تأخیر', desc: 'چند ثانیه یا دقیقه صبر کنید، سپس ادامه دهید' },
 ];
 
 type Step = { id: string; type: string; label: string };
@@ -110,17 +110,17 @@ export default function NewWorkflow() {
               <CheckCircle2 size={28} />
             </div>
             <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0, letterSpacing: '-.02em' }}>
-              Workflow ذخیره شد
+              فرآیند ذخیره شد
             </h2>
             <p style={{ color: 'var(--muted)', fontSize: 13, lineHeight: 1.85, maxWidth: 380, margin: 0 }}>
-              Workflow در وضعیت Draft ذخیره شد. برای فعال‌سازی، آن را Publish کنید.
+              فرآیند در وضعیت پیش‌نویس ذخیره شد. برای فعال‌سازی، آن را از صفحه جزئیات منتشر کنید.
             </p>
             <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
               <Link className="button primary" href="/automation">
-                همه Workflow‌ها
+                همه فرآیندها
               </Link>
               <Link className="button secondary" href="/automation/new">
-                Workflow جدید
+                فرآیند جدید
               </Link>
             </div>
           </div>
@@ -160,7 +160,7 @@ export default function NewWorkflow() {
             }}
           >
             <div>
-              <span className="eyebrow">اتوماسیون · Workflow جدید</span>
+              <span className="eyebrow">اتوماسیون · فرآیند جدید</span>
               <h1
                 style={{
                   fontSize: 'clamp(22px, 3vw, 30px)',
@@ -169,10 +169,10 @@ export default function NewWorkflow() {
                   letterSpacing: '-.03em',
                 }}
               >
-                Workflow جدید
+                فرآیند خودکار جدید
               </h1>
               <p style={{ color: 'var(--muted)', fontSize: 12, margin: 0 }}>
-                Trigger، مراحل اجرا و شرط‌ها را تعریف کنید.
+                نام را وارد کنید، نقطه شروع را انتخاب کنید و مراحل اجرا را اضافه کنید.
               </p>
             </div>
             <Link
@@ -220,12 +220,12 @@ export default function NewWorkflow() {
               </div>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)' }}>
-                  نام Workflow
+                  نام فرآیند
                 </span>
                 <input
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  placeholder="مثال: پاسخ خودکار به تیکت‌های پشتیبانی"
+                  placeholder="مثلاً: پاسخ خودکار به تیکت‌های پشتیبانی"
                   style={{
                     padding: '10px 13px',
                     borderRadius: 10,
@@ -260,7 +260,7 @@ export default function NewWorkflow() {
                   marginBottom: 12,
                 }}
               >
-                Trigger
+                نقطه شروع
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
                 {triggerTypes.map(t => {
@@ -380,7 +380,7 @@ export default function NewWorkflow() {
                     <selectedTrigger.icon size={12} />
                   </div>
                   <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)' }}>
-                    Trigger: {selectedTrigger.label}
+                    شروع با: {selectedTrigger.label}
                   </span>
                 </div>
               )}
@@ -394,7 +394,7 @@ export default function NewWorkflow() {
                     fontSize: 11,
                   }}
                 >
-                  یک Action از پنل کنار اضافه کنید.
+                  از پنل سمت راست یک مرحله اضافه کنید.
                 </div>
               )}
 
@@ -479,7 +479,7 @@ export default function NewWorkflow() {
                   marginBottom: 12,
                 }}
               >
-                Actions
+                مراحل قابل اضافه‌کردن
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {actionTypes.map(a => (
@@ -562,7 +562,7 @@ export default function NewWorkflow() {
                 onClick={handleSave}
                 disabled={!name.trim() || submitting}
               >
-                {submitting ? 'در حال ذخیره...' : 'ذخیره Workflow'}
+                {submitting ? 'در حال ذخیره...' : 'ذخیره فرآیند'}
               </button>
             </div>
           </div>

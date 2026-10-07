@@ -138,7 +138,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             href="/orders"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--muted)', fontSize: 11, textDecoration: 'none', marginBottom: 10 }}
           >
-            <ArrowRight size={13} />سفارش‌ها
+            <ArrowRight size={13} />بازگشت به سفارش‌ها
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
             <div>
@@ -162,7 +162,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <article className="surface-panel">
             <div className="panel-head" style={{ marginBottom: 22 }}>
               <div>
-                <p className="panel-kicker" style={{ margin: '0 0 2px' }}>TIMELINE</p>
+                <p className="panel-kicker" style={{ margin: '0 0 2px' }}>تاریخچه</p>
                 <h2 style={{ margin: 0 }}>وضعیت و تاریخچه</h2>
               </div>
             </div>
@@ -208,7 +208,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             <article className="surface-panel">
               <div className="panel-head" style={{ marginBottom: 16 }}>
                 <div>
-                  <p className="panel-kicker" style={{ margin: '0 0 2px' }}>DETAILS</p>
+                  <p className="panel-kicker" style={{ margin: '0 0 2px' }}>جزئیات</p>
                   <h2 style={{ margin: 0 }}>جزئیات سفارش</h2>
                 </div>
               </div>
@@ -259,7 +259,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             <article className="surface-panel">
               <div className="panel-head" style={{ marginBottom: 14 }}>
                 <div>
-                  <p className="panel-kicker" style={{ margin: '0 0 2px' }}>ACTIONS</p>
+                  <p className="panel-kicker" style={{ margin: '0 0 2px' }}>عملیات</p>
                   <h2 style={{ margin: 0 }}>عملیات سریع</h2>
                 </div>
               </div>

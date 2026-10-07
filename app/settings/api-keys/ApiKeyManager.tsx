@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, CheckCircle2, Copy, KeyRound, Loader2, Plus, Trash2, X } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle2, Copy, KeyRound, Loader2, Plus, Trash2, X } from 'lucide-react';
 
 type ApiKey = {
   id: string;
@@ -27,6 +27,7 @@ export function ApiKeyManager({ initialKeys, workspaceId }: { initialKeys: ApiKe
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   async function handleCreate() {
     if (!newName.trim()) { setError('نام کلید الزامی است'); return; }
@@ -56,8 +57,8 @@ export function ApiKeyManager({ initialKeys, workspaceId }: { initialKeys: ApiKe
   }
 
   async function handleDelete(keyId: string) {
-    if (!confirm('این کلید API حذف شده و قابل بازیابی نیست. ادامه می‌دهید؟')) return;
     setDeletingId(keyId);
+    setConfirmDeleteId(null);
     try {
       const res = await fetch('/api/v1/b2b/api-keys', {
         method: 'DELETE',
@@ -236,10 +237,11 @@ export function ApiKeyManager({ initialKeys, workspaceId }: { initialKeys: ApiKe
                       cursor: 'pointer',
                       fontWeight: newEnv === e ? 700 : 400,
                       transition: 'all .13s',
+                      fontFamily: 'var(--font-latin)',
                     }}
                     onClick={() => setNewEnv(e)}
                   >
-                    {e === 'live' ? '🔴 Live' : '🧪 Test'}
+                    {e === 'live' ? 'Live' : 'Test'}
                   </button>
                 ))}
               </div>
@@ -335,88 +337,127 @@ export function ApiKeyManager({ initialKeys, workspaceId }: { initialKeys: ApiKe
             const lastUsed = k.lastUsedAt
               ? new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(k.lastUsedAt))
               : 'استفاده نشده';
+            const isConfirming = confirmDeleteId === k.id;
             return (
-              <div key={k.id} className="api-key-row">
-                <div
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: 10,
-                    background: k.environment === 'live' ? 'var(--success-soft)' : 'var(--info-soft)',
-                    color: k.environment === 'live' ? 'var(--success)' : 'var(--info)',
-                    display: 'grid',
-                    placeItems: 'center',
-                    flex: 'none',
-                  }}
-                >
-                  <KeyRound size={16} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <b style={{ fontSize: 13, color: 'var(--ink)' }}>{k.name}</b>
-                    <span
-                      className={`status-pill ${k.environment === 'live' ? 'success' : 'info'}`}
-                      style={{ fontSize: 8 }}
-                    >
-                      {k.environment === 'live' ? 'Live' : 'Test'}
-                    </span>
-                  </div>
-                  <code
+              <div key={k.id} style={{ display: 'grid', gap: 0 }}>
+                <div className="api-key-row" style={isConfirming ? { borderBottomLeftRadius: 0, borderBottomRightRadius: 0, borderBottom: '1px solid rgba(220,38,38,.15)' } : undefined}>
+                  <div
                     style={{
-                      display: 'block',
-                      fontSize: 11,
-                      color: 'var(--subtle)',
-                      fontFamily: 'var(--font-latin), monospace',
-                      direction: 'ltr',
-                      textAlign: 'right',
+                      width: 38,
+                      height: 38,
+                      borderRadius: 10,
+                      background: k.environment === 'live' ? 'var(--success-soft)' : 'var(--info-soft)',
+                      color: k.environment === 'live' ? 'var(--success)' : 'var(--info)',
+                      display: 'grid',
+                      placeItems: 'center',
+                      flex: 'none',
                     }}
                   >
-                    {k.keyPrefix}••••••••••••••••
-                  </code>
-                  {k.scopes.length > 0 && (
-                    <div style={{ display: 'flex', gap: 5, marginTop: 8, flexWrap: 'wrap' }}>
-                      {k.scopes.map(s => (
-                        <span
-                          key={s}
-                          style={{
-                            fontSize: 9,
-                            background: 'var(--surface-3)',
-                            border: '1px solid var(--line)',
-                            borderRadius: 5,
-                            padding: '2px 8px',
-                            fontFamily: 'var(--font-latin), monospace',
-                            direction: 'ltr',
-                            color: 'var(--muted)',
-                          }}
-                        >
-                          {s}
-                        </span>
-                      ))}
+                    <KeyRound size={16} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <b style={{ fontSize: 13, color: 'var(--ink)' }}>{k.name}</b>
+                      <span
+                        className={`status-pill ${k.environment === 'live' ? 'success' : 'info'}`}
+                        style={{ fontSize: 8 }}
+                      >
+                        {k.environment === 'live' ? 'Live' : 'Test'}
+                      </span>
                     </div>
-                  )}
-                  <p style={{ margin: '7px 0 0', fontSize: 10, color: 'var(--subtle)' }}>
-                    ساخته‌شده: {created} · آخرین استفاده: {lastUsed}
-                  </p>
+                    <code
+                      style={{
+                        display: 'block',
+                        fontSize: 11,
+                        color: 'var(--subtle)',
+                        fontFamily: 'var(--font-latin), monospace',
+                        direction: 'ltr',
+                        textAlign: 'right',
+                      }}
+                    >
+                      {k.keyPrefix}••••••••••••••••
+                    </code>
+                    {k.scopes.length > 0 && (
+                      <div style={{ display: 'flex', gap: 5, marginTop: 8, flexWrap: 'wrap' }}>
+                        {k.scopes.map(s => (
+                          <span
+                            key={s}
+                            style={{
+                              fontSize: 9,
+                              background: 'var(--surface-3)',
+                              border: '1px solid var(--line)',
+                              borderRadius: 5,
+                              padding: '2px 8px',
+                              fontFamily: 'var(--font-latin), monospace',
+                              direction: 'ltr',
+                              color: 'var(--muted)',
+                            }}
+                          >
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <p style={{ margin: '7px 0 0', fontSize: 10, color: 'var(--subtle)' }}>
+                      ساخته‌شده: {created} · آخرین استفاده: {lastUsed}
+                    </p>
+                  </div>
+                  <button
+                    aria-label="حذف کلید"
+                    disabled={deletingId === k.id}
+                    style={{
+                      background: isConfirming ? 'var(--danger-soft)' : 'none',
+                      color: deletingId === k.id ? 'var(--subtle)' : 'var(--danger)',
+                      height: 36,
+                      width: 36,
+                      border: '1px solid rgba(220,38,38,.2)',
+                      borderRadius: 9,
+                      display: 'grid',
+                      placeItems: 'center',
+                      cursor: deletingId === k.id ? 'not-allowed' : 'pointer',
+                      flex: 'none',
+                    }}
+                    onClick={() => setConfirmDeleteId(isConfirming ? null : k.id)}
+                  >
+                    {deletingId === k.id ? <Loader2 size={14} className="spin-icon" /> : <Trash2 size={14} />}
+                  </button>
                 </div>
-                <button
-                  aria-label="حذف کلید"
-                  disabled={deletingId === k.id}
-                  style={{
-                    background: 'none',
-                    color: deletingId === k.id ? 'var(--subtle)' : 'var(--danger)',
-                    height: 36,
-                    width: 36,
-                    border: '1px solid rgba(220,38,38,.2)',
-                    borderRadius: 9,
-                    display: 'grid',
-                    placeItems: 'center',
-                    cursor: deletingId === k.id ? 'not-allowed' : 'pointer',
-                    flex: 'none',
-                  }}
-                  onClick={() => void handleDelete(k.id)}
-                >
-                  {deletingId === k.id ? <Loader2 size={14} className="spin-icon" /> : <Trash2 size={14} />}
-                </button>
+                {isConfirming && (
+                  <div
+                    style={{
+                      padding: '14px 16px',
+                      background: 'var(--danger-soft)',
+                      border: '1px solid rgba(220,38,38,.18)',
+                      borderTop: 'none',
+                      borderRadius: '0 0 13px 13px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                    }}
+                  >
+                    <AlertTriangle size={14} style={{ color: 'var(--danger)', flex: 'none' }} />
+                    <span style={{ flex: 1, fontSize: 11, color: 'var(--danger)', lineHeight: 1.7 }}>
+                      این کلید پس از حذف غیرقابل بازیابی است.
+                    </span>
+                    <button
+                      className="button danger"
+                      type="button"
+                      style={{ height: 32, padding: '0 12px', fontSize: 11, minHeight: 32 }}
+                      disabled={deletingId === k.id}
+                      onClick={() => void handleDelete(k.id)}
+                    >
+                      {deletingId === k.id ? <Loader2 size={12} className="spin-icon" /> : 'حذف'}
+                    </button>
+                    <button
+                      className="button secondary"
+                      type="button"
+                      style={{ height: 32, padding: '0 12px', fontSize: 11, minHeight: 32 }}
+                      onClick={() => setConfirmDeleteId(null)}
+                    >
+                      انصراف
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}

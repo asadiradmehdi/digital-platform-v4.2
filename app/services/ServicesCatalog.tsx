@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { Bot, Film, Hash, Heart, Instagram, MessageCircle, Music2, Play, Sparkles, Star, Users, Workflow, Youtube, Zap } from 'lucide-react';
+import { Bot, Film, Hash, Heart, Instagram, MessageCircle, Music2, Play, Search, Sparkles, Star, Users, Workflow, Youtube, Zap } from 'lucide-react';
 import type { CatalogService } from '../../server/commerce/catalog';
 
 type Category = 'همه' | 'اینستاگرام' | 'تلگرام' | 'تیک‌تاک' | 'یوتیوب' | 'هوش مصنوعی' | 'اتوماسیون';
@@ -73,6 +73,16 @@ const badgeColors: Record<string, string> = {
   'Pro':    'accent',
 };
 
+/** Platform-specific icon tint — provides visual differentiation without external assets */
+const platformIconStyle: Record<string, { color: string; background: string; border: string }> = {
+  'اینستاگرام': { color: '#e1306c', background: 'rgba(225,48,108,.08)',  border: 'rgba(225,48,108,.15)'  },
+  'تلگرام':     { color: '#229ed9', background: 'rgba(34,158,217,.08)',   border: 'rgba(34,158,217,.15)'  },
+  'تیک‌تاک':    { color: '#111111', background: 'rgba(0,0,0,.06)',        border: 'rgba(0,0,0,.12)'       },
+  'یوتیوب':     { color: '#cc0000', background: 'rgba(204,0,0,.08)',      border: 'rgba(204,0,0,.15)'     },
+  'هوش مصنوعی': { color: '#1a56db', background: 'rgba(26,86,219,.07)',    border: 'rgba(26,86,219,.14)'   },
+  'اتوماسیون':  { color: '#7c3aed', background: 'rgba(124,58,237,.08)',   border: 'rgba(124,58,237,.15)'  },
+};
+
 export default function ServicesCatalog({ dbServices }: { dbServices?: CatalogService[] | null }) {
   const [active, setActive] = useState<Category>('همه');
 
@@ -114,41 +124,68 @@ export default function ServicesCatalog({ dbServices }: { dbServices?: CatalogSe
         ))}
       </div>
 
-      <div className="service-catalog">
-        {filtered.map(svc => {
-          const Icon = svc.icon;
-          return (
-            <div key={svc.id} className="service-card">
-              <div className="service-card-head">
-                <div className="service-icon"><Icon size={20}/></div>
-                <div className="service-card-head-copy">
-                  <h3>
-                    {svc.title}
-                    {svc.badge && (
-                      <span
-                        className={`status-pill ${badgeColors[svc.badge] ?? ''}`}
-                        style={{ marginInlineStart: 8, verticalAlign: 'middle' }}
-                      >{svc.badge}</span>
-                    )}
-                  </h3>
-                  {svc.description && <p>{svc.description}</p>}
+      {filtered.length === 0 ? (
+        <div className="state-block state-empty" style={{ minHeight: 260, marginTop: 8 }}>
+          <Search size={22} />
+          <h3>خدمتی یافت نشد</h3>
+          <p>برای دسته‌بندی انتخاب‌شده خدمتی موجود نیست. دسته دیگری را امتحان کنید.</p>
+          <button
+            type="button"
+            className="button secondary"
+            style={{ marginTop: 6, fontSize: 11 }}
+            onClick={() => setActive('همه')}
+          >
+            نمایش همه خدمات
+          </button>
+        </div>
+      ) : (
+        <div className="service-catalog">
+          {filtered.map(svc => {
+            const Icon = svc.icon;
+            const iconStyle = platformIconStyle[svc.category] ?? { color: '#1a56db', background: 'rgba(26,86,219,.07)', border: 'rgba(26,86,219,.14)' };
+            return (
+              <div key={svc.id} className="service-card">
+                <div className="service-card-head">
+                  <div
+                    className="service-icon"
+                    style={{ color: iconStyle.color, background: iconStyle.background, border: `1px solid ${iconStyle.border}` }}
+                  >
+                    <Icon size={20}/>
+                  </div>
+                  <div className="service-card-head-copy">
+                    <h3>
+                      {svc.title}
+                      {svc.badge && (
+                        <span
+                          className={`status-pill ${badgeColors[svc.badge] ?? ''}`}
+                          style={{ marginInlineStart: 8, verticalAlign: 'middle' }}
+                        >{svc.badge}</span>
+                      )}
+                    </h3>
+                    {svc.description && <p>{svc.description}</p>}
+                  </div>
+                </div>
+                <div className="service-platforms">
+                  <span
+                    className="platform-tag"
+                    style={{ color: iconStyle.color, borderColor: iconStyle.border, background: iconStyle.background }}
+                  >
+                    {svc.productName}
+                  </span>
+                </div>
+                <div className="service-card-foot">
+                  <div className="service-price">
+                    <span>از {svc.unit}</span>
+                  </div>
+                  <Link href={`/orders/new?service=${svc.slug}`} className="service-order-btn">
+                    <Zap size={13}/>سفارش
+                  </Link>
                 </div>
               </div>
-              <div className="service-platforms">
-                <span className="platform-tag">{svc.productName}</span>
-              </div>
-              <div className="service-card-foot">
-                <div className="service-price">
-                  <span>از {svc.unit}</span>
-                </div>
-                <Link href={`/orders/new?service=${svc.slug}`} className="service-order-btn">
-                  <Zap size={13}/>سفارش
-                </Link>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </>
   );
 }

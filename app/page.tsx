@@ -1,71 +1,199 @@
 import Link from 'next/link';
-import { ArrowLeft, Bot, Layers3, ShieldCheck, Sparkles, Workflow, Zap } from 'lucide-react';
+import { ArrowLeft, Bot, CreditCard, Globe, Layers3, Lock, ShieldCheck, Sparkles, Workflow, Zap } from 'lucide-react';
 import { MarketingJsonLd } from '../components/seo/MarketingJsonLd';
 import { siteConfig } from '../lib/seo/site';
 
-export const metadata = { title: siteConfig.name, description: siteConfig.description, alternates: { canonical: '/' }, openGraph: { title: siteConfig.name, description: siteConfig.description, type: 'website', locale: siteConfig.locale }, twitter: { card: 'summary_large_image', title: siteConfig.name, description: siteConfig.description } };
-
-const pillars = [
-  { icon: Sparkles, title: 'هوش مصنوعی', text: 'مدل‌ها، ابزارها، پروژه‌ها، RAG و Agentها در یک محیط یکپارچه و کنترل‌شده.', href: '/ai' },
-  { icon: Layers3, title: 'خدمات شبکه‌های اجتماعی', text: 'خدمات اینستاگرام، تلگرام و سایر شبکه‌ها با سفارش، پیگیری و کنترل کیفیت.', href: '/services' },
-  { icon: Workflow, title: 'اتوماسیون', text: 'فرآیندهای زمان‌بندی‌شده، وب‌هوک و Agentهای عملیاتی برای کارهای تکرارشونده.', href: '/automation' },
-  { icon: Bot, title: 'اشتراک و اعتبار', text: 'اشتراک‌های AI، کیف پول، اعتبار و پرداخت در یک لایه مالی یکپارچه.', href: '/pricing' },
-];
+export const metadata = {
+  title: siteConfig.name,
+  description: siteConfig.description,
+  alternates: { canonical: '/' },
+  openGraph: { title: siteConfig.name, description: siteConfig.description, type: 'website', locale: siteConfig.locale },
+  twitter: { card: 'summary_large_image', title: siteConfig.name, description: siteConfig.description },
+};
 
 export default function MarketingHome() {
-  return <main className="marketing-shell">
-    <MarketingJsonLd/>
-    <header className="marketing-header">
-      <Link href="/" className="brand" aria-label={siteConfig.name}><span className="logo" aria-hidden="true">✦</span><span><b>پلتفرم</b><small>خدمات دیجیتال نسل جدید</small></span></Link>
-      <nav aria-label="ناوبری اصلی"><Link href="/services">خدمات</Link><Link href="/ai">هوش مصنوعی</Link><Link href="/automation">اتوماسیون</Link><Link href="/pricing">قیمت‌گذاری</Link><Link href="/blog">مجله</Link></nav>
-      <div className="marketing-actions"><Link href="/auth">ورود</Link><Link className="marketing-cta" href="/auth">شروع کنید <ArrowLeft size={16}/></Link></div>
-    </header>
+  return (
+    <main className="marketing-shell">
+      <MarketingJsonLd />
 
-    <section className="marketing-hero">
-      <div className="hero-copy">
-        <span className="eyebrow">یک زیرساخت فارسی برای خدمات دیجیتال</span>
-        <h1>هوش مصنوعی، خدمات دیجیتال و اتوماسیون؛ در یک محیط حرفه‌ای.</h1>
-        <p>{siteConfig.description} همه‌چیز از انتخاب سرویس و اشتراک تا سفارش، پرداخت، مصرف AI و اتوماسیون، در یک تجربه یکپارچه و ساده.</p>
-        <div className="hero-actions"><Link className="marketing-cta large" href="/auth">شروع کنید <ArrowLeft size={18}/></Link><Link className="marketing-secondary" href="/services">مشاهده خدمات</Link></div>
-        <div className="hero-trust"><span><ShieldCheck size={15}/> امنیت از ابتدا</span><span><Zap size={15}/> قیمت‌گذاری شفاف</span><span><Bot size={15}/> آماده رشد</span></div>
-      </div>
-      <div className="hero-panel" aria-label="نمای کلی پلتفرم">
-        <div className="hero-panel-top"><span>نمای کلی فضای کاری</span><span>امن · یکپارچه · فارسی</span></div>
-        <div className="hero-metric"><b>همه‌چیز، یک‌جا و تحت کنترل.</b><span>سفارش‌ها، اشتراک‌ها، اعتبار، هوش مصنوعی و اتوماسیون را در یک تجربه سریع و حرفه‌ای مدیریت کنید.</span></div>
-        <div className="hero-dashboard">
-          <div className="mini-chart"><span className="mini-label">مصرف اعتبار این ماه</span><span className="mini-number">۶۸٪</span><div className="mini-bars"><i style={{width:'82%'}}/><i style={{width:'64%'}}/><i style={{width:'48%'}}/></div></div>
-          <div className="mini-card"><div className="mini-card-row"><span>وضعیت سرویس</span><span className="mini-dot"/></div><div className="mini-card-row"><span>سفارش فعال</span><strong>۳</strong></div><div className="mini-card-row"><span>اشتراک</span><strong>حرفه‌ای</strong></div><div className="mini-card-row"><span>کیف پول</span><strong>—</strong></div></div>
+      {/* ── Header ── */}
+      <header className="marketing-header">
+        <Link href="/" className="brand" aria-label={siteConfig.name}>
+          <span className="logo" aria-hidden="true">✦</span>
+          <span><b>پلتفرم</b><small>خدمات دیجیتال</small></span>
+        </Link>
+        <nav aria-label="ناوبری اصلی">
+          <Link href="/services">خدمات</Link>
+          <Link href="/ai">هوش مصنوعی</Link>
+          <Link href="/automation">اتوماسیون</Link>
+          <Link href="/pricing">قیمت‌گذاری</Link>
+        </nav>
+        <div className="marketing-actions">
+          <Link href="/auth">ورود</Link>
+          <Link className="marketing-cta" href="/auth">شروع کنید <ArrowLeft size={15} /></Link>
         </div>
-        <div className="hero-pills"><span>درگاه هوش مصنوعی</span><span>خدمات اجتماعی</span><span>اتوماسیون</span><span>کیف پول و اشتراک</span></div>
+      </header>
+
+      {/* ── Hero ── */}
+      <section className="marketing-hero landing-hero-v2">
+        <div className="hero-copy">
+          <span className="eyebrow">زیرساخت دیجیتال فارسی</span>
+          <h1>خدمات دیجیتال، هوش مصنوعی و اتوماسیون — در یک محیط حرفه‌ای</h1>
+          <p>
+            از خرید خدمات اینستاگرام تا اجرای مدل‌های AI و ساخت فرآیند خودکار؛
+            همه در یک پلتفرم یکپارچه با کیف پول، اشتراک و مدیریت کامل.
+          </p>
+          <div className="hero-actions" style={{ marginTop: 28 }}>
+            <Link className="marketing-cta large" href="/auth">
+              شروع رایگان <ArrowLeft size={17} />
+            </Link>
+            <Link className="marketing-secondary" href="/services">مشاهده خدمات</Link>
+          </div>
+          <div className="hero-trust">
+            <span><ShieldCheck size={14} /> رمزگذاری AES-256</span>
+            <span><CreditCard size={14} /> کیف پول یکپارچه</span>
+            <span><Globe size={14} /> فارسی‌سرا، RTL‌محور</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Platform pillars ── */}
+      <div className="marketing-section-head">
+        <span className="eyebrow">سه دامنه، یک پلتفرم</span>
+        <h2 className="marketing-section-title">هر چیزی که برای رشد دیجیتال نیاز دارید</h2>
       </div>
-    </section>
 
-    <section className="metrics-band" aria-label="ویژگی‌های پلتفرم">
-      <div className="metric-item"><strong>چند کانال</strong><span>شبکه‌های اجتماعی یکپارچه</span></div>
-      <div className="metric-sep"/>
-      <div className="metric-item"><strong>AES-256</strong><span>رمزگذاری داده</span></div>
-      <div className="metric-sep"/>
-      <div className="metric-item"><strong>دوطرفه</strong><span>پشتیبانی RTL و LTR</span></div>
-      <div className="metric-sep"/>
-      <div className="metric-item"><strong>بلادرنگ</strong><span>پردازش خودکار سفارش</span></div>
-    </section>
+      <div className="landing-platform-grid">
+        {/* Pillar 1 — Services */}
+        <div className="landing-pillar">
+          <div className="landing-pillar-head">
+            <div className="landing-pillar-icon"><Layers3 size={20} /></div>
+            <h2>خدمات شبکه‌های اجتماعی</h2>
+          </div>
+          <p>
+            کاتالوگ کامل خدمات اینستاگرام، تلگرام، یوتیوب و سایر پلتفرم‌ها.
+            سفارش، پیگیری و مدیریت همه‌چیز از یک پنل.
+          </p>
+          <ul className="landing-pillar-list">
+            <li>فالوور، لایک، ویو، ممبر و ری‌اکشن</li>
+            <li>قیمت‌گذاری پویا از موتور سرور‌ساید</li>
+            <li>پیگیری بلادرنگ وضعیت سفارش</li>
+            <li>تاریخچه کامل و فیلتر پیشرفته</li>
+          </ul>
+          <Link href="/services" className="pillar-link">مشاهده کاتالوگ <ArrowLeft size={13} /></Link>
+        </div>
 
-    <div className="marketing-section-head">
-      <span className="eyebrow">قابلیت‌های اصلی</span>
-      <h2 className="marketing-section-title">همه ابزارهای رشد دیجیتال در یک‌جا</h2>
-    </div>
+        {/* Pillar 2 — AI */}
+        <div className="landing-pillar">
+          <div className="landing-pillar-head">
+            <div className="landing-pillar-icon"><Sparkles size={20} /></div>
+            <h2>هوش مصنوعی</h2>
+          </div>
+          <p>
+            دسترسی یکپارچه به مدل‌های برجسته با مدیریت اعتبار، اشتراک و محیط
+            کاری حرفه‌ای برای پروژه‌های AI.
+          </p>
+          <ul className="landing-pillar-list">
+            <li>مدل‌های Claude، GPT و Gemini</li>
+            <li>پروژه RAG با Knowledge Base</li>
+            <li>اجرای Agent‌ها با tool‌call audit</li>
+            <li>مدیریت مصرف و بودجه‌بندی</li>
+          </ul>
+          <Link href="/ai" className="pillar-link">فضای هوش مصنوعی <ArrowLeft size={13} /></Link>
+        </div>
 
-    <section className="marketing-grid" aria-label="قابلیت‌های اصلی">{pillars.map(({icon:Icon,title,text,href})=><Link className="marketing-card" href={href} key={title}><span className="marketing-icon"><Icon size={19}/></span><h2>{title}</h2><p>{text}</p><span className="card-link">مشاهده <ArrowLeft size={14}/></span></Link>)}</section>
-
-    <section className="marketing-cta-section">
-      <div className="cta-section-content">
-        <h2>آماده‌اید شروع کنید؟</h2>
-        <p>از اشتراک رایگان شروع کنید. بدون نیاز به کارت اعتباری.</p>
-        <div className="cta-section-actions">
-          <Link className="marketing-cta large" href="/auth">حساب رایگان بسازید <ArrowLeft size={18}/></Link>
-          <Link className="marketing-secondary" href="/pricing">مشاهده پلن‌ها</Link>
+        {/* Pillar 3 — Automation */}
+        <div className="landing-pillar">
+          <div className="landing-pillar-head">
+            <div className="landing-pillar-icon"><Workflow size={20} /></div>
+            <h2>اتوماسیون</h2>
+          </div>
+          <p>
+            ساخت فرآیندهای خودکار با trigger زمان‌بندی‌شده، webhook و agent.
+            اجرای قابل اعتماد با مانیتورینگ کامل.
+          </p>
+          <ul className="landing-pillar-list">
+            <li>Trigger زمان‌بندی و Webhook ورودی</li>
+            <li>گام‌های شرطی و branching</li>
+            <li>تأخیر، تکرار و مدیریت خطا</li>
+            <li>گزارش اجرا و لاگ کامل</li>
+          </ul>
+          <Link href="/automation" className="pillar-link">ساخت workflow <ArrowLeft size={13} /></Link>
         </div>
       </div>
-    </section>
-  </main>;
+
+      {/* ── How it works ── */}
+      <div className="marketing-section-head">
+        <span className="eyebrow">چگونه شروع کنید</span>
+        <h2 className="marketing-section-title">سه قدم تا اولین نتیجه</h2>
+      </div>
+
+      <div className="landing-how-grid">
+        <div className="landing-how-step">
+          <div className="landing-how-num">۱</div>
+          <h3>حساب بسازید</h3>
+          <p>ثبت‌نام رایگان، بدون نیاز به کارت اعتباری. فضای کاری شما فوری آماده است.</p>
+        </div>
+        <div className="landing-how-arrow" aria-hidden="true">←</div>
+        <div className="landing-how-step">
+          <div className="landing-how-num">۲</div>
+          <h3>کیف پول شارژ کنید</h3>
+          <p>اعتبار به کیف پول اضافه کنید. تمام پرداخت‌ها از همین کیف پول کسر می‌شود.</p>
+        </div>
+        <div className="landing-how-arrow" aria-hidden="true">←</div>
+        <div className="landing-how-step">
+          <div className="landing-how-num">۳</div>
+          <h3>سفارش دهید</h3>
+          <p>سرویس انتخاب کنید، پارامتر بدهید و تأیید کنید. اجرا و پیگیری خودکار است.</p>
+        </div>
+      </div>
+
+      {/* ── Differentiators ── */}
+      <div className="marketing-section-head">
+        <span className="eyebrow">چرا این پلتفرم</span>
+        <h2 className="marketing-section-title">ساخته‌شده برای مقیاس</h2>
+      </div>
+
+      <div className="landing-diff-grid">
+        <div className="landing-diff-item">
+          <div className="landing-diff-icon"><Lock size={18} /></div>
+          <h3>امنیت از ابتدا</h3>
+          <p>
+            رمزگذاری AES-256-GCM برای اطلاعات حساس. RBAC چندسطحی.
+            Session‌های چرخشی. احراز هویت چندعاملی و Passkey.
+          </p>
+        </div>
+        <div className="landing-diff-item">
+          <div className="landing-diff-icon"><Zap size={18} /></div>
+          <h3>مالی یکپارچه</h3>
+          <p>
+            کیف پول با دفترچه دوطرفه. اشتراک‌های تجدیدشونده. فاکتور خودکار.
+            هیچ محاسبه مالی سمت کلاینت انجام نمی‌شود.
+          </p>
+        </div>
+        <div className="landing-diff-item">
+          <div className="landing-diff-icon"><Bot size={18} /></div>
+          <h3>فارسی‌سرا</h3>
+          <p>
+            RTL کامل، اعداد فارسی، تقویم شمسی. رابط کاربری بهینه‌شده برای
+            بازار ایران، با پشتیبانی از عربی و ترکی.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Final CTA ── */}
+      <section className="marketing-cta-section">
+        <div className="cta-section-content">
+          <h2>آماده‌اید شروع کنید؟</h2>
+          <p>از پلن رایگان شروع کنید. بدون نیاز به کارت اعتباری.</p>
+          <div className="cta-section-actions">
+            <Link className="marketing-cta large" href="/auth">
+              حساب رایگان بسازید <ArrowLeft size={17} />
+            </Link>
+            <Link className="marketing-secondary" href="/pricing">مشاهده پلن‌ها</Link>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
 }

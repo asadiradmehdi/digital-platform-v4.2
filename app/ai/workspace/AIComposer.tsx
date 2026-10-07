@@ -8,38 +8,39 @@ import {
 const STARTERS = [
   {
     icon: Sparkles,
-    label: 'تولید محتوای اینستاگرام',
-    prompt: 'کپشن فارسی حرفه‌ای برای ۵ پست اینستاگرام درباره یک محصول دیجیتال بنویس.',
+    label: 'کپشن اینستاگرام',
+    prompt: 'پنج کپشن فارسی برای معرفی یک محصول دیجیتال جدید در اینستاگرام بنویس. لحن گرم و جذاب باشد.',
   },
   {
     icon: Code2,
-    label: 'تحلیل داده کسب‌وکار',
-    prompt: 'روش تحلیل عملکرد ماهانه یک کسب‌وکار آنلاین را با شاخص‌های کلیدی توضیح بده.',
-  },
-  {
-    icon: ImageIcon,
-    label: 'توضیحات تصویری',
-    prompt: 'Alt text حرفه‌ای برای تصویر محصول الکترونیکی بنویس که SEO-friendly باشد.',
+    label: 'خلاصه گزارش مالی',
+    prompt: 'یک گزارش عملکرد ماهانه کسب‌وکار را با اعداد فرضی بنویس که شامل درآمد، هزینه و رشد باشد.',
   },
   {
     icon: Search,
-    label: 'تحقیق بازار',
-    prompt: 'روش تحلیل رقبا و ترندهای صنعت خدمات دیجیتال را خلاصه کن.',
+    label: 'تحلیل رقبا',
+    prompt: 'یک قالب برای تحلیل رقبا در صنعت خدمات دیجیتال بساز. شامل: ویژگی‌ها، قیمت‌گذاری، نقاط ضعف.',
   },
   {
     icon: Bot,
-    label: 'نوشتن ایمیل فروش',
-    prompt: 'یک ایمیل فروش حرفه‌ای فارسی برای معرفی سرویس هوش مصنوعی به مشتری B2B بنویس.',
+    label: 'ایمیل فروش فارسی',
+    prompt: 'یک ایمیل فروش کوتاه و حرفه‌ای فارسی بنویس برای معرفی یک سرویس اتوماسیون به مدیر یک کسب‌وکار.',
+  },
+  {
+    icon: ImageIcon,
+    label: 'توضیح برای تصویر',
+    prompt: 'یک توضیح کامل برای تصویر محصول الکترونیکی بنویس که هم برای مشتری جذاب باشد هم برای موتور جستجو.',
   },
   {
     icon: Zap,
-    label: 'طراحی Workflow',
-    prompt: 'یک Workflow برای پاسخ خودکار به تیکت‌های پشتیبانی مشتریان طراحی کن.',
+    label: 'برنامه محتوا هفتگی',
+    prompt: 'یک برنامه محتوای هفتگی برای یک برند فناوری در شبکه‌های اجتماعی طراحی کن.',
   },
 ];
 
 const MODELS = [
   { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku', badge: 'سریع' },
+  { id: 'claude-sonnet-4-5', label: 'Claude Sonnet', badge: 'متعادل' },
   { id: 'gpt-4o', label: 'GPT-4o', badge: 'قدرتمند' },
 ];
 
@@ -109,8 +110,8 @@ export default function AIComposer() {
           <div className="ai-empty-icon">
             <Sparkles size={22} />
           </div>
-          <h2>از کجا شروع می‌کنی؟</h2>
-          <p>یک درخواست بنویس یا یکی از پیشنهادهای زیر را انتخاب کن.</p>
+          <h2>چه می‌خواهید بنویسید؟</h2>
+          <p>درخواست خود را تایپ کنید یا یکی از موضوعات پیشنهادی را انتخاب کنید.</p>
           <div className="ai-starters">
             {STARTERS.map(({ icon: Icon, label, prompt }) => (
               <button
@@ -161,7 +162,7 @@ export default function AIComposer() {
             <div className="ai-message ai-message-assistant">
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Bot size={12} style={{ opacity: 0.5 }} />
-                <span style={{ fontSize: 10, color: 'var(--muted)' }}>در حال پردازش</span>
+                <span style={{ fontSize: 10, color: 'var(--muted)' }}>در حال پاسخ‌دهی</span>
                 <span
                   style={{
                     display: 'inline-flex',
@@ -262,7 +263,7 @@ export default function AIComposer() {
               void send();
             }
           }}
-          placeholder="مثلاً: کپشن اینستاگرام فارسی برای تبلیغ محصول جدیدم بنویس..."
+          placeholder="مثلاً: یک ایمیل فارسی برای معرفی سرویس جدیدمان به مشتریان بنویس..."
           style={{
             resize: 'none',
             width: '100%',

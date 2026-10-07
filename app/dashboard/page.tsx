@@ -134,8 +134,8 @@ export default async function Dashboard() {
         <section className="dash-hero">
           <div>
             <span className="eyebrow">خانه · خلاصه فضای کاری</span>
-            <h1>سلام، {displayName} 👋</h1>
-            <p>وضعیت فضای کاری شما به طور خلاصه</p>
+            <h1>{displayName}، خوش آمدید</h1>
+            <p>خلاصه وضعیت فضای کاری شما</p>
           </div>
           <div className="hero-actions">
             <Link href="/orders/new" className="button primary"><Plus size={16}/>سفارش جدید</Link>

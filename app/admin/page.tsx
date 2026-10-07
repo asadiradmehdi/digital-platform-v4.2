@@ -173,28 +173,38 @@ export default async function AdminPage() {
       <main className="workspace-page-content">
 
         {/* ── Page header ── */}
-        <header className="dash-hero" style={{ paddingBottom: 22, marginBottom: 0 }}>
+        <header style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 20,
+          paddingBottom: 18,
+          marginBottom: 0,
+          borderBottom: '1px solid var(--line)',
+        }}>
           <div>
-            <span className="eyebrow">ADMIN · پنل عملیاتی</span>
-            <h1 style={{ fontSize: 'clamp(26px,3vw,40px)', letterSpacing: '-.03em', margin: '6px 0 6px' }}>
-              مرکز عملیات
+            <span style={{ display: 'block', fontSize: 9, fontWeight: 800, letterSpacing: '.1em', color: 'var(--accent)', fontFamily: 'var(--font-latin)', marginBottom: 3 }}>
+              ADMIN · OPERATIONS
+            </span>
+            <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-.03em', margin: '0 0 3px', color: 'var(--ink)' }}>
+              پنل عملیاتی
             </h1>
-            <p style={{ color: 'var(--muted)', fontSize: 12, margin: 0 }}>
+            <p style={{ color: 'var(--muted)', fontSize: 11, margin: 0 }}>
               سفارش‌ها، ارائه‌دهندگان و رویدادهای ۲۴ ساعت گذشته
             </p>
           </div>
-          <div style={{ display: 'flex', gap: 9, alignItems: 'center', flexShrink: 0 }}>
-            <Link className="button secondary" href="/admin/orders" style={{ fontSize: 11 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+            <Link className="button secondary" href="/admin/orders" style={{ fontSize: 11, height: 36, minHeight: 36 }}>
               <Package size={13} />
               سفارش‌ها
             </Link>
-            <Link className="button secondary" href="/admin/providers" style={{ fontSize: 11 }}>
+            <Link className="button secondary" href="/admin/providers" style={{ fontSize: 11, height: 36, minHeight: 36 }}>
               <Server size={13} />
               ارائه‌دهندگان
             </Link>
-            <Link className="button primary" href="/api/v1/health" target="_blank" style={{ fontSize: 11 }}>
+            <Link className="button primary" href="/api/v1/health" target="_blank" style={{ fontSize: 11, height: 36, minHeight: 36 }}>
               <Activity size={13} />
-              وضعیت سیستم
+              Health Check
             </Link>
           </div>
         </header>
@@ -235,26 +245,26 @@ export default async function AdminPage() {
           {/* Orders in 24h */}
           <div className="premium-stat">
             <div className="stat-top">
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, color: 'var(--muted)' }}>
-                <Clock size={11} />
-                سفارش ۲۴ ساعت اخیر
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: 'var(--muted)' }}>
+                <Clock size={12} />
+                سفارش‌های ۲۴ ساعت
               </span>
               <TrendingUp size={13} style={{ color: 'var(--accent)', opacity: .7 }} />
             </div>
             <strong style={{ fontSize: 28, fontVariantNumeric: 'tabular-nums' }}>{fmt(orders24hCount)}</strong>
-            <small>از {fmt(totalOrders)} کل سفارش</small>
+            <small style={{ fontSize: 10 }}>از {fmt(totalOrders)} کل سفارش</small>
           </div>
 
           {/* Queue depth */}
           <div className="premium-stat">
             <div className="stat-top">
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, color: 'var(--muted)' }}>
-                <RefreshCw size={11} />
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: 'var(--muted)' }}>
+                <RefreshCw size={12} />
                 صف پردازش فعال
               </span>
               {activeOrders > 0
-                ? <span className="status-pill info" style={{ fontSize: 7 }}>فعال</span>
-                : <span className="status-pill success" style={{ fontSize: 7 }}>خالی</span>
+                ? <span className="status-pill info">فعال</span>
+                : <span className="status-pill success">خالی</span>
               }
             </div>
             <strong style={{
@@ -262,19 +272,19 @@ export default async function AdminPage() {
               fontVariantNumeric: 'tabular-nums',
               color: activeOrders > 0 ? 'var(--accent-strong)' : undefined,
             }}>{fmt(queueTotal)}</strong>
-            <small>QUEUED · PROCESSING · SUBMITTED</small>
+            <small style={{ fontSize: 9, fontFamily: 'var(--font-latin)' }}>QUEUED · PROCESSING · SUBMITTED</small>
           </div>
 
           {/* Providers health */}
           <div className="premium-stat">
             <div className="stat-top">
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, color: 'var(--muted)' }}>
-                <Server size={11} />
-                ارائه‌دهندگان فعال
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: 'var(--muted)' }}>
+                <Server size={12} />
+                ارائه‌دهندگان سالم
               </span>
               {degradedProviders.length > 0
-                ? <span className="status-pill warning" style={{ fontSize: 7 }}>{degradedProviders.length} مشکل</span>
-                : <span className="status-pill success" style={{ fontSize: 7 }}>سالم</span>
+                ? <span className="status-pill warning">{degradedProviders.length} مشکل</span>
+                : <span className="status-pill success">همه سالم</span>
               }
             </div>
             <strong style={{
@@ -282,20 +292,20 @@ export default async function AdminPage() {
               fontVariantNumeric: 'tabular-nums',
               color: degradedProviders.length > 0 ? 'var(--warning)' : undefined,
             }}>{fmt(healthyProviders.length)}</strong>
-            <small>از {fmt(providers.length)} ارائه‌دهنده</small>
+            <small style={{ fontSize: 10 }}>از {fmt(providers.length)} ارائه‌دهنده</small>
           </div>
 
           {/* Users */}
           <div className="premium-stat">
             <div className="stat-top">
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, color: 'var(--muted)' }}>
-                <Users size={11} />
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: 'var(--muted)' }}>
+                <Users size={12} />
                 کاربران پلتفرم
               </span>
               <Zap size={13} style={{ color: 'var(--accent)', opacity: .7 }} />
             </div>
             <strong style={{ fontSize: 28, fontVariantNumeric: 'tabular-nums' }}>{fmt(userCount)}</strong>
-            <small>{fmt(activeSubs)} اشتراک فعال</small>
+            <small style={{ fontSize: 10 }}>{fmt(activeSubs)} اشتراک فعال</small>
           </div>
         </div>
 
@@ -341,9 +351,9 @@ export default async function AdminPage() {
                         <td>
                           <code
                             className="latin"
-                            style={{ fontSize: 11, background: 'var(--surface-2)', padding: '2px 6px', borderRadius: 6 }}
+                            style={{ fontSize: 11, background: 'var(--surface-2)', padding: '2px 7px', borderRadius: 6, letterSpacing: '-.01em' }}
                           >
-                            {p.provider_id.slice(0, 12)}…
+                            {p.provider_id.length > 18 ? `${p.provider_id.slice(0, 18)}…` : p.provider_id}
                           </code>
                         </td>
                         <td>
@@ -357,14 +367,18 @@ export default async function AdminPage() {
                             style={{
                               fontSize: 11,
                               fontVariantNumeric: 'tabular-nums',
-                              color: p.latency_ms > 2000 ? 'var(--warning)' : p.latency_ms > 5000 ? 'var(--danger)' : 'var(--muted)',
+                              color: p.latency_ms > 5000
+                                ? 'var(--danger)'
+                                : p.latency_ms > 2000
+                                  ? 'var(--warning)'
+                                  : 'var(--muted)',
                             }}
                           >
                             {p.latency_ms}ms
                           </span>
                         </td>
-                        <td style={{ color: 'var(--subtle)', fontSize: 10 }}>
-                          {new Date(p.checked_at).toLocaleTimeString('fa-IR')}
+                        <td style={{ color: 'var(--subtle)', fontSize: 11 }}>
+                          {new Date(p.checked_at).toLocaleString('fa-IR', { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' })}
                         </td>
                       </tr>
                     ))}
@@ -410,19 +424,19 @@ export default async function AdminPage() {
                         return (
                           <tr key={status}>
                             <td>
-                              <span className={`status-pill ${statusPillClass(status)}`} style={{ fontFamily: 'var(--font-latin)', fontSize: 9 }}>
+                              <span className={`status-pill ${statusPillClass(status)}`} style={{ fontFamily: 'var(--font-latin)' }}>
                                 {status}
                               </span>
                             </td>
-                            <td style={{ color: 'var(--muted)' }}>{statusLabel(status)}</td>
-                            <td><strong style={{ fontVariantNumeric: 'tabular-nums' }}>{fmt(count)}</strong></td>
-                            <td style={{ minWidth: 80 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                            <td style={{ color: 'var(--muted)', fontSize: 11 }}>{statusLabel(status)}</td>
+                            <td><strong style={{ fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{fmt(count)}</strong></td>
+                            <td style={{ minWidth: 90 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                 <div className="progress-track" style={{ flex: 1 }}>
                                   <i style={{ width: `${pct}%` }} />
                                 </div>
-                                <span style={{ fontSize: 9, color: 'var(--muted)', minWidth: 24, textAlign: 'end', fontVariantNumeric: 'tabular-nums' }}>
-                                  {fmt(pct)}٪
+                                <span style={{ fontSize: 10, color: 'var(--muted)', minWidth: 28, textAlign: 'end', fontVariantNumeric: 'tabular-nums', fontFamily: 'var(--font-latin)' }}>
+                                  {pct}%
                                 </span>
                               </div>
                             </td>
@@ -469,7 +483,7 @@ export default async function AdminPage() {
                           display: 'grid',
                           gridTemplateColumns: '1fr auto',
                           alignItems: 'center',
-                          padding: '10px 12px',
+                          padding: '11px 13px',
                           background: sev === 'CRITICAL' || sev === 'ERROR' ? 'var(--danger-soft)' : sev === 'WARNING' ? 'var(--warning-soft)' : 'var(--surface-2)',
                           borderRadius: 11,
                           border: `1px solid ${sev === 'CRITICAL' || sev === 'ERROR' ? 'rgba(220,38,38,.15)' : sev === 'WARNING' ? 'rgba(217,119,6,.15)' : 'var(--line)'}`,
@@ -477,14 +491,17 @@ export default async function AdminPage() {
                         }}
                       >
                         <div>
-                          <span className={`status-pill ${statusPillClass(sev)}`} style={{ fontSize: 7, marginBottom: 4, display: 'inline-flex' }}>
+                          <span
+                            className={`status-pill ${statusPillClass(sev)}`}
+                            style={{ fontFamily: 'var(--font-latin)', marginBottom: 5, display: 'inline-flex' }}
+                          >
                             {sev}
                           </span>
-                          <div style={{ fontSize: 9, color: 'var(--subtle)', marginTop: 3 }}>
+                          <div style={{ fontSize: 10, color: 'var(--subtle)', marginTop: 3 }}>
                             {new Date(lastAt).toLocaleString('fa-IR', { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' })}
                           </div>
                         </div>
-                        <strong style={{ fontSize: 20, fontVariantNumeric: 'tabular-nums', letterSpacing: '-.02em' }}>
+                        <strong style={{ fontSize: 22, fontVariantNumeric: 'tabular-nums', letterSpacing: '-.02em' }}>
                           {fmt(count)}
                         </strong>
                       </div>
@@ -505,14 +522,14 @@ export default async function AdminPage() {
                 </span>
               </div>
               {Object.keys(subMap).length === 0 ? (
-                <div style={{ color: 'var(--muted)', fontSize: 11, padding: '8px 0' }}>اشتراکی وجود ندارد.</div>
+                <div style={{ color: 'var(--muted)', fontSize: 12, padding: '8px 0' }}>اشتراکی وجود ندارد.</div>
               ) : (
-                <div style={{ display: 'grid', gap: 7 }}>
+                <div style={{ display: 'grid', gap: 8 }}>
                   {Object.entries(subMap)
                     .sort(([, a], [, b]) => b - a)
                     .map(([status, count]) => (
                       <div key={status} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                        <span className={`status-pill ${statusPillClass(status)}`} style={{ fontSize: 8 }}>
+                        <span className={`status-pill ${statusPillClass(status)}`}>
                           {statusLabel(status)}
                         </span>
                         <strong style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>{fmt(count)}</strong>
@@ -532,14 +549,14 @@ export default async function AdminPage() {
                 <CreditCard size={14} style={{ color: 'var(--muted)' }} />
               </div>
               {Object.keys(paymentMap).length === 0 ? (
-                <div style={{ color: 'var(--muted)', fontSize: 11, padding: '8px 0' }}>پرداختی ثبت نشده.</div>
+                <div style={{ color: 'var(--muted)', fontSize: 12, padding: '8px 0' }}>پرداختی ثبت نشده.</div>
               ) : (
-                <div style={{ display: 'grid', gap: 7 }}>
+                <div style={{ display: 'grid', gap: 8 }}>
                   {Object.entries(paymentMap)
                     .sort(([, a], [, b]) => b.count - a.count)
                     .map(([status, { count }]) => (
                       <div key={status} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                        <span className={`status-pill ${statusPillClass(status)}`} style={{ fontSize: 8, fontFamily: 'var(--font-latin)' }}>
+                        <span className={`status-pill ${statusPillClass(status)}`} style={{ fontFamily: 'var(--font-latin)' }}>
                           {status}
                         </span>
                         <strong style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>{fmt(count)}</strong>

@@ -48,17 +48,16 @@ export default function ProfileForm({ initialDisplayName, initialPhone }: Props)
             value={displayName}
             onChange={e => { setDisplayName(e.target.value); setSaved(false); }}
             autoComplete="nickname"
-            placeholder="نام شما"
           />
         </label>
         <label>
           شماره موبایل
+          <span style={{ fontSize: 10, color: 'var(--subtle)', fontWeight: 400, marginTop: -2 }}>اختیاری</span>
           <input
             name="phone"
             type="tel"
             value={phone}
             onChange={e => { setPhone(e.target.value); setSaved(false); }}
-            placeholder="اختیاری"
             autoComplete="tel"
             dir="ltr"
           />

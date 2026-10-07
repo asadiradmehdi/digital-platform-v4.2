@@ -43,10 +43,10 @@ export default async function Automation() {
         {/* ── Header ─────────────────────────────────────────────── */}
         <header className="page-header" style={{ marginBottom: 28 }}>
           <div>
-            <span className="eyebrow">اتوماسیون · Workflow</span>
-            <h1>اتوماسیون</h1>
+            <span className="eyebrow">اتوماسیون</span>
+            <h1>فرآیندهای خودکار</h1>
             <p>
-              Trigger، شرط، Action، Delay و Webhook را به Workflowهای نسخه‌دار و قابل ردیابی تبدیل کنید.
+              رویداد یا زمان‌بندی را انتخاب کنید، مراحل اجرا را تعریف کنید و بگذارید سیستم کار کند.
             </p>
           </div>
           <Link className="button primary" href="/automation/new">
@@ -111,7 +111,7 @@ export default async function Automation() {
               }}
             >
               <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 8, textTransform: 'uppercase' }}>
-                Draft
+                پیش‌نویس
               </div>
               <div
                 style={{
@@ -158,7 +158,7 @@ export default async function Automation() {
               <Zap size={24} />
             </div>
             <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0, letterSpacing: '-.02em' }}>
-              هنوز Workflow‌ای ندارید
+              هنوز فرآیند خودکاری ندارید
             </h3>
             <p
               style={{
@@ -169,7 +169,7 @@ export default async function Automation() {
                 margin: 0,
               }}
             >
-              اولین Workflow خود را بسازید. Trigger، Actions و شرط‌ها را تعریف کنید تا فرآیندهای تکراری خودکار شوند.
+              با اتوماسیون می‌توانید کارهای تکراری را حذف کنید. یک رویداد یا زمان‌بندی انتخاب کنید، مراحل را تعریف کنید و سیستم بقیه را انجام می‌دهد.
             </p>
             <Link
               href="/automation/new"
@@ -274,7 +274,7 @@ export default async function Automation() {
                     </td>
                     <td>
                       <span className={`status-pill ${w.active ? 'success' : 'warning'}`}>
-                        {w.active ? 'فعال' : 'Draft'}
+                        {w.active ? 'فعال' : 'پیش‌نویس'}
                       </span>
                     </td>
                     <td style={{ color: 'var(--muted)', fontSize: 11 }}>
@@ -311,40 +311,40 @@ export default async function Automation() {
           <div style={{ marginBottom: 14 }}>
             <span className="eyebrow">قابلیت‌ها</span>
             <h2 style={{ fontSize: 15, fontWeight: 700, margin: '4px 0 0', letterSpacing: '-.02em' }}>
-              آنچه می‌توانید بسازید
+              چه فرآیندهایی می‌توانید خودکار کنید
             </h2>
           </div>
           <div className="product-card-grid-premium">
             <article className="product-card">
               <div className="product-card-icon"><Play size={18} /></div>
               <div className="product-card-copy">
-                <div className="product-card-title"><h2>Workflow Builder</h2></div>
-                <p>ساخت بصری جریان اجرا با نسخه‌بندی و run history کامل.</p>
-                <span>Draft · Published · Versioned</span>
+                <div className="product-card-title"><h2>ساخت Workflow</h2></div>
+                <p>مراحل اجرا را تعریف کنید. هر تغییر نسخه‌بندی می‌شود و تاریخچه کامل نگه داشته می‌شود.</p>
+                <span>پیش‌نویس · منتشرشده · نسخه‌بندی‌شده</span>
               </div>
             </article>
             <article className="product-card">
               <div className="product-card-icon"><Webhook size={18} /></div>
               <div className="product-card-copy">
-                <div className="product-card-title"><h2>Triggers و Webhooks</h2></div>
-                <p>شروع فرآیند از رویداد، زمان‌بندی یا Webhook امن و idempotent.</p>
-                <span>Signed · Idempotent · Audited</span>
+                <div className="product-card-title"><h2>رویداد و Webhook</h2></div>
+                <p>فرآیند را با رویداد سفارش، زمان‌بندی یا درخواست HTTP از سرویس دیگری شروع کنید.</p>
+                <span>امضاشده · ایمن · قابل‌ردیابی</span>
               </div>
             </article>
             <article className="product-card">
               <div className="product-card-icon"><Bot size={18} /></div>
               <div className="product-card-copy">
-                <div className="product-card-title"><h2>AI Agents</h2></div>
-                <p>Agentهای دارای ابزار و policy با ثبت تمام side effectها.</p>
-                <span>Policy controlled · Audited</span>
+                <div className="product-card-title"><h2>عامل‌های هوشمند</h2></div>
+                <p>هوش مصنوعی را در فرآیند خود داشته باشید؛ با ابزار، دانش و کنترل کامل رفتار.</p>
+                <span>کنترل‌شده · قابل‌حسابرسی</span>
               </div>
             </article>
             <article className="product-card">
               <div className="product-card-icon"><GitBranch size={18} /></div>
               <div className="product-card-copy">
-                <div className="product-card-title"><h2>Conditions</h2></div>
-                <p>Branching، guardها و کنترل خطا برای مسیرهای پیچیده.</p>
-                <span>Deterministic · Observable</span>
+                <div className="product-card-title"><h2>شرط و انشعاب</h2></div>
+                <p>مسیر اجرا را بر اساس شرط تقسیم کنید و خطاها را با guard مدیریت کنید.</p>
+                <span>قطعی · قابل‌مشاهده</span>
               </div>
             </article>
           </div>

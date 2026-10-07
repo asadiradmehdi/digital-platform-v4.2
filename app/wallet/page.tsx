@@ -107,7 +107,7 @@ export default async function Wallet() {
           <div>
             <span className="eyebrow">مالی · کیف پول</span>
             <h1>کیف پول</h1>
-            <p>موجودی، تراکنش‌ها و افزایش اعتبار — همه از Ledger سمت سرور.</p>
+            <p>موجودی، تراکنش‌ها و افزایش اعتبار در یک نگاه.</p>
           </div>
           <a href="#topup" className="button primary" style={{ textDecoration: 'none' }}>
             <Plus size={15} />افزایش موجودی
@@ -166,7 +166,7 @@ export default async function Wallet() {
           <article className="surface-panel data-panel" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ padding: '20px 22px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
               <div>
-                <p className="panel-kicker" style={{ margin: '0 0 2px' }}>LEDGER</p>
+                <p className="panel-kicker" style={{ margin: '0 0 2px' }}>تراکنش‌ها</p>
                 <h2 style={{ margin: 0 }}>تراکنش‌های اخیر</h2>
               </div>
               {entries.length > 0 && (
@@ -250,7 +250,7 @@ export default async function Wallet() {
             <article className="surface-panel">
               <div className="panel-head" style={{ marginBottom: 18 }}>
                 <div>
-                  <p className="panel-kicker" style={{ margin: '0 0 2px' }}>TOPUP</p>
+                  <p className="panel-kicker" style={{ margin: '0 0 2px' }}>افزایش موجودی</p>
                   <h2 style={{ margin: 0 }}>افزایش موجودی</h2>
                 </div>
               </div>
@@ -261,7 +261,7 @@ export default async function Wallet() {
             <article className="surface-panel">
               <div className="panel-head" style={{ marginBottom: 14 }}>
                 <div>
-                  <p className="panel-kicker" style={{ margin: '0 0 2px' }}>QUICK ACTIONS</p>
+                  <p className="panel-kicker" style={{ margin: '0 0 2px' }}>دسترسی سریع</p>
                   <h2 style={{ margin: 0 }}>عملیات سریع</h2>
                 </div>
               </div>

@@ -118,10 +118,10 @@ export default async function Subscriptions() {
               <Sparkles size={26} />
             </div>
             <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0, letterSpacing: '-.02em' }}>
-              اشتراک فعالی ندارید
+              هنوز اشتراکی ندارید
             </h3>
             <p style={{ color: 'var(--muted)', fontSize: 13, lineHeight: 1.85, maxWidth: 380, margin: 0 }}>
-              با انتخاب یک پلن، به مدل‌های هوش مصنوعی، اتوماسیون و امکانات پیشرفته دسترسی پیدا کنید.
+              با انتخاب یک پلن به مدل‌های هوش مصنوعی، فرآیندهای خودکار و امکانات حرفه‌ای دسترسی داشته باشید.
             </p>
             <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
               <Link href="/pricing" className="button primary" style={{ textDecoration: 'none' }}>
@@ -249,14 +249,14 @@ export default async function Subscriptions() {
             {/* Metrics */}
             <div className="metric-grid-4">
               <div className="metric-tile">
-                <span>قیمت تمدید</span>
+                <span>هزینه تمدید</span>
                 <strong>
                   {sub.priceMinor ? formatTomanFromIRR(Number(sub.priceMinor)) : '—'}
                 </strong>
-                <small>ثابت در زمان خرید</small>
+                <small>ثابت از زمان خرید</small>
               </div>
               <div className="metric-tile">
-                <span>تمدید بعدی</span>
+                <span>تاریخ تمدید</span>
                 <strong style={{ fontSize: 16, letterSpacing: 0 }}>{renewalDate}</strong>
                 <small>تمدید خودکار</small>
               </div>
@@ -268,7 +268,7 @@ export default async function Subscriptions() {
                 <small>روز</small>
               </div>
               <div className="metric-tile">
-                <span>وضعیت</span>
+                <span>وضعیت اشتراک</span>
                 <strong
                   style={{
                     display: 'flex',
@@ -281,7 +281,7 @@ export default async function Subscriptions() {
                   {isTrialing ? <CheckCircle2 size={18} /> : <ShieldCheck size={18} />}
                   {statusLabel(sub.status)}
                 </strong>
-                <small>بدون قطعی</small>
+                <small>فعال و بدون وقفه</small>
               </div>
             </div>
 
@@ -298,7 +298,7 @@ export default async function Subscriptions() {
               }}
             >
               <CalendarDays size={13} />
-              قیمت renewal در زمان ثبت subscription snapshot می‌شود. هر تمدید در همان قیمت انجام می‌شود.
+              قیمت اشتراک در زمان خرید ثابت می‌شود و هر تمدید بعدی با همان مبلغ انجام می‌شود.
             </div>
           </div>
         </article>
@@ -307,9 +307,9 @@ export default async function Subscriptions() {
         {sub.entitlements.length > 0 && (
           <section style={{ marginBottom: 20 }}>
             <div style={{ marginBottom: 14 }}>
-              <span className="eyebrow">امکانات پلن</span>
+              <span className="eyebrow">امکانات شامل</span>
               <h2 style={{ fontSize: 15, fontWeight: 700, margin: '4px 0 0', letterSpacing: '-.02em' }}>
-                شامل در اشتراک شما
+                آنچه با این پلن دارید
               </h2>
             </div>
             <div
