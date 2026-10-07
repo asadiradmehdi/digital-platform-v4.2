@@ -37,7 +37,6 @@ export function useQuery<T>(
       });
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     cancelRef.current = false;
     fetcherRef.current()

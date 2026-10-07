@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 
 vi.mock('../../server/identity/sessions', () => ({
   revokeSession: vi.fn(),
+  resolveSession: vi.fn(),
 }));
 vi.mock('../../server/core/security-boundary', () => ({
   assertSameOrigin: vi.fn(),
@@ -21,16 +22,19 @@ const mockCookieStore = { get: vi.fn() };
 vi.mock('next/headers', () => ({
   cookies: vi.fn(),
 }));
+vi.mock('../../server/core/audit', () => ({ writeAudit: vi.fn() }));
 
-import { revokeSession } from '../../server/identity/sessions';
+import { revokeSession, resolveSession } from '../../server/identity/sessions';
 import { cookies } from 'next/headers';
 
 const mockRevoke = vi.mocked(revokeSession);
+const mockResolve = vi.mocked(resolveSession);
 const mockCookies = vi.mocked(cookies);
 
 beforeEach(() => {
   vi.resetAllMocks();
   mockCookies.mockResolvedValue(mockCookieStore as never);
+  mockResolve.mockResolvedValue('user-1' as never);
 });
 
 type RouteModule = typeof import('../../app/api/v1/auth/logout/route');
@@ -75,5 +79,17 @@ describe('POST /api/v1/auth/logout', () => {
     const data = await response.json();
     expect(data.ok).toBe(true);
     expect(mockRevoke).not.toHaveBeenCalled();
+  });
+
+  it('writes a LOGOUT audit event when session is present', async () => {
+    mockCookieStore.get.mockReturnValueOnce({ value: 'session-token-audit' });
+    mockRevoke.mockResolvedValueOnce(undefined);
+    // resolveSession is set to return 'user-1' in beforeEach
+
+    await POST(makeRequest());
+    const { writeAudit } = await import('../../server/core/audit');
+    expect(vi.mocked(writeAudit)).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'LOGOUT' }),
+    );
   });
 });

@@ -112,7 +112,7 @@ export async function payOrderFromWallet(input: {
     const amountMinor = BigInt(order.rows[0].total_minor);
     const currency = order.rows[0].currency;
 
-    // Check wallet balance.
+    // Lock the ledger account row first to serialize concurrent balance check + debit.
     const acct = await client.query<{ account_id: string; balance: string }>(
       `SELECT la.id AS account_id,
               COALESCE(SUM(CASE WHEN le.direction='CREDIT' THEN le.amount_minor ELSE -le.amount_minor END),0)::text AS balance
@@ -120,7 +120,8 @@ export async function payOrderFromWallet(input: {
        JOIN ledger_accounts la ON la.wallet_id=w.id
        LEFT JOIN ledger_entries le ON le.account_id=la.id
        WHERE w.workspace_id=$1 AND la.account_code='MAIN'
-       GROUP BY la.id`,
+       GROUP BY la.id
+       FOR UPDATE OF la`,
       [input.workspaceId],
     );
     const accountId = acct.rows[0]?.account_id;

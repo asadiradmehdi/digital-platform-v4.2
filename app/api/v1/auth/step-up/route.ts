@@ -4,6 +4,8 @@ import { requireRequestUser } from '../../../../../server/identity/request-user'
 import { assertSameOrigin } from '../../../../../server/core/security-boundary';
 import { AppError } from '../../../../../server/core/errors';
 import { issueStepUpChallenge, verifyStepUpChallenge, getTransactionSecurityPolicy } from '../../../../../server/identity/step-up';
+import { consumeDistributedRateLimit } from '../../../../../server/core/distributed-rate-limit';
+import { clientFingerprint } from '../../../../../server/core/security-boundary';
 
 /**
  * GET /api/v1/auth/step-up?action=WALLET_WITHDRAW
@@ -36,6 +38,8 @@ export async function POST(request: NextRequest) {
   try {
     assertSameOrigin(request);
     const userId = await requireRequestUser(request);
+    // Rate-limit step-up verification: 10 attempts per 15 minutes per user.
+    await consumeDistributedRateLimit({ key: userId, scope: 'step-up:verify', windowSeconds: 900, maxRequests: 10 });
     const body = await request.json() as {
       challengeToken?: string; code?: string; codeType?: string;
     };

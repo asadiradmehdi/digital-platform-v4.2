@@ -1418,3 +1418,28 @@ After Sessions 33-37: ~1272 tests across 151 test files (1259 base + 9 renewal/p
 - [x] pnpm lint — PASS (exit 0, 1 harmless warning)
 - [x] pnpm test — PASS (1336/1336, 156 test files)
 - [x] pnpm build — PASS (next build --webpack exit 0)
+
+---
+
+## Session 42 — Release hardening: security gap fixes (2026-10-06)
+
+### Task 1 — Wallet balance race condition fix
+- [x] `server/payments/service.ts` — added `FOR UPDATE OF la` to ledger_accounts SELECT in `payOrderFromWallet`; serializes concurrent balance-check+debit for the same wallet, preventing double-spend under concurrent payment requests
+
+### Task 2 — Rate limiting on security-sensitive endpoints
+- [x] `app/api/v1/auth/step-up/route.ts` — POST now calls `consumeDistributedRateLimit(userId, scope:step-up:verify, 900s, 10)` before MFA code verification; prevents brute-force of step-up challenges
+- [x] `app/api/v1/me/trusted-devices/route.ts` — POST calls `consumeDistributedRateLimit(userId, scope:trusted-device:register, 3600s, 5)` before registering a new trusted device
+- [x] `app/api/v1/me/passkeys/route.ts` — POST calls `consumeDistributedRateLimit(userId, scope:passkey:register, 3600s, 10)` before any passkey operation
+
+### Task 3 — Logout audit trail
+- [x] `app/api/v1/auth/logout/route.ts` — reformatted (was minified); now resolves userId before revoking session; calls `writeAudit(LOGOUT)` on successful logout; uses proper async/await structure
+
+### Task 4 — Tests for new security controls
+- [x] `tests/security/step-up-route.test.ts` — 9 tests: GET (inactive policy returns false, active issues challenge, missing action 400, unauth 401); POST (success, 401, 429 rate-limited, 400 missing token, rate-limit called with correct params)
+- [x] `tests/identity/logout-route.test.ts` — updated mocks to include `resolveSession` + `writeAudit`; added test: writes LOGOUT audit event on successful logout
+
+### Verification gate (2026-10-06)
+- [x] pnpm typecheck — PASS (tsc --noEmit exit 0)
+- [x] pnpm lint — PASS (exit 0, cleaned redundant eslint-disable in useQuery.ts)
+- [x] pnpm test — PASS (1346/1346, 157 test files; +10 new security tests)
+- [x] pnpm build — PASS (next build --webpack exit 0)

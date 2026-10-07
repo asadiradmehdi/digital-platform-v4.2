@@ -5,6 +5,7 @@ import { assertSameOrigin } from '../../../../../server/core/security-boundary';
 import { AppError } from '../../../../../server/core/errors';
 import { listPasskeys, beginPasskeyRegistration, completePasskeyRegistration } from '../../../../../server/identity/passkey-service';
 import { simpleWebAuthnVerifier } from '../../../../../server/identity/webauthn-verifier';
+import { consumeDistributedRateLimit } from '../../../../../server/core/distributed-rate-limit';
 
 export async function GET(request: NextRequest) {
   const id = correlationId(request);
@@ -25,6 +26,8 @@ export async function POST(request: NextRequest) {
   try {
     assertSameOrigin(request);
     const userId = await requireRequestUser(request);
+    // Rate-limit: 10 passkey operations per hour per user.
+    await consumeDistributedRateLimit({ key: userId, scope: 'passkey:register', windowSeconds: 3600, maxRequests: 10 });
     const body = await request.json() as {
       stage?: string; challengeToken?: string; attestationResponse?: unknown; label?: string;
     };
