@@ -5,7 +5,7 @@ export function PublicPage({ eyebrow, title, description, children }: { eyebrow:
   return (
     <main className="public-page">
       <header className="public-page-header">
-        <Link href="/" className="public-brand"><span className="logo" aria-hidden="true">D</span><span><b>Digital</b><small>Platform</small></span></Link>
+        <Link href="/" className="public-brand"><span className="logo" aria-hidden="true">✦</span><span><b>ZOHALPAY</b><small>خدمات دیجیتال</small></span></Link>
         <nav><Link href="/services">خدمات</Link><Link href="/ai">AI</Link><Link href="/social">شبکه‌های اجتماعی</Link><Link href="/automation">اتوماسیون</Link><Link href="/pricing">قیمت‌گذاری</Link></nav>
         <Link href="/auth" className="marketing-cta">ورود / شروع</Link>
       </header>
