@@ -3,21 +3,24 @@ set -euo pipefail
 TOKENS="packages/design-tokens/src/index.ts"
 CSS="app/globals.css"
 checks=(
-  "--bg:#07080d"
-  "--surface:#10131b"
-  "--surface-2:#151924"
-  "--surface-3:#1b202c"
-  "--ink:#f6f7fb"
-  "--muted:#969baa"
-  "--line:#252a37"
-  "--line-strong:#343b4b"
-  "--accent:#a18aff"
-  "--accent-strong:#c0b4ff"
-  "--success:#41d39a"
-  "--warning:#f4bd61"
-  "--danger:#ff7187"
-  "--info:#75b8ff"
+  "--bg:#f7f9fc"
+  "--surface:#ffffff"
+  "--surface-2:#f3f5f8"
+  "--surface-3:#eaecef"
+  "--ink:#0d1117"
+  "--muted:#5c6474"
+  "--subtle:#8898a8"
+  "--accent:#1a56db"
+  "--accent-strong:#1044b5"
+  "--success:#16a34a"
+  "--warning:#d97706"
+  "--danger:#dc2626"
+  "--info:#0284c7"
+  "color-scheme:light"
 )
 for c in "${checks[@]}"; do grep -Fq -- "$c" "$CSS" || { echo "VISUAL_PARITY_FAIL: missing $c"; exit 1; }; done
 grep -Fq "colors:" "$TOKENS" || { echo "VISUAL_PARITY_FAIL: token source missing"; exit 1; }
+grep -Fq "'#1a56db'" "$TOKENS" || { echo "VISUAL_PARITY_FAIL: token accent not updated"; exit 1; }
+grep -Fq "'#f7f9fc'" "$TOKENS" || { echo "VISUAL_PARITY_FAIL: token bg not updated"; exit 1; }
+grep -Fq "'#0d1117'" "$TOKENS" || { echo "VISUAL_PARITY_FAIL: token ink not updated"; exit 1; }
 echo 'VISUAL_PARITY_STATIC=PASS'

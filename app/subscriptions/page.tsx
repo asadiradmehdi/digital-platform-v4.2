@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { CalendarDays, ChevronLeft, ShieldCheck, Sparkles, TrendingUp, Zap } from 'lucide-react';
+import {
+  ArrowUpLeft, CalendarDays, CheckCircle2, ChevronLeft,
+  ShieldCheck, Sparkles, TrendingUp, Zap,
+} from 'lucide-react';
 import { AppShell } from '../../components/AppShell';
-import { SystemStrip } from '../../components/ProductSurface';
 import { formatTomanFromIRR, statusLabel } from '../../lib/format';
 import { requireCurrentUser } from '../../server/identity/request-user';
 import { query, withWorkspaceTransaction } from '../../server/core/db';
@@ -69,131 +71,318 @@ export default async function Subscriptions() {
     [userId],
   );
   const workspaceId = memberships.rows[0]?.workspace_id ?? null;
-
   const subscriptions = workspaceId ? await getSubscriptions(workspaceId) : [];
   const sub = subscriptions[0] ?? null;
 
+  /* ── Empty state ─────────────────────────────────────────────── */
   if (!sub) {
     return (
       <AppShell>
         <main className="workspace-page-content">
-          <header className="page-header" style={{ marginBottom: 22 }}>
+          <header className="page-header" style={{ marginBottom: 28 }}>
             <div>
               <span className="eyebrow">مالی · اشتراک‌ها</span>
               <h1>اشتراک‌ها</h1>
-              <p>Entitlement، قیمت تمدید و مصرف از Pricing Engine سمت سرور.</p>
             </div>
             <Link className="button secondary" href="/pricing">
               مقایسه پلن‌ها <ChevronLeft size={14} />
             </Link>
           </header>
-          <SystemStrip />
-          <div className="state-block state-empty" style={{ marginTop: 40 }}>
-            <Sparkles size={28}/>
-            <h3>اشتراک فعالی ندارید</h3>
-            <p>با انتخاب یک پلن، به امکانات پیشرفته دسترسی پیدا کنید.</p>
-            <Link href="/pricing" className="button primary" style={{ marginTop: 14, textDecoration: 'none' }}>
-              مشاهده پلن‌ها
-            </Link>
+
+          <div
+            style={{
+              background: 'var(--surface)',
+              border: '1px solid var(--line)',
+              borderRadius: 'var(--radius-xl)',
+              padding: '56px 32px',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 12,
+              marginTop: 8,
+            }}
+          >
+            <div
+              style={{
+                width: 60,
+                height: 60,
+                borderRadius: 20,
+                background: 'var(--accent-soft)',
+                display: 'grid',
+                placeItems: 'center',
+                color: 'var(--accent)',
+                marginBottom: 4,
+              }}
+            >
+              <Sparkles size={26} />
+            </div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0, letterSpacing: '-.02em' }}>
+              اشتراک فعالی ندارید
+            </h3>
+            <p style={{ color: 'var(--muted)', fontSize: 13, lineHeight: 1.85, maxWidth: 380, margin: 0 }}>
+              با انتخاب یک پلن، به مدل‌های هوش مصنوعی، اتوماسیون و امکانات پیشرفته دسترسی پیدا کنید.
+            </p>
+            <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+              <Link href="/pricing" className="button primary" style={{ textDecoration: 'none' }}>
+                مشاهده پلن‌ها <ArrowUpLeft size={14} />
+              </Link>
+              <Link href="/wallet" className="button secondary" style={{ textDecoration: 'none' }}>
+                کیف پول
+              </Link>
+            </div>
           </div>
         </main>
       </AppShell>
     );
   }
 
-  const renewalDate = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(new Date(sub.currentPeriodEnd));
+  const renewalDate = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'long' }).format(
+    new Date(sub.currentPeriodEnd),
+  );
   const isTrialing = sub.status === 'TRIALING';
+  const daysLeft = Math.max(
+    0,
+    Math.ceil((new Date(sub.currentPeriodEnd).getTime() - Date.now()) / 86_400_000),
+  );
 
   return (
     <AppShell>
       <main className="workspace-page-content">
-        <header className="page-header" style={{ marginBottom: 22 }}>
+        <header className="page-header" style={{ marginBottom: 28 }}>
           <div>
             <span className="eyebrow">مالی · اشتراک‌ها</span>
             <h1>اشتراک‌ها</h1>
-            <p>Entitlement، قیمت تمدید و مصرف از Pricing Engine سمت سرور.</p>
           </div>
           <Link className="button secondary" href="/pricing">
-            مقایسه پلن‌ها <ChevronLeft size={14} />
+            ارتقای پلن <ChevronLeft size={14} />
           </Link>
         </header>
 
-        <SystemStrip />
+        {/* ── Active plan hero card ─────────────────────────────── */}
+        <article
+          style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--line)',
+            borderRadius: 'var(--radius-xl)',
+            padding: '28px 28px 24px',
+            marginBottom: 16,
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          {/* subtle accent backdrop */}
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              insetInlineEnd: -60,
+              top: -60,
+              width: 260,
+              height: 260,
+              borderRadius: '50%',
+              background: 'var(--accent-soft)',
+              pointerEvents: 'none',
+            }}
+          />
 
-        <article className="surface-panel" style={{ marginBottom: 14 }}>
-          <div className="panel-head" style={{ marginBottom: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 46, height: 46, borderRadius: 14, background: 'var(--accent-soft)', border: '1px solid rgba(155,124,255,.18)', display: 'grid', placeItems: 'center', color: 'var(--accent-strong)' }}>
-                <Sparkles size={20} />
+          <div style={{ position: 'relative' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: 16,
+                flexWrap: 'wrap',
+                marginBottom: 24,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: 16,
+                    background: 'var(--accent-soft)',
+                    border: '1px solid rgba(26,86,219,.15)',
+                    display: 'grid',
+                    placeItems: 'center',
+                    color: 'var(--accent)',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Sparkles size={22} />
+                </div>
+                <div>
+                  <span
+                    style={{
+                      display: 'block',
+                      fontSize: 9,
+                      fontWeight: 800,
+                      letterSpacing: '.1em',
+                      color: 'var(--accent)',
+                      marginBottom: 3,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    پلن فعال
+                  </span>
+                  <h2
+                    style={{
+                      fontSize: 22,
+                      fontWeight: 800,
+                      margin: 0,
+                      letterSpacing: '-.03em',
+                    }}
+                  >
+                    {sub.planName}
+                  </h2>
+                </div>
               </div>
-              <div>
-                <p className="panel-kicker">CURRENT PLAN</p>
-                <h2 style={{ marginTop: 3 }}>{sub.planName}</h2>
-              </div>
+              <span className={`status-pill ${isTrialing ? 'info' : 'success'}`}>
+                {isTrialing ? (
+                  <>{statusLabel(sub.status)} · {sub.trialEndsAt ? new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short' }).format(new Date(sub.trialEndsAt)) : ''}</>
+                ) : statusLabel(sub.status)}
+              </span>
             </div>
-            <span className={`status-pill ${isTrialing ? 'info' : 'success'}`}>{statusLabel(sub.status)}</span>
-          </div>
 
-          <div className="metric-grid-4" style={{ marginBottom: 18 }}>
-            <div className="metric-tile">
-              <span>قیمت تمدید</span>
-              <strong>{sub.priceMinor ? formatTomanFromIRR(Number(sub.priceMinor)) : '—'}</strong>
-              <small>ثابت شده در زمان خرید</small>
-            </div>
-            <div className="metric-tile">
-              <span>تمدید بعدی</span>
-              <strong style={{ fontSize: 16 }}>{renewalDate}</strong>
-              <small>تمدید خودکار</small>
-            </div>
-            {isTrialing && sub.trialEndsAt && (
+            {/* Metrics */}
+            <div className="metric-grid-4">
               <div className="metric-tile">
-                <span>پایان آزمایشی</span>
-                <strong style={{ fontSize: 14 }}>
-                  {new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(new Date(sub.trialEndsAt))}
+                <span>قیمت تمدید</span>
+                <strong>
+                  {sub.priceMinor ? formatTomanFromIRR(Number(sub.priceMinor)) : '—'}
                 </strong>
-                <small>دوره رایگان</small>
+                <small>ثابت در زمان خرید</small>
               </div>
-            )}
-            <div className="metric-tile">
-              <span>وضعیت</span>
-              <strong style={{ display: 'flex', alignItems: 'center', gap: 6, color: isTrialing ? 'var(--info)' : 'var(--success)' }}>
-                <ShieldCheck size={18} />{statusLabel(sub.status)}
-              </strong>
-              <small>بدون محدودیت</small>
+              <div className="metric-tile">
+                <span>تمدید بعدی</span>
+                <strong style={{ fontSize: 16, letterSpacing: 0 }}>{renewalDate}</strong>
+                <small>تمدید خودکار</small>
+              </div>
+              <div className="metric-tile">
+                <span>روزهای باقی‌مانده</span>
+                <strong style={{ color: daysLeft < 7 ? 'var(--warning)' : 'var(--ink)' }}>
+                  {daysLeft}
+                </strong>
+                <small>روز</small>
+              </div>
+              <div className="metric-tile">
+                <span>وضعیت</span>
+                <strong
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: 18,
+                    color: isTrialing ? 'var(--info)' : 'var(--success)',
+                  }}
+                >
+                  {isTrialing ? <CheckCircle2 size={18} /> : <ShieldCheck size={18} />}
+                  {statusLabel(sub.status)}
+                </strong>
+                <small>بدون قطعی</small>
+              </div>
             </div>
-          </div>
 
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 10, color: 'var(--muted)', paddingTop: 14, borderTop: '1px solid var(--line)' }}>
-            <CalendarDays size={13} />
-            قیمت renewal در زمان ثبت subscription snapshot می‌شود. هر بار تمدید در همان قیمت انجام می‌شود.
+            {/* Renewal note */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: 10,
+                color: 'var(--subtle)',
+                paddingTop: 14,
+                borderTop: '1px solid var(--line)',
+              }}
+            >
+              <CalendarDays size={13} />
+              قیمت renewal در زمان ثبت subscription snapshot می‌شود. هر تمدید در همان قیمت انجام می‌شود.
+            </div>
           </div>
         </article>
 
+        {/* ── Entitlements ─────────────────────────────────────── */}
         {sub.entitlements.length > 0 && (
-          <div style={{ marginBottom: 14 }}>
-            <p className="panel-kicker" style={{ marginBottom: 12 }}>ENTITLEMENTS</p>
-            <div className="product-card-grid-premium">
+          <section style={{ marginBottom: 20 }}>
+            <div style={{ marginBottom: 14 }}>
+              <span className="eyebrow">امکانات پلن</span>
+              <h2 style={{ fontSize: 15, fontWeight: 700, margin: '4px 0 0', letterSpacing: '-.02em' }}>
+                شامل در اشتراک شما
+              </h2>
+            </div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                gap: 12,
+              }}
+            >
               {sub.entitlements.map(({ entitlement_key, value }) => {
                 const Icon = entitlementIcons[entitlement_key] ?? Sparkles;
                 const label = entitlementLabel[entitlement_key] ?? entitlement_key;
                 return (
-                  <article className="product-card" key={entitlement_key} style={{ minHeight: 100 }}>
-                    <div className="product-card-icon"><Icon size={16} /></div>
-                    <div className="product-card-copy">
-                      <div className="product-card-title"><h2>{label}</h2></div>
-                      {value && <p style={{ color: 'var(--muted)', fontSize: 9 }}>{value}</p>}
-                      <p style={{ color: 'var(--success)', fontSize: 9 }}>شامل پلن</p>
+                  <div
+                    key={entitlement_key}
+                    style={{
+                      background: 'var(--surface)',
+                      border: '1px solid var(--line)',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '16px 18px',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: 10,
+                        background: 'var(--accent-soft)',
+                        display: 'grid',
+                        placeItems: 'center',
+                        color: 'var(--accent)',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Icon size={15} />
                     </div>
-                  </article>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 3 }}>{label}</div>
+                      {value && (
+                        <div style={{ fontSize: 10, color: 'var(--muted)' }}>{value}</div>
+                      )}
+                      <div
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          fontSize: 9,
+                          color: 'var(--success)',
+                          marginTop: 4,
+                        }}
+                      >
+                        <CheckCircle2 size={10} />
+                        شامل پلن
+                      </div>
+                    </div>
+                  </div>
                 );
               })}
             </div>
-          </div>
+          </section>
         )}
 
-        <div style={{ display: 'flex', gap: 10 }}>
-          <Link href="/wallet" className="button secondary">کیف پول</Link>
-          <Link href="/pricing" className="button secondary">ارتقا پلن</Link>
+        {/* ── Actions ──────────────────────────────────────────── */}
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <Link href="/wallet" className="button secondary">
+            کیف پول
+          </Link>
+          <Link href="/pricing" className="button secondary">
+            مقایسه پلن‌ها
+          </Link>
         </div>
       </main>
     </AppShell>

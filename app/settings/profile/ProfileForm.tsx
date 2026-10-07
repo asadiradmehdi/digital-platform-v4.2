@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 
 interface Props {
   initialDisplayName: string;
@@ -41,13 +41,77 @@ export default function ProfileForm({ initialDisplayName, initialPhone }: Props)
   return (
     <form className="settings-form" onSubmit={e => void handleSave(e)}>
       <div className="form-row">
-        <label>نام نمایشی<input name="displayName" value={displayName} onChange={e => { setDisplayName(e.target.value); setSaved(false); }} autoComplete="nickname"/></label>
+        <label>
+          نام نمایشی
+          <input
+            name="displayName"
+            value={displayName}
+            onChange={e => { setDisplayName(e.target.value); setSaved(false); }}
+            autoComplete="nickname"
+            placeholder="نام شما"
+          />
+        </label>
+        <label>
+          شماره موبایل
+          <input
+            name="phone"
+            type="tel"
+            value={phone}
+            onChange={e => { setPhone(e.target.value); setSaved(false); }}
+            placeholder="اختیاری"
+            autoComplete="tel"
+            dir="ltr"
+          />
+        </label>
       </div>
-      <label>شماره موبایل<input name="phone" type="tel" value={phone} onChange={e => { setPhone(e.target.value); setSaved(false); }} placeholder="اختیاری" autoComplete="tel" dir="ltr"/></label>
-      {error && <p style={{ fontSize: 11, color: 'var(--danger)', margin: 0 }}>{error}</p>}
+
+      {error && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '10px 14px',
+            background: 'var(--danger-soft)',
+            border: '1px solid rgba(220,38,38,.18)',
+            borderRadius: 10,
+            fontSize: 12,
+            color: 'var(--danger)',
+          }}
+          role="alert"
+        >
+          <AlertCircle size={14} style={{ flex: 'none' }} />
+          {error}
+        </div>
+      )}
+
       <div className="form-actions">
-        {saved && <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--success)', marginInlineEnd: 'auto' }}><CheckCircle2 size={13}/>ذخیره شد</span>}
-        <button className="button primary" type="submit" disabled={saving}>{saving ? 'در حال ذخیره...' : 'ذخیره تغییرات'}</button>
+        {saved && (
+          <span
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 12,
+              color: 'var(--success)',
+              marginInlineEnd: 'auto',
+              fontWeight: 600,
+            }}
+          >
+            <CheckCircle2 size={14} />
+            تغییرات ذخیره شد
+          </span>
+        )}
+        <button className="button primary" type="submit" disabled={saving}>
+          {saving ? (
+            <>
+              <Loader2 size={14} className="spin-icon" />
+              در حال ذخیره...
+            </>
+          ) : (
+            'ذخیره تغییرات'
+          )}
+        </button>
       </div>
     </form>
   );

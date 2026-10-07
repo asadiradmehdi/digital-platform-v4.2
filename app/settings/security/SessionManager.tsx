@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { CheckCircle2, Laptop2, LogOut, Smartphone } from 'lucide-react';
+import { CheckCircle2, Laptop2, Loader2, LogOut, Smartphone } from 'lucide-react';
 
 interface Session {
   id: string;
@@ -50,40 +50,82 @@ export default function SessionManager({ sessions }: { sessions: Session[] }) {
     }
   };
 
+  if (list.length === 0) {
+    return (
+      <p style={{ fontSize: 12, color: 'var(--muted)', padding: '12px 0' }}>
+        نشست فعالی یافت نشد.
+      </p>
+    );
+  }
+
   return (
     <>
-      <div style={{ display: 'grid', gap: 10, marginTop: 6 }}>
-        {list.length === 0 ? (
-          <p style={{ fontSize: 12, color: 'var(--muted)' }}>نشست فعالی یافت نشد.</p>
-        ) : (
-          list.map(s => {
-            const Icon = /iPhone|iPad|Android/.test(s.lastUserAgent ?? '') || s.clientType === 'IOS' || s.clientType === 'ANDROID' ? Smartphone : Laptop2;
-            return (
-              <div key={s.id} className="session-row">
-                <span className="session-icon"><Icon size={17}/></span>
-                <div style={{ flex: 1 }}>
-                  <b style={{ fontSize: 12 }}>{s.label}</b>
-                  <small style={{ display: 'block', color: 'var(--muted)', fontSize: 10, marginTop: 2 }}>
-                    آخرین فعالیت: {s.lastSeen}
-                  </small>
+      <div style={{ display: 'grid', gap: 8, marginTop: 4 }}>
+        {list.map(s => {
+          const isMobile =
+            /iPhone|iPad|Android/.test(s.lastUserAgent ?? '') ||
+            s.clientType === 'IOS' ||
+            s.clientType === 'ANDROID';
+          const Icon = isMobile ? Smartphone : Laptop2;
+          return (
+            <div key={s.id} className="session-row">
+              <span
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 11,
+                  background: s.isCurrent ? 'var(--accent-soft)' : 'var(--surface-3)',
+                  color: s.isCurrent ? 'var(--accent)' : 'var(--muted)',
+                  display: 'grid',
+                  placeItems: 'center',
+                  flex: 'none',
+                }}
+              >
+                <Icon size={17} />
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <b style={{ fontSize: 13, color: 'var(--ink)' }}>{s.label}</b>
+                  {s.isCurrent && (
+                    <span className="status-pill success" style={{ fontSize: 8 }}>
+                      این دستگاه
+                    </span>
+                  )}
                 </div>
-                {s.isCurrent
-                  ? <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--success)' }}><CheckCircle2 size={13}/>این دستگاه</span>
-                  : <button
-                      className="button secondary"
-                      style={{ padding: '0 12px', height: 32, fontSize: 10 }}
-                      type="button"
-                      disabled={revoking === s.id}
-                      onClick={() => void revokeOne(s.id)}
-                    >
-                      <LogOut size={12}/>{revoking === s.id ? '...' : 'خروج'}
-                    </button>
-                }
+                <small
+                  style={{
+                    display: 'block',
+                    color: 'var(--subtle)',
+                    fontSize: 11,
+                    marginTop: 3,
+                  }}
+                >
+                  آخرین فعالیت: {s.lastSeen}
+                </small>
               </div>
-            );
-          })
-        )}
+              {s.isCurrent ? (
+                <CheckCircle2 size={16} style={{ color: 'var(--success)', flex: 'none' }} />
+              ) : (
+                <button
+                  className="button secondary"
+                  style={{ padding: '0 14px', height: 34, fontSize: 11, gap: 6, flex: 'none' }}
+                  type="button"
+                  disabled={revoking === s.id}
+                  onClick={() => void revokeOne(s.id)}
+                >
+                  {revoking === s.id ? (
+                    <Loader2 size={12} className="spin-icon" />
+                  ) : (
+                    <LogOut size={13} />
+                  )}
+                  خروج
+                </button>
+              )}
+            </div>
+          );
+        })}
       </div>
+
       {list.length > 1 && !allRevoked && (
         <button
           className="button danger"
@@ -92,13 +134,35 @@ export default function SessionManager({ sessions }: { sessions: Session[] }) {
           disabled={revokingAll}
           onClick={() => void revokeAll()}
         >
-          {revokingAll ? 'در حال خروج...' : 'خروج از همه دستگاه‌ها به جز این'}
+          {revokingAll ? (
+            <>
+              <Loader2 size={14} className="spin-icon" />
+              در حال خروج...
+            </>
+          ) : (
+            'خروج از همه دستگاه‌ها به جز این'
+          )}
         </button>
       )}
+
       {allRevoked && (
-        <p style={{ fontSize: 11, color: 'var(--success)', marginTop: 12, display: 'flex', alignItems: 'center', gap: 5 }}>
-          <CheckCircle2 size={13}/>همه نشست‌های دیگر خاتمه یافت.
-        </p>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            marginTop: 14,
+            padding: '10px 14px',
+            background: 'var(--success-soft)',
+            borderRadius: 10,
+            fontSize: 12,
+            color: 'var(--success)',
+            fontWeight: 600,
+          }}
+        >
+          <CheckCircle2 size={14} />
+          همه نشست‌های دیگر با موفقیت خاتمه یافتند.
+        </div>
       )}
     </>
   );

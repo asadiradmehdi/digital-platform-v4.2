@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Screen } from '../components/Screen';
-import { Action, Card, Divider, Section, State, Status, Title } from '../components/Ui';
+import { Action, Card, Divider, Section, State, Status } from '../components/Ui';
 import { theme } from '../theme';
 import { useWorkspace } from '../hooks/useWorkspace';
 import { useQuery } from '../hooks/useQuery';
@@ -33,20 +34,43 @@ function statusLabel(status: string): string {
   return labels[status] ?? status;
 }
 
+const statusAccentColor = (status: string): string => {
+  const map: Record<string, string> = {
+    COMPLETED: theme.colors.success,
+    PROCESSING: theme.colors.accent,
+    PROVIDER_SUBMITTED: theme.colors.accent,
+    QUEUED: theme.colors.warning,
+    PAID: theme.colors.warning,
+    FAILED: theme.colors.danger,
+    CANCELLED: theme.colors.danger,
+  };
+  return map[status] ?? theme.colors.muted;
+};
+
 function OrderRow({ order, last }: { order: OrderSummary; last: boolean }) {
+  const accentColor = statusAccentColor(order.status);
+  const code = order.code ?? `#${order.id.slice(0, 8).toUpperCase()}`;
+
   return (
     <View>
       {!last && <Divider />}
-      <View style={styles.row}>
-        <View style={styles.main}>
-          <View style={styles.topRow}>
-            <Text style={styles.code}>{order.code ?? `#${order.id.slice(0, 8).toUpperCase()}`}</Text>
+      <View style={styles.orderCard}>
+        <View style={[styles.orderAccent, { backgroundColor: accentColor }]} />
+        <View style={styles.orderContent}>
+          <View style={styles.orderTopRow}>
+            <Text style={styles.orderCode}>{code}</Text>
             <Status tone={statusTone(order.status)}>{statusLabel(order.status)}</Status>
           </View>
-          <Text style={styles.service}>{order.status}</Text>
-          <View style={styles.bottomRow}>
-            <Text style={styles.total}>{formatToman(order.totalMinor)}</Text>
-            <Text style={styles.date}>{new Date(order.createdAt).toLocaleDateString('fa-IR', { month: 'short', day: 'numeric' })}</Text>
+          <View style={styles.orderBottomRow}>
+            <View>
+              <Text style={styles.orderAmount}>{formatToman(order.totalMinor)}</Text>
+              <Text style={styles.orderCurrency}>تومان</Text>
+            </View>
+            <Text style={styles.orderDate}>
+              {new Date(order.createdAt).toLocaleDateString('fa-IR', {
+                year: 'numeric', month: 'short', day: 'numeric',
+              })}
+            </Text>
           </View>
         </View>
       </View>
@@ -55,32 +79,51 @@ function OrderRow({ order, last }: { order: OrderSummary; last: boolean }) {
 }
 
 export function OrdersScreen() {
+  const router = useRouter();
   const { workspaceId, loading: wsLoading } = useWorkspace();
+
   const ordersQ = useQuery(
     () => workspaceId ? orders.list(workspaceId) : Promise.resolve({ items: [], nextCursor: null }),
     [workspaceId],
   );
 
   const items = ordersQ.data?.items ?? [];
+  const activeCount = items.filter((o) =>
+    ['PAID', 'QUEUED', 'PROCESSING', 'PROVIDER_SUBMITTED'].includes(o.status)
+  ).length;
+
+  const isLoading = wsLoading || ordersQ.status === 'loading';
 
   return (
     <Screen>
-      <Title eyebrow="COMMERCE / ORDERS" description="وضعیت، مبلغ و state سفارش‌ها از API مشترک">
-        سفارش‌ها
-      </Title>
+      {/* Header */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.pageTitle}>سفارش‌ها</Text>
+          {!isLoading && items.length > 0 && (
+            <Text style={styles.pageSubtitle}>
+              {items.length} سفارش · {activeCount} فعال
+            </Text>
+          )}
+        </View>
+        <Action onPress={() => router.push('/services')}>+ سفارش جدید</Action>
+      </View>
 
-      <Action>سفارش جدید</Action>
-
-      {(wsLoading || ordersQ.status === 'loading') && <State loading />}
+      {isLoading && <State loading />}
       {ordersQ.status === 'error' && <State error={ordersQ.error} />}
 
       {ordersQ.status === 'success' && items.length === 0 && (
-        <State empty="سفارشی ثبت نشده است." />
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyIcon}>📋</Text>
+          <Text style={styles.emptyTitle}>هنوز سفارشی ندارید</Text>
+          <Text style={styles.emptyDesc}>اولین سفارش خود را از بخش خدمات ثبت کنید</Text>
+          <Action onPress={() => router.push('/services')}>مشاهده خدمات</Action>
+        </View>
       )}
 
-      {items.length > 0 && (
+      {!isLoading && items.length > 0 && (
         <Card>
-          <Section title="سفارش‌های اخیر" />
+          <Section title={`${items.length} سفارش`} />
           {items.map((o, i) => (
             <OrderRow key={o.id} order={o} last={i === items.length - 1} />
           ))}
@@ -91,12 +134,92 @@ export function OrdersScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: { paddingVertical: 13 },
-  main: { gap: 5 },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  code: { color: theme.colors.ink, fontWeight: '800', fontSize: 12, fontFamily: 'monospace' },
-  service: { color: theme.colors.muted, fontSize: 11 },
-  bottomRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  total: { color: theme.colors.ink, fontSize: 12, fontWeight: '700' },
-  date: { color: theme.colors.subtle, fontSize: 10 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  pageTitle: {
+    color: theme.colors.ink,
+    fontSize: 26,
+    fontWeight: '800',
+    fontFamily: theme.typography.fa,
+    letterSpacing: -0.5,
+  },
+  pageSubtitle: {
+    color: theme.colors.muted,
+    fontSize: 11,
+    fontFamily: theme.typography.fa,
+    marginTop: 2,
+  },
+
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 48,
+    gap: 12,
+  },
+  emptyIcon: { fontSize: 56 },
+  emptyTitle: {
+    color: theme.colors.ink,
+    fontSize: 18,
+    fontWeight: '800',
+    fontFamily: theme.typography.fa,
+  },
+  emptyDesc: {
+    color: theme.colors.muted,
+    fontSize: 13,
+    fontFamily: theme.typography.fa,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+
+  orderCard: {
+    flexDirection: 'row',
+    paddingVertical: 14,
+  },
+  orderAccent: {
+    width: 4,
+    borderRadius: 2,
+    marginRight: 12,
+    flexShrink: 0,
+  },
+  orderContent: {
+    flex: 1,
+    gap: 8,
+  },
+  orderTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  orderCode: {
+    color: theme.colors.ink,
+    fontSize: 13,
+    fontWeight: '700',
+    fontFamily: 'monospace',
+  },
+  orderBottomRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  orderAmount: {
+    color: theme.colors.accentStrong,
+    fontSize: 16,
+    fontWeight: '800',
+    fontFamily: theme.typography.fa,
+    letterSpacing: -0.3,
+  },
+  orderCurrency: {
+    color: theme.colors.muted,
+    fontSize: 10,
+    fontFamily: theme.typography.fa,
+  },
+  orderDate: {
+    color: theme.colors.subtle,
+    fontSize: 11,
+    fontFamily: theme.typography.fa,
+  },
 });

@@ -133,13 +133,13 @@ export default async function Dashboard() {
       <main className="workspace-page-content">
         <section className="dash-hero">
           <div>
-            <span className="eyebrow">امروز · {workspaceName}</span>
-            <h1>سلام، {displayName}.</h1>
-            <p>همه‌چیز برای ادامه کار آماده است. امروز چه چیزی را جلو ببریم؟</p>
+            <span className="eyebrow">خانه · خلاصه فضای کاری</span>
+            <h1>سلام، {displayName} 👋</h1>
+            <p>وضعیت فضای کاری شما به طور خلاصه</p>
           </div>
           <div className="hero-actions">
-            <Link className="button secondary" href="/ai"><Sparkles size={17}/>شروع با AI</Link>
-            <Link className="button primary" href="/services"><Plus size={17}/>سفارش جدید</Link>
+            <Link href="/orders/new" className="button primary"><Plus size={16}/>سفارش جدید</Link>
+            <Link href="/wallet" className="button secondary"><WalletCards size={16}/>کیف پول</Link>
           </div>
         </section>
 

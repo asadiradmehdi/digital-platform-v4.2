@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export default function PasswordForm() {
   const [current, setCurrent] = useState('');
@@ -9,6 +9,8 @@ export default function PasswordForm() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNext, setShowNext] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,14 +40,145 @@ export default function PasswordForm() {
 
   return (
     <form className="settings-form" onSubmit={e => void handleSubmit(e)}>
-      <label>رمز عبور فعلی<input name="currentPassword" type="password" autoComplete="current-password" value={current} onChange={e => { setCurrent(e.target.value); setSaved(false); }} required/></label>
-      <label>رمز عبور جدید<input name="newPassword" type="password" autoComplete="new-password" value={next} onChange={e => { setNext(e.target.value); setSaved(false); }} required minLength={14}/></label>
-      <label>تکرار رمز عبور جدید<input name="confirmPassword" type="password" autoComplete="new-password" value={confirm} onChange={e => { setConfirm(e.target.value); setSaved(false); }} required minLength={14}/></label>
-      <p style={{ fontSize: 10, color: 'var(--muted)', margin: 0 }}>حداقل ۱۴ کاراکتر — ترکیب حروف بزرگ، کوچک، عدد و نماد.</p>
-      {error && <p style={{ fontSize: 11, color: 'var(--danger)', margin: 0 }}>{error}</p>}
+      <label>
+        رمز عبور فعلی
+        <div style={{ position: 'relative' }}>
+          <input
+            name="currentPassword"
+            type={showCurrent ? 'text' : 'password'}
+            autoComplete="current-password"
+            value={current}
+            onChange={e => { setCurrent(e.target.value); setSaved(false); }}
+            required
+            style={{ paddingInlineEnd: 44 }}
+          />
+          <button
+            type="button"
+            onClick={() => setShowCurrent(v => !v)}
+            aria-label={showCurrent ? 'مخفی کردن' : 'نمایش'}
+            style={{
+              position: 'absolute',
+              insetInlineEnd: 12,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: 'none',
+              color: 'var(--subtle)',
+              padding: 4,
+              display: 'flex',
+            }}
+          >
+            {showCurrent ? <EyeOff size={15} /> : <Eye size={15} />}
+          </button>
+        </div>
+      </label>
+
+      <label>
+        رمز عبور جدید
+        <div style={{ position: 'relative' }}>
+          <input
+            name="newPassword"
+            type={showNext ? 'text' : 'password'}
+            autoComplete="new-password"
+            value={next}
+            onChange={e => { setNext(e.target.value); setSaved(false); }}
+            required
+            minLength={14}
+            style={{ paddingInlineEnd: 44 }}
+          />
+          <button
+            type="button"
+            onClick={() => setShowNext(v => !v)}
+            aria-label={showNext ? 'مخفی کردن' : 'نمایش'}
+            style={{
+              position: 'absolute',
+              insetInlineEnd: 12,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: 'none',
+              color: 'var(--subtle)',
+              padding: 4,
+              display: 'flex',
+            }}
+          >
+            {showNext ? <EyeOff size={15} /> : <Eye size={15} />}
+          </button>
+        </div>
+      </label>
+
+      <label>
+        تکرار رمز عبور جدید
+        <input
+          name="confirmPassword"
+          type="password"
+          autoComplete="new-password"
+          value={confirm}
+          onChange={e => { setConfirm(e.target.value); setSaved(false); }}
+          required
+          minLength={14}
+        />
+      </label>
+
+      <p
+        style={{
+          fontSize: 11,
+          color: 'var(--subtle)',
+          margin: '-4px 0 0',
+          lineHeight: 1.8,
+          padding: '8px 12px',
+          background: 'var(--surface-2)',
+          borderRadius: 8,
+        }}
+      >
+        حداقل ۱۴ کاراکتر — ترکیب حروف بزرگ، کوچک، عدد و نماد.
+      </p>
+
+      {error && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '10px 14px',
+            background: 'var(--danger-soft)',
+            border: '1px solid rgba(220,38,38,.18)',
+            borderRadius: 10,
+            fontSize: 12,
+            color: 'var(--danger)',
+          }}
+          role="alert"
+        >
+          <AlertCircle size={14} style={{ flex: 'none' }} />
+          {error}
+        </div>
+      )}
+
       <div className="form-actions">
-        {saved && <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--success)', marginInlineEnd: 'auto' }}><CheckCircle2 size={13}/>تغییر رمز عبور موفق بود</span>}
-        <button className="button primary" type="submit" disabled={saving}>{saving ? 'در حال ذخیره...' : 'تغییر رمز عبور'}</button>
+        {saved && (
+          <span
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 12,
+              color: 'var(--success)',
+              marginInlineEnd: 'auto',
+              fontWeight: 600,
+            }}
+          >
+            <CheckCircle2 size={14} />
+            رمز عبور با موفقیت تغییر کرد
+          </span>
+        )}
+        <button className="button primary" type="submit" disabled={saving}>
+          {saving ? (
+            <>
+              <Loader2 size={14} className="spin-icon" />
+              در حال ذخیره...
+            </>
+          ) : (
+            'تغییر رمز عبور'
+          )}
+        </button>
       </div>
     </form>
   );

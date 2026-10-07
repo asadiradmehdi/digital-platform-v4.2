@@ -57,34 +57,40 @@ export default function AutomationScreen() {
 
   const wfItems = (workflowsQ.data?.items ?? []) as WorkflowItem[];
   const runItems = (runsQ.data?.items ?? []) as RunItem[];
-  const activeCount = wfItems.filter(w => ['ACTIVE', 'ENABLED'].includes((w.status ?? '').toUpperCase())).length;
-  const totalRuns = runItems.length;
+  const activeCount = wfItems.filter((w) => ['ACTIVE', 'ENABLED'].includes((w.status ?? '').toUpperCase())).length;
+  const successRuns = runItems.filter((r) => ['COMPLETED', 'SUCCESS'].includes((r.status ?? '').toUpperCase())).length;
 
   return (
     <Screen>
-      <Title eyebrow="AUTOMATION / WORKFLOWS" description="Side effectها با Tool Grant و Audit اجرا می‌شوند">
-        اتوماسیون
-      </Title>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.pageTitle}>اتوماسیون</Text>
+        <Action>+ جدید</Action>
+      </View>
 
-      <Action>ساخت Workflow جدید</Action>
-
-      <View style={styles.row2}>
-        <View style={styles.half}>
-          <Metric
-            label="Workflowهای فعال"
-            value={workflowsQ.status === 'loading' ? '…' : String(activeCount)}
-            hint={`از ${wfItems.length} workflow`}
-          />
+      {/* Stats */}
+      <View style={styles.statsRow}>
+        <View style={styles.statCard}>
+          <Text style={styles.statValue}>
+            {workflowsQ.status === 'loading' ? '…' : String(activeCount)}
+          </Text>
+          <Text style={styles.statLabel}>Workflow فعال</Text>
         </View>
-        <View style={styles.half}>
-          <Metric
-            label="اجراهای اخیر"
-            value={runsQ.status === 'loading' ? '…' : String(totalRuns)}
-            hint="موفق + خطا"
-          />
+        <View style={styles.statCard}>
+          <Text style={styles.statValue}>
+            {runsQ.status === 'loading' ? '…' : String(runItems.length)}
+          </Text>
+          <Text style={styles.statLabel}>کل اجراها</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={[styles.statValue, { color: theme.colors.success }]}>
+            {runsQ.status === 'loading' ? '…' : String(successRuns)}
+          </Text>
+          <Text style={styles.statLabel}>موفق</Text>
         </View>
       </View>
 
+      {/* Workflows */}
       <Card>
         <Section title="Workflowها" />
         {workflowsQ.status === 'loading' && <State loading />}
@@ -98,12 +104,12 @@ export default function AutomationScreen() {
             <View style={styles.wfRow}>
               <View style={styles.wfLeft}>
                 <View style={styles.wfNameRow}>
-                  <Text style={styles.wfName}>{wf.name}</Text>
+                  <Text style={styles.wfName} numberOfLines={1}>{wf.name}</Text>
                   <Status tone={workflowTone(wf.status)}>{workflowStatusLabel(wf.status)}</Status>
                 </View>
                 <Text style={styles.wfMeta}>
                   {wf.trigger ?? 'Manual'}
-                  {wf.runCount != null ? ` · ${wf.runCount} بار` : ''}
+                  {wf.runCount != null ? ` · ${wf.runCount} اجرا` : ''}
                   {wf.lastRunAt ? ` · ${new Date(wf.lastRunAt).toLocaleDateString('fa-IR', { month: 'short', day: 'numeric' })}` : ''}
                 </Text>
               </View>
@@ -112,6 +118,7 @@ export default function AutomationScreen() {
         ))}
       </Card>
 
+      {/* Recent runs */}
       <Card>
         <Section title="اجراهای اخیر" />
         {runsQ.status === 'loading' && <State loading />}
@@ -119,12 +126,12 @@ export default function AutomationScreen() {
         {runsQ.status === 'success' && runItems.length === 0 && (
           <State empty="اجرایی وجود ندارد." />
         )}
-        {runItems.map((r, i) => (
+        {runItems.slice(0, 10).map((r, i) => (
           <View key={r.id}>
             {i > 0 && <Divider />}
             <View style={styles.runRow}>
               <View style={styles.runLeft}>
-                <Text style={styles.runName}>{r.workflowName ?? r.workflowId ?? r.id}</Text>
+                <Text style={styles.runName} numberOfLines={1}>{r.workflowName ?? r.workflowId ?? r.id}</Text>
                 <Text style={styles.runTime}>
                   {r.startedAt ? new Date(r.startedAt).toLocaleDateString('fa-IR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                 </Text>
@@ -134,20 +141,81 @@ export default function AutomationScreen() {
           </View>
         ))}
       </Card>
+
+      <Card>
+        <Section title="امنیت" />
+        <Text style={styles.securityNote}>
+          🔐 Side effectها با Tool Grant و Audit اجرا می‌شوند. هیچ عملیاتی بدون مجوز سرور انجام نمی‌شود.
+        </Text>
+      </Card>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  row2: { flexDirection: 'row', gap: 12 },
-  half: { flex: 1 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  pageTitle: {
+    color: theme.colors.ink,
+    fontSize: 26,
+    fontWeight: '800',
+    fontFamily: theme.typography.fa,
+    letterSpacing: -0.5,
+    paddingTop: 4,
+  },
+
+  statsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.line,
+    borderRadius: theme.radius.lg,
+    padding: 14,
+    alignItems: 'center',
+    gap: 5,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  statValue: {
+    color: theme.colors.ink,
+    fontSize: 24,
+    fontWeight: '800',
+    fontFamily: theme.typography.fa,
+    letterSpacing: -0.5,
+  },
+  statLabel: {
+    color: theme.colors.muted,
+    fontSize: 10,
+    fontFamily: theme.typography.fa,
+    textAlign: 'center',
+  },
+
   wfRow: { paddingVertical: 12, gap: 4 },
   wfLeft: { gap: 4 },
   wfNameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  wfName: { color: theme.colors.ink, fontSize: 13, fontWeight: '700', flex: 1 },
-  wfMeta: { color: theme.colors.subtle, fontSize: 10 },
+  wfName: { color: theme.colors.ink, fontSize: 13, fontWeight: '700', fontFamily: theme.typography.fa, flex: 1 },
+  wfMeta: { color: theme.colors.subtle, fontSize: 10, fontFamily: theme.typography.fa },
+
   runRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, gap: 10 },
   runLeft: { flex: 1, gap: 3 },
-  runName: { color: theme.colors.ink, fontSize: 12, fontWeight: '600' },
-  runTime: { color: theme.colors.subtle, fontSize: 10 },
+  runName: { color: theme.colors.ink, fontSize: 12, fontWeight: '600', fontFamily: theme.typography.fa },
+  runTime: { color: theme.colors.subtle, fontSize: 10, fontFamily: theme.typography.fa },
+
+  securityNote: {
+    color: theme.colors.muted,
+    fontSize: 11,
+    fontFamily: theme.typography.fa,
+    lineHeight: 20,
+  },
 });

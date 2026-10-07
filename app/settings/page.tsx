@@ -1,14 +1,134 @@
 import Link from 'next/link';
-import { Bell, CreditCard, KeyRound, ShieldCheck, UserRound, Workflow } from 'lucide-react';
+import { Bell, CreditCard, KeyRound, ShieldCheck, UserRound } from 'lucide-react';
 import { AppShell } from '../../components/AppShell';
-import { InsightPanel, SurfaceHero } from '../../components/ProductSurface';
-export const metadata={title:'تنظیمات',robots:{index:false,follow:false}};
-const items=[
-  ['حساب و پروفایل','هویت، نام نمایشی و اطلاعات پایه',UserRound,'/settings/profile'],
-  ['امنیت','MFA، Passkey، دستگاه‌ها و نشست‌ها',ShieldCheck,'/settings/security'],
-  ['پرداخت و صورتحساب','روش پرداخت، فاکتور و سوابق مالی',CreditCard,'/settings/billing'],
-  ['اعلان‌ها','کانال‌های اطلاع‌رسانی و ترجیحات',Bell,'/settings/notifications'],
-  ['API و دسترسی‌ها','API keys، scopeها و دسترسی سرویس‌ها',KeyRound,'/settings/api-keys'],
-  ['Automation','تنظیمات اجرای Workflowها',Workflow,'/settings/pricing'],
+
+export const metadata = { title: 'تنظیمات', robots: { index: false, follow: false } };
+
+const sections = [
+  {
+    icon: UserRound,
+    label: 'PROFILE',
+    title: 'پروفایل',
+    description: 'نام نمایشی، ایمیل و اطلاعات هویتی حساب.',
+    href: '/settings/profile',
+    cta: 'ویرایش پروفایل',
+  },
+  {
+    icon: ShieldCheck,
+    label: 'SECURITY',
+    title: 'امنیت',
+    description: 'رمز عبور، MFA، Passkey، نشست‌ها و دستگاه‌ها.',
+    href: '/settings/security',
+    cta: 'مدیریت امنیت',
+  },
+  {
+    icon: Bell,
+    label: 'NOTIFICATIONS',
+    title: 'اعلان‌ها',
+    description: 'کانال‌های اطلاع‌رسانی و ترجیحات دریافت پیام.',
+    href: '/settings/notifications',
+    cta: 'تنظیم اعلان‌ها',
+  },
+  {
+    icon: CreditCard,
+    label: 'BILLING',
+    title: 'پرداخت و صورتحساب',
+    description: 'اشتراک، کیف پول، فاکتورها و روش پرداخت.',
+    href: '/settings/billing',
+    cta: 'مشاهده صورتحساب',
+  },
+  {
+    icon: KeyRound,
+    label: 'API KEYS',
+    title: 'API و دسترسی‌ها',
+    description: 'کلیدهای API، scopeها و دسترسی سرویس‌های خارجی.',
+    href: '/settings/api-keys',
+    cta: 'مدیریت کلیدها',
+  },
 ] as const;
-export default function Settings(){return <AppShell><main className="workspace-page-content"><SurfaceHero eyebrow="CONTROL PLANE / SETTINGS" title="کنترل دقیق Workspace." description="تنظیمات حساب، امنیت، صورتحساب، اعلان‌ها و دسترسی‌های فنی در یک مرکز کنترل متمرکز." secondaryHref="/security" secondaryLabel="مرکز امنیت"/><section className="product-card-grid-premium">{items.map(([title,desc,Icon,href])=><InsightPanel key={title} kicker="SETTING" title={title}><div className="setting-mini"><Icon size={18}/><p>{desc}</p><Link href={href}>مدیریت <span>←</span></Link></div></InsightPanel>)}</section></main></AppShell>}
+
+export default function Settings() {
+  return (
+    <AppShell>
+      <main className="workspace-page-content">
+        <div className="dash-hero">
+          <div>
+            <span className="eyebrow">حساب کاربری · تنظیمات</span>
+            <h1>تنظیمات</h1>
+            <p>مدیریت پروفایل، امنیت، اعلان‌ها و دسترسی‌های فنی workspace.</p>
+          </div>
+          <Link className="button secondary" href="/security">مرکز امنیت</Link>
+        </div>
+
+        <div style={{ display: 'grid', gap: 10 }}>
+          {sections.map(({ icon: Icon, label, title, description, href, cta }) => (
+            <Link
+              key={href}
+              href={href}
+              style={{ textDecoration: 'none' }}
+            >
+              <article
+                className="surface-panel"
+                style={{
+                  padding: '20px 24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 20,
+                  cursor: 'pointer',
+                  transition: 'border-color .15s, box-shadow .15s',
+                }}
+              >
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 14,
+                    background: 'var(--accent-soft)',
+                    color: 'var(--accent)',
+                    display: 'grid',
+                    placeItems: 'center',
+                    flex: 'none',
+                  }}
+                >
+                  <Icon size={20} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <span
+                    style={{
+                      display: 'block',
+                      fontSize: 9,
+                      fontWeight: 800,
+                      letterSpacing: '.07em',
+                      color: 'var(--accent)',
+                      marginBottom: 3,
+                      fontFamily: 'var(--font-latin)',
+                    }}
+                  >
+                    {label}
+                  </span>
+                  <strong style={{ display: 'block', fontSize: 14, color: 'var(--ink)', letterSpacing: '-.015em' }}>
+                    {title}
+                  </strong>
+                  <span style={{ display: 'block', fontSize: 11, color: 'var(--muted)', marginTop: 3, lineHeight: 1.7 }}>
+                    {description}
+                  </span>
+                </div>
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: 'var(--accent)',
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap',
+                    flex: 'none',
+                  }}
+                >
+                  {cta} ←
+                </span>
+              </article>
+            </Link>
+          ))}
+        </div>
+      </main>
+    </AppShell>
+  );
+}

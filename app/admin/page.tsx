@@ -1,19 +1,39 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Activity, AlertTriangle, CheckCircle2, Clock, CreditCard, Package, RefreshCw, ShieldCheck, Users, Zap } from 'lucide-react';
+import {
+  Activity,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  CreditCard,
+  ExternalLink,
+  Package,
+  RefreshCw,
+  ShieldCheck,
+  Users,
+  Zap,
+  Server,
+  TrendingUp,
+  AlertCircle,
+  Circle,
+} from 'lucide-react';
 import { AppShell } from '../../components/AppShell';
 import { SystemStrip } from '../../components/ProductSurface';
 import { requireCurrentUser } from '../../server/identity/request-user';
 import { isPlatformAdmin } from '../../server/identity/platform-admin';
 import { query } from '../../server/core/db';
 
-export const metadata: Metadata = { title: 'Admin', robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: 'Admin — پنل عملیاتی', robots: { index: false, follow: false } };
 
 async function getAdminStats() {
-  const [orders, payments, subs, providers, alerts, users] = await Promise.all([
+  const [orders, orders24h, payments, subs, providers, alerts, users, queueStats] = await Promise.all([
     query<{ status: string; count: string }>(
       `SELECT status, COUNT(*)::text AS count FROM orders GROUP BY status`,
+      [],
+    ),
+    query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM orders WHERE created_at > now() - interval '24 hours'`,
       [],
     ),
     query<{ status: string; count: string; total: string }>(
@@ -39,19 +59,78 @@ async function getAdminStats() {
       `SELECT COUNT(*)::text AS count FROM users`,
       [],
     ),
+    query<{ status: string; count: string }>(
+      `SELECT status, COUNT(*)::text AS count FROM orders
+       WHERE status IN ('QUEUED','PROCESSING','PROVIDER_SUBMITTED')
+       GROUP BY status`,
+      [],
+    ),
   ]);
 
   const orderMap = Object.fromEntries(orders.rows.map(r => [r.status, Number(r.count)]));
   const paymentMap = Object.fromEntries(payments.rows.map(r => [r.status, { count: Number(r.count), total: BigInt(r.total) }]));
   const subMap = Object.fromEntries(subs.rows.map(r => [r.status, Number(r.count)]));
   const alertBySev = Object.fromEntries(alerts.rows.map(r => [r.severity, { count: Number(r.count), lastAt: r.last_at }]));
+  const queueTotal = queueStats.rows.reduce((acc, r) => acc + Number(r.count), 0);
+  const orders24hCount = Number(orders24h.rows[0]?.count ?? 0);
 
-  return { orderMap, paymentMap, subMap, providers: providers.rows, alertBySev, userCount: Number(users.rows[0]?.count ?? 0) };
+  return {
+    orderMap,
+    paymentMap,
+    subMap,
+    providers: providers.rows,
+    alertBySev,
+    userCount: Number(users.rows[0]?.count ?? 0),
+    queueTotal,
+    orders24hCount,
+  };
 }
 
-function StatusDot({ status }: { status: string }) {
-  const color = status === 'HEALTHY' ? 'var(--success)' : status === 'DEGRADED' ? 'var(--warning)' : 'var(--danger)';
-  return <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: color, marginInlineEnd: 6 }}/>;
+/** Translates an order/subscription status to a human-readable Persian label */
+function statusLabel(status: string): string {
+  const map: Record<string, string> = {
+    COMPLETED: 'تکمیل‌شده',
+    FAILED: 'ناموفق',
+    QUEUED: 'در صف',
+    PROCESSING: 'در حال پردازش',
+    PROVIDER_SUBMITTED: 'ارسال‌شده',
+    REFUNDED: 'بازگشت‌خورده',
+    ACTIVE: 'فعال',
+    TRIALING: 'آزمایشی',
+    PAST_DUE: 'سررسیدگذشته',
+    CANCELED: 'لغوشده',
+  };
+  return map[status] ?? status;
+}
+
+function statusPillClass(status: string): string {
+  if (['COMPLETED', 'ACTIVE', 'TRIALING', 'HEALTHY'].includes(status)) return 'success';
+  if (['FAILED', 'PAST_DUE', 'ERROR', 'CRITICAL', 'OFFLINE'].includes(status)) return 'danger';
+  if (['QUEUED', 'PROCESSING', 'PROVIDER_SUBMITTED'].includes(status)) return 'info';
+  if (['REFUNDED', 'CANCELED', 'WARNING', 'DEGRADED'].includes(status)) return 'warning';
+  return '';
+}
+
+function ProviderStatusIcon({ status }: { status: string }) {
+  if (status === 'HEALTHY') {
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: '50%', background: 'var(--success-soft)' }}>
+        <CheckCircle2 size={13} style={{ color: 'var(--success)' }} />
+      </span>
+    );
+  }
+  if (status === 'DEGRADED') {
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: '50%', background: 'var(--warning-soft)' }}>
+        <AlertCircle size={13} style={{ color: 'var(--warning)' }} />
+      </span>
+    );
+  }
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: '50%', background: 'var(--danger-soft)' }}>
+      <Circle size={13} style={{ color: 'var(--danger)' }} />
+    </span>
+  );
 }
 
 export default async function AdminPage() {
@@ -64,7 +143,7 @@ export default async function AdminPage() {
       <AppShell>
         <main className="workspace-page-content">
           <div className="state-block state-error" style={{ marginTop: 60 }}>
-            <ShieldCheck size={28}/>
+            <ShieldCheck size={28} />
             <h3>دسترسی محدود</h3>
             <p>این صفحه تنها برای مدیران پلتفرم قابل دسترسی است.</p>
           </div>
@@ -74,170 +153,516 @@ export default async function AdminPage() {
   }
 
   const stats = await getAdminStats();
-  const { orderMap, paymentMap, subMap, providers, alertBySev, userCount } = stats;
+  const { orderMap, paymentMap, subMap, providers, alertBySev, userCount, queueTotal, orders24hCount } = stats;
 
   const totalOrders = Object.values(orderMap).reduce((a, b) => a + b, 0);
   const activeOrders = (orderMap['QUEUED'] ?? 0) + (orderMap['PROCESSING'] ?? 0) + (orderMap['PROVIDER_SUBMITTED'] ?? 0);
-  const failedOrders = (orderMap['FAILED'] ?? 0);
+  const failedOrders = orderMap['FAILED'] ?? 0;
   const paidPayments = paymentMap['PAID']?.count ?? 0;
   const activeSubs = (subMap['ACTIVE'] ?? 0) + (subMap['TRIALING'] ?? 0);
   const criticalAlerts = alertBySev['CRITICAL']?.count ?? 0;
   const errorAlerts = alertBySev['ERROR']?.count ?? 0;
+  const degradedProviders = providers.filter(p => p.status === 'DEGRADED' || p.status === 'OFFLINE');
+  const healthyProviders = providers.filter(p => p.status === 'HEALTHY');
+  const hasAlerts = (criticalAlerts + errorAlerts) > 0 || degradedProviders.length > 0;
+
+  const fmt = (n: number) => new Intl.NumberFormat('fa-IR').format(n);
 
   return (
     <AppShell>
       <main className="workspace-page-content">
-        <header className="page-header">
-          <div><span className="eyebrow">PLATFORM · ADMIN</span><h1>پنل مدیریت</h1><p>دید عملیاتی سفارش‌ها، پرداخت‌ها، ارائه‌دهندگان و رویدادهای ۲۴ ساعت اخیر.</p></div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <Link className="button secondary" href="/admin/orders">سفارش‌ها</Link>
-            <Link className="button secondary" href="/admin/providers">ارائه‌دهندگان</Link>
+
+        {/* ── Page header ── */}
+        <header className="dash-hero" style={{ paddingBottom: 22, marginBottom: 0 }}>
+          <div>
+            <span className="eyebrow">ADMIN · پنل عملیاتی</span>
+            <h1 style={{ fontSize: 'clamp(26px,3vw,40px)', letterSpacing: '-.03em', margin: '6px 0 6px' }}>
+              مرکز عملیات
+            </h1>
+            <p style={{ color: 'var(--muted)', fontSize: 12, margin: 0 }}>
+              سفارش‌ها، ارائه‌دهندگان و رویدادهای ۲۴ ساعت گذشته
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 9, alignItems: 'center', flexShrink: 0 }}>
+            <Link className="button secondary" href="/admin/orders" style={{ fontSize: 11 }}>
+              <Package size={13} />
+              سفارش‌ها
+            </Link>
+            <Link className="button secondary" href="/admin/providers" style={{ fontSize: 11 }}>
+              <Server size={13} />
+              ارائه‌دهندگان
+            </Link>
+            <Link className="button primary" href="/api/v1/health" target="_blank" style={{ fontSize: 11 }}>
+              <Activity size={13} />
+              وضعیت سیستم
+            </Link>
           </div>
         </header>
-        <SystemStrip/>
 
-        {/* KPI grid */}
-        <div className="metric-grid-4" style={{ marginBottom: 20 }}>
-          <div className="metric-tile">
-            <span><Users size={13} style={{ verticalAlign: 'middle', marginInlineEnd: 4 }}/>کاربران</span>
-            <strong>{new Intl.NumberFormat('fa-IR').format(userCount)}</strong>
+        <SystemStrip />
+
+        {/* ── Critical alert banner (only when issues present) ── */}
+        {hasAlerts && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 12,
+            padding: '14px 18px',
+            background: 'var(--danger-soft)',
+            border: '1px solid rgba(220,38,38,.2)',
+            borderRadius: 14,
+            marginBottom: 16,
+          }}>
+            <AlertTriangle size={16} style={{ color: 'var(--danger)', flexShrink: 0, marginTop: 1 }} />
+            <div>
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: 'var(--danger)' }}>
+                هشدار عملیاتی
+              </p>
+              <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--danger)', lineHeight: 1.7 }}>
+                {degradedProviders.length > 0 && (
+                  <span>{degradedProviders.length} ارائه‌دهنده با مشکل مواجه است. </span>
+                )}
+                {(criticalAlerts + errorAlerts) > 0 && (
+                  <span>{fmt(criticalAlerts + errorAlerts)} رویداد خطا در ۲۴ ساعت اخیر ثبت شده است.</span>
+                )}
+              </p>
+            </div>
           </div>
-          <div className="metric-tile">
-            <span><Package size={13} style={{ verticalAlign: 'middle', marginInlineEnd: 4 }}/>سفارش‌های فعال</span>
-            <strong style={{ color: activeOrders > 0 ? 'var(--accent-strong)' : undefined }}>{new Intl.NumberFormat('fa-IR').format(activeOrders)}</strong>
-            <small>از {new Intl.NumberFormat('fa-IR').format(totalOrders)} کل</small>
+        )}
+
+        {/* ── KPI stat band ── */}
+        <div className="stat-grid-premium" style={{ marginBottom: 16 }}>
+          {/* Orders in 24h */}
+          <div className="premium-stat">
+            <div className="stat-top">
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, color: 'var(--muted)' }}>
+                <Clock size={11} />
+                سفارش ۲۴ ساعت اخیر
+              </span>
+              <TrendingUp size={13} style={{ color: 'var(--accent)', opacity: .7 }} />
+            </div>
+            <strong style={{ fontSize: 28, fontVariantNumeric: 'tabular-nums' }}>{fmt(orders24hCount)}</strong>
+            <small>از {fmt(totalOrders)} کل سفارش</small>
           </div>
-          <div className="metric-tile">
-            <span><CreditCard size={13} style={{ verticalAlign: 'middle', marginInlineEnd: 4 }}/>پرداخت‌های موفق</span>
-            <strong>{new Intl.NumberFormat('fa-IR').format(paidPayments)}</strong>
+
+          {/* Queue depth */}
+          <div className="premium-stat">
+            <div className="stat-top">
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, color: 'var(--muted)' }}>
+                <RefreshCw size={11} />
+                صف پردازش فعال
+              </span>
+              {activeOrders > 0
+                ? <span className="status-pill info" style={{ fontSize: 7 }}>فعال</span>
+                : <span className="status-pill success" style={{ fontSize: 7 }}>خالی</span>
+              }
+            </div>
+            <strong style={{
+              fontSize: 28,
+              fontVariantNumeric: 'tabular-nums',
+              color: activeOrders > 0 ? 'var(--accent-strong)' : undefined,
+            }}>{fmt(queueTotal)}</strong>
+            <small>QUEUED · PROCESSING · SUBMITTED</small>
           </div>
-          <div className="metric-tile">
-            <span><Zap size={13} style={{ verticalAlign: 'middle', marginInlineEnd: 4 }}/>اشتراک‌های فعال</span>
-            <strong>{new Intl.NumberFormat('fa-IR').format(activeSubs)}</strong>
+
+          {/* Providers health */}
+          <div className="premium-stat">
+            <div className="stat-top">
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, color: 'var(--muted)' }}>
+                <Server size={11} />
+                ارائه‌دهندگان فعال
+              </span>
+              {degradedProviders.length > 0
+                ? <span className="status-pill warning" style={{ fontSize: 7 }}>{degradedProviders.length} مشکل</span>
+                : <span className="status-pill success" style={{ fontSize: 7 }}>سالم</span>
+              }
+            </div>
+            <strong style={{
+              fontSize: 28,
+              fontVariantNumeric: 'tabular-nums',
+              color: degradedProviders.length > 0 ? 'var(--warning)' : undefined,
+            }}>{fmt(healthyProviders.length)}</strong>
+            <small>از {fmt(providers.length)} ارائه‌دهنده</small>
+          </div>
+
+          {/* Users */}
+          <div className="premium-stat">
+            <div className="stat-top">
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, color: 'var(--muted)' }}>
+                <Users size={11} />
+                کاربران پلتفرم
+              </span>
+              <Zap size={13} style={{ color: 'var(--accent)', opacity: .7 }} />
+            </div>
+            <strong style={{ fontSize: 28, fontVariantNumeric: 'tabular-nums' }}>{fmt(userCount)}</strong>
+            <small>{fmt(activeSubs)} اشتراک فعال</small>
           </div>
         </div>
 
-        <div className="settings-layout">
-          {/* Orders by status */}
-          <article className="surface-panel" style={{ padding: 24 }}>
-            <div className="panel-head"><div><span className="panel-kicker">ORDERS</span><h2>وضعیت سفارش‌ها</h2></div></div>
-            {totalOrders === 0 ? (
-              <p style={{ color: 'var(--muted)', fontSize: 12, marginTop: 12 }}>سفارشی ثبت نشده.</p>
-            ) : (
-              <table className="data-table" style={{ marginTop: 10 }}>
-                <thead><tr><th>وضعیت</th><th>تعداد</th></tr></thead>
-                <tbody>
-                  {Object.entries(orderMap).sort(([, a], [, b]) => b - a).map(([status, count]) => (
-                    <tr key={status}>
-                      <td>
-                        <span className={`status-pill ${status === 'COMPLETED' ? 'success' : status === 'FAILED' ? 'error' : status === 'QUEUED' || status === 'PROCESSING' ? 'info' : 'warning'}`} style={{ fontSize: 9 }}>{status}</span>
-                      </td>
-                      <td><strong>{new Intl.NumberFormat('fa-IR').format(count)}</strong></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-            {failedOrders > 0 && (
-              <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--danger)' }}>
-                <AlertTriangle size={14}/>{new Intl.NumberFormat('fa-IR').format(failedOrders)} سفارش ناموفق
+        {/* ── Main two-column grid ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.4fr) minmax(300px,.6fr)', gap: 14, alignItems: 'start' }}>
+
+          {/* LEFT COLUMN */}
+          <div style={{ display: 'grid', gap: 14 }}>
+
+            {/* Provider health table */}
+            <article className="surface-panel">
+              <div className="panel-head">
+                <div>
+                  <span className="panel-kicker">PROVIDER HEALTH</span>
+                  <h2>وضعیت ارائه‌دهندگان</h2>
+                </div>
+                {degradedProviders.length > 0 && (
+                  <span className="status-pill warning">{degradedProviders.length} ناسالم</span>
+                )}
               </div>
-            )}
-          </article>
-
-          {/* Provider health */}
-          <article className="surface-panel" style={{ padding: 24 }}>
-            <div className="panel-head"><div><span className="panel-kicker">PROVIDERS</span><h2>سلامت ارائه‌دهندگان</h2></div></div>
-            {providers.length === 0 ? (
-              <p style={{ color: 'var(--muted)', fontSize: 12, marginTop: 12 }}>هیچ ارائه‌دهنده‌ای ثبت نشده.</p>
-            ) : (
-              <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
-                {providers.map(p => (
-                  <div key={p.provider_id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--surface-2)', borderRadius: 8, fontSize: 12 }}>
-                    <StatusDot status={p.status}/>
-                    <code style={{ fontFamily: 'monospace', fontSize: 10, direction: 'ltr', flex: 1 }}>{p.provider_id.slice(0, 8)}…</code>
-                    <span style={{ color: 'var(--muted)' }}>{p.latency_ms}ms</span>
-                    <span style={{ fontSize: 9, color: 'var(--muted)' }}>{new Date(p.checked_at).toLocaleTimeString('fa-IR')}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </article>
-
-          {/* Subscriptions */}
-          <article className="surface-panel" style={{ padding: 24 }}>
-            <div className="panel-head"><div><span className="panel-kicker">SUBSCRIPTIONS</span><h2>اشتراک‌ها</h2></div></div>
-            {Object.keys(subMap).length === 0 ? (
-              <p style={{ color: 'var(--muted)', fontSize: 12, marginTop: 12 }}>اشتراکی وجود ندارد.</p>
-            ) : (
-              <table className="data-table" style={{ marginTop: 10 }}>
-                <thead><tr><th>وضعیت</th><th>تعداد</th></tr></thead>
-                <tbody>
-                  {Object.entries(subMap).map(([status, count]) => (
-                    <tr key={status}>
-                      <td><span className={`status-pill ${status === 'ACTIVE' ? 'success' : status === 'PAST_DUE' ? 'error' : 'info'}`} style={{ fontSize: 9 }}>{status}</span></td>
-                      <td><strong>{new Intl.NumberFormat('fa-IR').format(count)}</strong></td>
+              {providers.length === 0 ? (
+                <div className="state-block state-empty" style={{ minHeight: 120, border: 'none' }}>
+                  <Server size={18} />
+                  <p>هیچ ارائه‌دهنده‌ای ثبت نشده.</p>
+                </div>
+              ) : (
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: 32 }}></th>
+                      <th>شناسه ارائه‌دهنده</th>
+                      <th>وضعیت</th>
+                      <th>تأخیر</th>
+                      <th>آخرین بررسی</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </article>
-
-          {/* Operational events (last 24h) */}
-          <article className="surface-panel" style={{ padding: 24 }}>
-            <div className="panel-head">
-              <div><span className="panel-kicker">EVENTS / 24H</span><h2>رویدادهای عملیاتی</h2></div>
-              {(criticalAlerts + errorAlerts) > 0 && (
-                <span className="status-pill error" style={{ fontSize: 10 }}>{criticalAlerts + errorAlerts} خطا</span>
+                  </thead>
+                  <tbody>
+                    {providers.map(p => (
+                      <tr key={p.provider_id}>
+                        <td style={{ paddingInlineEnd: 4 }}>
+                          <ProviderStatusIcon status={p.status} />
+                        </td>
+                        <td>
+                          <code
+                            className="latin"
+                            style={{ fontSize: 11, background: 'var(--surface-2)', padding: '2px 6px', borderRadius: 6 }}
+                          >
+                            {p.provider_id.slice(0, 12)}…
+                          </code>
+                        </td>
+                        <td>
+                          <span className={`status-pill ${statusPillClass(p.status)}`}>
+                            {p.status === 'HEALTHY' ? 'سالم' : p.status === 'DEGRADED' ? 'ضعیف' : 'آفلاین'}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className="latin"
+                            style={{
+                              fontSize: 11,
+                              fontVariantNumeric: 'tabular-nums',
+                              color: p.latency_ms > 2000 ? 'var(--warning)' : p.latency_ms > 5000 ? 'var(--danger)' : 'var(--muted)',
+                            }}
+                          >
+                            {p.latency_ms}ms
+                          </span>
+                        </td>
+                        <td style={{ color: 'var(--subtle)', fontSize: 10 }}>
+                          {new Date(p.checked_at).toLocaleTimeString('fa-IR')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
-            </div>
-            {Object.keys(alertBySev).length === 0 ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, color: 'var(--success)', fontSize: 12 }}>
-                <CheckCircle2 size={16}/>رویداد غیرعادی در ۲۴ ساعت گذشته ثبت نشده.
-              </div>
-            ) : (
-              <table className="data-table" style={{ marginTop: 10 }}>
-                <thead><tr><th>سطح</th><th>تعداد</th><th>آخرین بار</th></tr></thead>
-                <tbody>
-                  {Object.entries(alertBySev).map(([sev, { count, lastAt }]) => (
-                    <tr key={sev}>
-                      <td><span className={`status-pill ${sev === 'CRITICAL' || sev === 'ERROR' ? 'error' : sev === 'WARNING' ? 'warning' : 'info'}`} style={{ fontSize: 9 }}>{sev}</span></td>
-                      <td><strong>{new Intl.NumberFormat('fa-IR').format(count)}</strong></td>
-                      <td style={{ fontSize: 10, color: 'var(--muted)' }}>{new Date(lastAt).toLocaleString('fa-IR')}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </article>
+            </article>
 
-          {/* Quick actions */}
-          <article className="surface-panel" style={{ padding: 24 }}>
-            <div className="panel-head"><div><span className="panel-kicker">ACTIONS</span><h2>عملیات سریع</h2></div></div>
-            <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
-              <Link href="/api/internal/metrics" target="_blank" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--surface-2)', borderRadius: 8, fontSize: 12, textDecoration: 'none', color: 'var(--ink)' }}>
-                <Activity size={15} style={{ color: 'var(--accent-strong)' }}/>
-                <span>Metrics JSON</span>
-                <code style={{ fontSize: 10, color: 'var(--muted)', marginInlineStart: 'auto', fontFamily: 'monospace', direction: 'ltr' }}>GET /api/internal/metrics</code>
-              </Link>
-              <Link href="/api/v1/health" target="_blank" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--surface-2)', borderRadius: 8, fontSize: 12, textDecoration: 'none', color: 'var(--ink)' }}>
-                <CheckCircle2 size={15} style={{ color: 'var(--success)' }}/>
-                <span>Health Check</span>
-                <code style={{ fontSize: 10, color: 'var(--muted)', marginInlineStart: 'auto', fontFamily: 'monospace', direction: 'ltr' }}>GET /api/v1/health</code>
-              </Link>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--surface-2)', borderRadius: 8, fontSize: 12, color: 'var(--muted)' }}>
-                <RefreshCw size={15}/>
-                <span>تمدید اشتراک‌ها</span>
-                <code style={{ fontSize: 10, marginInlineStart: 'auto', fontFamily: 'monospace', direction: 'ltr' }}>POST /api/internal/queue/renewal</code>
+            {/* Orders by status */}
+            <article className="surface-panel">
+              <div className="panel-head">
+                <div>
+                  <span className="panel-kicker">ORDER BREAKDOWN</span>
+                  <h2>توزیع وضعیت سفارش‌ها</h2>
+                </div>
+                {failedOrders > 0 && (
+                  <span className="status-pill danger">
+                    <AlertTriangle size={9} style={{ marginInlineEnd: 3 }} />
+                    {fmt(failedOrders)} ناموفق
+                  </span>
+                )}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--surface-2)', borderRadius: 8, fontSize: 12, color: 'var(--muted)' }}>
-                <Clock size={15}/>
-                <span>پردازش صف خروجی</span>
-                <code style={{ fontSize: 10, marginInlineStart: 'auto', fontFamily: 'monospace', direction: 'ltr' }}>POST /api/internal/queue/outbox</code>
+              {totalOrders === 0 ? (
+                <div className="state-block state-empty" style={{ minHeight: 100, border: 'none' }}>
+                  <Package size={18} />
+                  <p>سفارشی ثبت نشده است.</p>
+                </div>
+              ) : (
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>وضعیت</th>
+                      <th>برچسب</th>
+                      <th>تعداد</th>
+                      <th>سهم</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(orderMap)
+                      .sort(([, a], [, b]) => b - a)
+                      .map(([status, count]) => {
+                        const pct = totalOrders > 0 ? Math.round((count / totalOrders) * 100) : 0;
+                        return (
+                          <tr key={status}>
+                            <td>
+                              <span className={`status-pill ${statusPillClass(status)}`} style={{ fontFamily: 'var(--font-latin)', fontSize: 9 }}>
+                                {status}
+                              </span>
+                            </td>
+                            <td style={{ color: 'var(--muted)' }}>{statusLabel(status)}</td>
+                            <td><strong style={{ fontVariantNumeric: 'tabular-nums' }}>{fmt(count)}</strong></td>
+                            <td style={{ minWidth: 80 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                                <div className="progress-track" style={{ flex: 1 }}>
+                                  <i style={{ width: `${pct}%` }} />
+                                </div>
+                                <span style={{ fontSize: 9, color: 'var(--muted)', minWidth: 24, textAlign: 'end', fontVariantNumeric: 'tabular-nums' }}>
+                                  {fmt(pct)}٪
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              )}
+            </article>
+
+          </div>
+
+          {/* RIGHT COLUMN */}
+          <div style={{ display: 'grid', gap: 14 }}>
+
+            {/* Operational events 24h */}
+            <article className="surface-panel">
+              <div className="panel-head">
+                <div>
+                  <span className="panel-kicker">EVENTS / 24H</span>
+                  <h2>رویدادهای عملیاتی</h2>
+                </div>
+                {(criticalAlerts + errorAlerts) > 0 && (
+                  <span className="status-pill danger">{fmt(criticalAlerts + errorAlerts)} خطا</span>
+                )}
               </div>
-            </div>
-          </article>
+              {Object.keys(alertBySev).length === 0 ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '14px 0', color: 'var(--success)', fontSize: 12 }}>
+                  <CheckCircle2 size={16} />
+                  <span>رویداد غیرعادی ثبت نشده</span>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gap: 8, marginTop: 4 }}>
+                  {Object.entries(alertBySev)
+                    .sort(([a], [b]) => {
+                      const order = ['CRITICAL', 'ERROR', 'WARNING', 'INFO'];
+                      return order.indexOf(a) - order.indexOf(b);
+                    })
+                    .map(([sev, { count, lastAt }]) => (
+                      <div
+                        key={sev}
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr auto',
+                          alignItems: 'center',
+                          padding: '10px 12px',
+                          background: sev === 'CRITICAL' || sev === 'ERROR' ? 'var(--danger-soft)' : sev === 'WARNING' ? 'var(--warning-soft)' : 'var(--surface-2)',
+                          borderRadius: 11,
+                          border: `1px solid ${sev === 'CRITICAL' || sev === 'ERROR' ? 'rgba(220,38,38,.15)' : sev === 'WARNING' ? 'rgba(217,119,6,.15)' : 'var(--line)'}`,
+                          gap: 10,
+                        }}
+                      >
+                        <div>
+                          <span className={`status-pill ${statusPillClass(sev)}`} style={{ fontSize: 7, marginBottom: 4, display: 'inline-flex' }}>
+                            {sev}
+                          </span>
+                          <div style={{ fontSize: 9, color: 'var(--subtle)', marginTop: 3 }}>
+                            {new Date(lastAt).toLocaleString('fa-IR', { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' })}
+                          </div>
+                        </div>
+                        <strong style={{ fontSize: 20, fontVariantNumeric: 'tabular-nums', letterSpacing: '-.02em' }}>
+                          {fmt(count)}
+                        </strong>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </article>
+
+            {/* Subscriptions */}
+            <article className="surface-panel">
+              <div className="panel-head">
+                <div>
+                  <span className="panel-kicker">SUBSCRIPTIONS</span>
+                  <h2>اشتراک‌ها</h2>
+                </div>
+                <span style={{ fontSize: 11, color: 'var(--muted)', fontVariantNumeric: 'tabular-nums' }}>
+                  {fmt(activeSubs)} فعال
+                </span>
+              </div>
+              {Object.keys(subMap).length === 0 ? (
+                <div style={{ color: 'var(--muted)', fontSize: 11, padding: '8px 0' }}>اشتراکی وجود ندارد.</div>
+              ) : (
+                <div style={{ display: 'grid', gap: 7 }}>
+                  {Object.entries(subMap)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([status, count]) => (
+                      <div key={status} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                        <span className={`status-pill ${statusPillClass(status)}`} style={{ fontSize: 8 }}>
+                          {statusLabel(status)}
+                        </span>
+                        <strong style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>{fmt(count)}</strong>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </article>
+
+            {/* Payments summary */}
+            <article className="surface-panel">
+              <div className="panel-head">
+                <div>
+                  <span className="panel-kicker">PAYMENTS</span>
+                  <h2>پرداخت‌ها</h2>
+                </div>
+                <CreditCard size={14} style={{ color: 'var(--muted)' }} />
+              </div>
+              {Object.keys(paymentMap).length === 0 ? (
+                <div style={{ color: 'var(--muted)', fontSize: 11, padding: '8px 0' }}>پرداختی ثبت نشده.</div>
+              ) : (
+                <div style={{ display: 'grid', gap: 7 }}>
+                  {Object.entries(paymentMap)
+                    .sort(([, a], [, b]) => b.count - a.count)
+                    .map(([status, { count }]) => (
+                      <div key={status} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                        <span className={`status-pill ${statusPillClass(status)}`} style={{ fontSize: 8, fontFamily: 'var(--font-latin)' }}>
+                          {status}
+                        </span>
+                        <strong style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>{fmt(count)}</strong>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </article>
+
+            {/* Quick actions */}
+            <article className="surface-panel">
+              <div className="panel-head">
+                <div>
+                  <span className="panel-kicker">OPERATIONS</span>
+                  <h2>عملیات سریع</h2>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gap: 8 }}>
+                <Link
+                  href="/api/internal/metrics"
+                  target="_blank"
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '28px 1fr auto',
+                    alignItems: 'center',
+                    gap: 9,
+                    padding: '11px 12px',
+                    background: 'var(--surface-2)',
+                    border: '1px solid var(--line)',
+                    borderRadius: 12,
+                    textDecoration: 'none',
+                    color: 'var(--ink)',
+                    transition: '.16s ease',
+                  }}
+                >
+                  <span style={{ width: 28, height: 28, borderRadius: 9, background: 'var(--accent-soft)', display: 'grid', placeItems: 'center', color: 'var(--accent)' }}>
+                    <Activity size={13} />
+                  </span>
+                  <div>
+                    <b style={{ display: 'block', fontSize: 11 }}>Metrics JSON</b>
+                    <small style={{ display: 'block', fontSize: 9, color: 'var(--muted)', marginTop: 2, fontFamily: 'var(--font-latin)', direction: 'ltr' }}>
+                      GET /api/internal/metrics
+                    </small>
+                  </div>
+                  <ExternalLink size={11} style={{ color: 'var(--subtle)' }} />
+                </Link>
+
+                <Link
+                  href="/api/v1/health"
+                  target="_blank"
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '28px 1fr auto',
+                    alignItems: 'center',
+                    gap: 9,
+                    padding: '11px 12px',
+                    background: 'var(--surface-2)',
+                    border: '1px solid var(--line)',
+                    borderRadius: 12,
+                    textDecoration: 'none',
+                    color: 'var(--ink)',
+                    transition: '.16s ease',
+                  }}
+                >
+                  <span style={{ width: 28, height: 28, borderRadius: 9, background: 'var(--success-soft)', display: 'grid', placeItems: 'center', color: 'var(--success)' }}>
+                    <CheckCircle2 size={13} />
+                  </span>
+                  <div>
+                    <b style={{ display: 'block', fontSize: 11 }}>Health Check</b>
+                    <small style={{ display: 'block', fontSize: 9, color: 'var(--muted)', marginTop: 2, fontFamily: 'var(--font-latin)', direction: 'ltr' }}>
+                      GET /api/v1/health
+                    </small>
+                  </div>
+                  <ExternalLink size={11} style={{ color: 'var(--subtle)' }} />
+                </Link>
+
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '28px 1fr',
+                  alignItems: 'center',
+                  gap: 9,
+                  padding: '11px 12px',
+                  background: 'var(--surface-2)',
+                  border: '1px solid var(--line)',
+                  borderRadius: 12,
+                  opacity: .65,
+                }}>
+                  <span style={{ width: 28, height: 28, borderRadius: 9, background: 'var(--surface-3)', display: 'grid', placeItems: 'center', color: 'var(--muted)' }}>
+                    <RefreshCw size={13} />
+                  </span>
+                  <div>
+                    <b style={{ display: 'block', fontSize: 11, color: 'var(--muted)' }}>تمدید اشتراک‌ها</b>
+                    <small style={{ display: 'block', fontSize: 9, color: 'var(--subtle)', marginTop: 2, fontFamily: 'var(--font-latin)', direction: 'ltr' }}>
+                      POST /api/internal/queue/renewal
+                    </small>
+                  </div>
+                </div>
+
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '28px 1fr',
+                  alignItems: 'center',
+                  gap: 9,
+                  padding: '11px 12px',
+                  background: 'var(--surface-2)',
+                  border: '1px solid var(--line)',
+                  borderRadius: 12,
+                  opacity: .65,
+                }}>
+                  <span style={{ width: 28, height: 28, borderRadius: 9, background: 'var(--surface-3)', display: 'grid', placeItems: 'center', color: 'var(--muted)' }}>
+                    <Clock size={13} />
+                  </span>
+                  <div>
+                    <b style={{ display: 'block', fontSize: 11, color: 'var(--muted)' }}>پردازش صف خروجی</b>
+                    <small style={{ display: 'block', fontSize: 9, color: 'var(--subtle)', marginTop: 2, fontFamily: 'var(--font-latin)', direction: 'ltr' }}>
+                      POST /api/internal/queue/outbox
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+          </div>
         </div>
       </main>
     </AppShell>

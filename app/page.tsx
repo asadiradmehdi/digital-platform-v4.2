@@ -30,16 +30,42 @@ export default function MarketingHome() {
         <div className="hero-trust"><span><ShieldCheck size={15}/> امنیت از ابتدا</span><span><Zap size={15}/> قیمت‌گذاری شفاف</span><span><Bot size={15}/> آماده رشد</span></div>
       </div>
       <div className="hero-panel" aria-label="نمای کلی پلتفرم">
-        <div className="hero-panel-top"><span>نمای زنده فضای کاری</span><span>امن · یکپارچه · فارسی</span></div>
+        <div className="hero-panel-top"><span>نمای کلی فضای کاری</span><span>امن · یکپارچه · فارسی</span></div>
         <div className="hero-metric"><b>همه‌چیز، یک‌جا و تحت کنترل.</b><span>سفارش‌ها، اشتراک‌ها، اعتبار، هوش مصنوعی و اتوماسیون را در یک تجربه سریع و حرفه‌ای مدیریت کنید.</span></div>
         <div className="hero-dashboard">
           <div className="mini-chart"><span className="mini-label">مصرف اعتبار این ماه</span><span className="mini-number">۶۸٪</span><div className="mini-bars"><i style={{width:'82%'}}/><i style={{width:'64%'}}/><i style={{width:'48%'}}/></div></div>
-          <div className="mini-card"><div className="mini-card-row"><span>وضعیت سرویس</span><span className="mini-dot"/></div><div className="mini-card-row"><span>سفارش فعال</span><strong>۳</strong></div><div className="mini-card-row"><span>اشتراک</span><strong>حرفه‌ای</strong></div><div className="mini-card-row"><span>کیف پول</span><strong>۱۲٫۵M</strong></div></div>
+          <div className="mini-card"><div className="mini-card-row"><span>وضعیت سرویس</span><span className="mini-dot"/></div><div className="mini-card-row"><span>سفارش فعال</span><strong>۳</strong></div><div className="mini-card-row"><span>اشتراک</span><strong>حرفه‌ای</strong></div><div className="mini-card-row"><span>کیف پول</span><strong>—</strong></div></div>
         </div>
         <div className="hero-pills"><span>درگاه هوش مصنوعی</span><span>خدمات اجتماعی</span><span>اتوماسیون</span><span>کیف پول و اشتراک</span></div>
       </div>
     </section>
 
+    <section className="metrics-band" aria-label="ویژگی‌های پلتفرم">
+      <div className="metric-item"><strong>چند کانال</strong><span>شبکه‌های اجتماعی یکپارچه</span></div>
+      <div className="metric-sep"/>
+      <div className="metric-item"><strong>AES-256</strong><span>رمزگذاری داده</span></div>
+      <div className="metric-sep"/>
+      <div className="metric-item"><strong>دوطرفه</strong><span>پشتیبانی RTL و LTR</span></div>
+      <div className="metric-sep"/>
+      <div className="metric-item"><strong>بلادرنگ</strong><span>پردازش خودکار سفارش</span></div>
+    </section>
+
+    <div className="marketing-section-head">
+      <span className="eyebrow">قابلیت‌های اصلی</span>
+      <h2 className="marketing-section-title">همه ابزارهای رشد دیجیتال در یک‌جا</h2>
+    </div>
+
     <section className="marketing-grid" aria-label="قابلیت‌های اصلی">{pillars.map(({icon:Icon,title,text,href})=><Link className="marketing-card" href={href} key={title}><span className="marketing-icon"><Icon size={19}/></span><h2>{title}</h2><p>{text}</p><span className="card-link">مشاهده <ArrowLeft size={14}/></span></Link>)}</section>
+
+    <section className="marketing-cta-section">
+      <div className="cta-section-content">
+        <h2>آماده‌اید شروع کنید؟</h2>
+        <p>از اشتراک رایگان شروع کنید. بدون نیاز به کارت اعتباری.</p>
+        <div className="cta-section-actions">
+          <Link className="marketing-cta large" href="/auth">حساب رایگان بسازید <ArrowLeft size={18}/></Link>
+          <Link className="marketing-secondary" href="/pricing">مشاهده پلن‌ها</Link>
+        </div>
+      </div>
+    </section>
   </main>;
 }

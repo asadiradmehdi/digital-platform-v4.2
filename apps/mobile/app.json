@@ -22,6 +22,13 @@
     "ios": {
       "bundleIdentifier": "com.digitalplatform.app",
       "supportsTablet": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "52fb7439-8d41-4fcf-aa18-b281ca8778c3"
+      }
+    },
+    "owner": "asadmehdi"
   }
 }

@@ -31,7 +31,12 @@ export default function AuthForm() {
         router.push('/dashboard');
       } else {
         const body = await res.json().catch(() => ({}));
-        setErrorMsg(body?.error?.message ?? (mode === 'login' ? 'ایمیل یا رمز عبور اشتباه است.' : 'ثبت‌نام ناموفق بود. لطفاً دوباره تلاش کنید.'));
+        setErrorMsg(
+          body?.error?.message ??
+          (mode === 'login'
+            ? 'ایمیل یا رمز عبور اشتباه است.'
+            : 'ثبت‌نام ناموفق بود. لطفاً دوباره تلاش کنید.'),
+        );
         setStatus('error');
       }
     } catch {
@@ -43,32 +48,80 @@ export default function AuthForm() {
   return (
     <main className="auth-shell">
       <section className="auth-card">
+        {/* Brand */}
         <Link href="/" className="auth-brand">
-          <span className="logo" aria-hidden="true">✦</span>
-          <span><b>پلتفرم</b><small>خدمات دیجیتال</small></span>
+          <span
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 10,
+              background: 'var(--accent)',
+              color: '#fff',
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: 16,
+              fontWeight: 900,
+              flex: 'none',
+            }}
+            aria-hidden="true"
+          >
+            ✦
+          </span>
+          <span>
+            <b>پلتفرم</b>
+            <small>خدمات دیجیتال</small>
+          </span>
         </Link>
-        <span className="eyebrow">{mode === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT'}</span>
-        <h1>{mode === 'login' ? 'ورود به Workspace' : 'ساخت حساب جدید'}</h1>
-        <p>{mode === 'login' ? 'برای دسترسی به داشبورد، سفارش‌ها، کیف پول و پروژه‌های AI وارد شوید.' : 'حساب رایگان بسازید و پلتفرم را کشف کنید.'}</p>
 
+        {/* Heading */}
+        <span className="eyebrow" style={{ marginTop: 4 }}>
+          {mode === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT'}
+        </span>
+        <h1 style={{ margin: '6px 0 0' }}>
+          {mode === 'login' ? 'ورود به Workspace' : 'ساخت حساب جدید'}
+        </h1>
+        <p>
+          {mode === 'login'
+            ? 'برای دسترسی به داشبورد، سفارش‌ها، کیف پول و پروژه‌های AI وارد شوید.'
+            : 'حساب رایگان بسازید و پلتفرم را کشف کنید.'}
+        </p>
+
+        {/* Error */}
         {status === 'error' && (
           <div className="auth-error" role="alert">
-            <AlertCircle size={15}/>
+            <AlertCircle size={15} />
             <span>{errorMsg}</span>
           </div>
         )}
 
+        {/* Form */}
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
           {mode === 'register' && (
             <label>
               نام
-              <input name="name" autoComplete="name" required minLength={2} maxLength={120} placeholder="نام شما"/>
+              <input
+                name="name"
+                autoComplete="name"
+                required
+                minLength={2}
+                maxLength={120}
+                placeholder="نام شما"
+              />
             </label>
           )}
+
           <label>
             ایمیل
-            <input name="email" type="email" autoComplete="email" required placeholder="your@email.com" dir="ltr"/>
+            <input
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              placeholder="your@email.com"
+              dir="ltr"
+            />
           </label>
+
           <label>
             رمز عبور
             <input
@@ -80,40 +133,82 @@ export default function AuthForm() {
               placeholder={mode === 'register' ? 'حداقل ۱۴ کاراکتر' : '••••••••'}
             />
           </label>
+
           {mode === 'login' && (
-            <div style={{ textAlign: 'left' }}>
-              <Link href="/auth/forgot" style={{ fontSize: 11, color: 'var(--muted)', textDecoration: 'none' }}>فراموشی رمز عبور</Link>
+            <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+              <Link
+                href="/auth/forgot"
+                style={{
+                  fontSize: 11,
+                  color: 'var(--accent)',
+                  textDecoration: 'none',
+                  fontWeight: 600,
+                }}
+              >
+                فراموشی رمز عبور
+              </Link>
             </div>
           )}
-          <button className="auth-submit" type="submit" disabled={status === 'loading'}>
-            {status === 'loading'
-              ? <><Loader2 size={16} className="spin-icon"/>لطفاً صبر کنید</>
-              : mode === 'login'
-                ? <>ورود <ArrowLeft size={16}/></>
-                : <>ساخت حساب <ArrowLeft size={16}/></>
-            }
-          </button>
-        </form>
 
-        <div className="auth-divider">
-          {mode === 'login'
-            ? (
+          <button
+            className="auth-submit"
+            type="submit"
+            disabled={status === 'loading'}
+            style={{ marginTop: 4 }}
+          >
+            {status === 'loading' ? (
               <>
-                <span>حساب ندارید؟</span>
-                <button type="button" className="auth-switch" onClick={() => { setMode('register'); setStatus('idle'); setErrorMsg(''); }}>ثبت‌نام کنید</button>
+                <Loader2 size={16} className="spin-icon" />
+                لطفاً صبر کنید
+              </>
+            ) : mode === 'login' ? (
+              <>
+                ورود
+                <ArrowLeft size={16} />
               </>
             ) : (
               <>
-                <span>قبلاً ثبت‌نام کرده‌اید؟</span>
-                <button type="button" className="auth-switch" onClick={() => { setMode('login'); setStatus('idle'); setErrorMsg(''); }}>وارد شوید</button>
+                ساخت حساب
+                <ArrowLeft size={16} />
               </>
-            )
-          }
+            )}
+          </button>
+        </form>
+
+        {/* Mode switch */}
+        <div className="auth-divider">
+          {mode === 'login' ? (
+            <>
+              <span>حساب ندارید؟</span>
+              <button
+                type="button"
+                className="auth-switch"
+                onClick={() => { setMode('register'); setStatus('idle'); setErrorMsg(''); }}
+              >
+                ثبت‌نام کنید
+              </button>
+            </>
+          ) : (
+            <>
+              <span>قبلاً ثبت‌نام کرده‌اید؟</span>
+              <button
+                type="button"
+                className="auth-switch"
+                onClick={() => { setMode('login'); setStatus('idle'); setErrorMsg(''); }}
+              >
+                وارد شوید
+              </button>
+            </>
+          )}
         </div>
 
+        {/* Trust note */}
         <div className="auth-note">
-          <ShieldCheck size={14}/>
-          <span>اتصال رمزنگاری‌شده · رمز عبور متن‌خوانی ذخیره نمی‌شود · احراز هویت دومرحله‌ای پشتیبانی می‌شود.</span>
+          <ShieldCheck size={14} />
+          <span>
+            اتصال رمزنگاری‌شده · رمز عبور متن‌خوانی ذخیره نمی‌شود · احراز هویت دومرحله‌ای پشتیبانی
+            می‌شود.
+          </span>
         </div>
       </section>
     </main>

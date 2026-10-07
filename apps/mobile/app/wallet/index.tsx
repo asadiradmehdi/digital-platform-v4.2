@@ -9,13 +9,14 @@ import type { TransactionSummary } from '../../src/api/client';
 import { formatToman } from '../../src/format';
 
 const topupAmountsMinor = [5_000_000_0, 10_000_000_0, 20_000_000_0];
+const topupLabels = ['۵۰۰ هزار', '۱ میلیون', '۲ میلیون'];
 
-const referenceTypeLabel: Record<string, string> = {
-  DEPOSIT: 'افزایش موجودی',
-  SERVICE_CHARGE: 'هزینه سرویس',
-  REFUND: 'بازگشت وجه',
-  SUBSCRIPTION: 'اشتراک',
-  TOPUP: 'افزایش موجودی',
+const referenceTypeConfig: Record<string, { label: string; icon: string }> = {
+  DEPOSIT: { label: 'افزایش موجودی', icon: '⬆️' },
+  SERVICE_CHARGE: { label: 'هزینه سرویس', icon: '📦' },
+  REFUND: { label: 'بازگشت وجه', icon: '↩️' },
+  SUBSCRIPTION: { label: 'اشتراک', icon: '⭐' },
+  TOPUP: { label: 'افزایش موجودی', icon: '⬆️' },
 };
 
 function TxRow({ tx, last }: { tx: TransactionSummary; last: boolean }) {
@@ -23,19 +24,27 @@ function TxRow({ tx, last }: { tx: TransactionSummary; last: boolean }) {
   const debit = tx.entries.find((e) => e.direction === 'DEBIT');
   const isDebit = Boolean(debit && !credit);
   const amountMinor = (credit ?? debit)?.amountMinor ?? 0;
-  const label = referenceTypeLabel[tx.referenceType] ?? tx.referenceType;
+  const cfg = referenceTypeConfig[tx.referenceType] ?? { label: tx.referenceType, icon: '💱' };
 
   return (
     <View>
       {!last && <Divider />}
       <View style={styles.txRow}>
-        <View style={styles.txLeft}>
-          <Text style={styles.txLabel}>{label}</Text>
-          <Text style={styles.txMeta}>{isDebit ? 'بدهکار' : 'بستانکار'} · {new Date(tx.createdAt).toLocaleDateString('fa-IR', { month: 'short', day: 'numeric' })}</Text>
+        <View style={[styles.txIconWrap, { backgroundColor: isDebit ? theme.colors.dangerSoft : theme.colors.successSoft }]}>
+          <Text style={styles.txIcon}>{cfg.icon}</Text>
         </View>
-        <Text style={[styles.txAmount, isDebit ? styles.debit : styles.credit]}>
-          {isDebit ? '−' : '+'}{formatToman(amountMinor)}
-        </Text>
+        <View style={styles.txLeft}>
+          <Text style={styles.txLabel}>{cfg.label}</Text>
+          <Text style={styles.txMeta}>
+            {new Date(tx.createdAt).toLocaleDateString('fa-IR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+          </Text>
+        </View>
+        <View style={styles.txRight}>
+          <Text style={[styles.txAmount, isDebit ? styles.txDebit : styles.txCredit]}>
+            {isDebit ? '−' : '+'}{formatToman(amountMinor)}
+          </Text>
+          <Text style={styles.txCurrency}>تومان</Text>
+        </View>
       </View>
     </View>
   );
@@ -44,10 +53,7 @@ function TxRow({ tx, last }: { tx: TransactionSummary; last: boolean }) {
 export default function Wallet() {
   const { workspaceId } = useWorkspace();
 
-  const walletQ = useQuery(
-    () => wallet.getBalances(),
-    [],
-  );
+  const walletQ = useQuery(() => wallet.getBalances(), []);
   const txQ = useQuery(
     () => workspaceId ? transactions.list(workspaceId) : Promise.resolve({ items: [], nextCursor: null }),
     [workspaceId],
@@ -58,52 +64,239 @@ export default function Wallet() {
 
   return (
     <Screen>
-      <Title eyebrow="FINANCE / WALLET" description="تمام عملیات مالی با idempotency و ledger سرور انجام می‌شود">
-        کیف پول
-      </Title>
+      {/* Page Title */}
+      <View>
+        <Text style={styles.pageTitle}>کیف پول</Text>
+      </View>
 
-      {walletQ.status === 'loading' ? (
-        <State loading />
-      ) : walletQ.status === 'error' ? (
-        <State error={walletQ.error} />
-      ) : (
-        <Metric accent label="موجودی قابل استفاده" value={formatToman(balanceMinor)} hint="به‌روز شده از سرور" />
-      )}
+      {/* Balance Hero */}
+      <View style={styles.balanceHero}>
+        <View style={styles.balanceGlow} />
+        <Text style={styles.balanceEyebrow}>موجودی قابل استفاده</Text>
+        {walletQ.status === 'loading' ? (
+          <Text style={styles.balanceLoading}>در حال بارگذاری...</Text>
+        ) : walletQ.status === 'error' ? (
+          <Text style={styles.balanceError}>خطا در دریافت موجودی</Text>
+        ) : (
+          <Text style={styles.balanceAmount}>{formatToman(balanceMinor)}</Text>
+        )}
+        <Text style={styles.balanceCurrency}>تومان</Text>
+        <Text style={styles.balanceNote}>به‌روز شده از سرور · idempotent</Text>
+      </View>
 
-      <Card>
-        <Section title="افزایش موجودی" />
-        <View style={styles.topupRow}>
-          {topupAmountsMinor.map((a) => (
-            <View key={a} style={styles.topupBtn}>
-              <Text style={styles.topupText}>{formatToman(a)}</Text>
+      {/* Top-up */}
+      <View style={styles.topupSection}>
+        <Text style={styles.sectionTitle}>افزایش موجودی</Text>
+        <View style={styles.topupGrid}>
+          {topupAmountsMinor.map((a, i) => (
+            <View key={a} style={styles.topupChip}>
+              <Text style={styles.topupChipLabel}>{topupLabels[i]}</Text>
+              <Text style={styles.topupChipAmount}>{formatToman(a)}</Text>
             </View>
           ))}
         </View>
         <Action>شارژ کیف پول</Action>
-      </Card>
+      </View>
 
-      <Card>
-        <Section title="آخرین تراکنش‌ها" />
-        {txQ.status === 'loading' && <State loading />}
-        {txQ.status === 'error' && <State error={txQ.error} />}
-        {txQ.status === 'success' && txItems.length === 0 && <State empty="تراکنشی ثبت نشده است." />}
-        {txItems.map((tx, i) => (
-          <TxRow key={tx.id} tx={tx} last={i === txItems.length - 1} />
-        ))}
-      </Card>
+      {/* Transactions */}
+      <View>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>آخرین تراکنش‌ها</Text>
+          {txItems.length > 0 && (
+            <Text style={styles.sectionCount}>{txItems.length} تراکنش</Text>
+          )}
+        </View>
+
+        <Card>
+          {txQ.status === 'loading' && <State loading />}
+          {txQ.status === 'error' && <State error={txQ.error} />}
+          {txQ.status === 'success' && txItems.length === 0 && (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyIcon}>💳</Text>
+              <Text style={styles.emptyTitle}>تراکنشی ثبت نشده</Text>
+              <Text style={styles.emptyDesc}>اولین شارژ را انجام دهید</Text>
+            </View>
+          )}
+          {txItems.map((tx, i) => (
+            <TxRow key={tx.id} tx={tx} last={i === txItems.length - 1} />
+          ))}
+        </Card>
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  topupRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
-  topupBtn: { flex: 1, alignItems: 'center', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: theme.colors.line, backgroundColor: theme.colors.surface2, gap: 2 },
-  topupText: { color: theme.colors.ink, fontSize: 11, fontWeight: '800', textAlign: 'center' },
-  txRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 },
+  pageTitle: {
+    color: theme.colors.ink,
+    fontSize: 26,
+    fontWeight: '800',
+    fontFamily: theme.typography.fa,
+    letterSpacing: -0.5,
+    paddingTop: 4,
+  },
+
+  balanceHero: {
+    backgroundColor: theme.colors.accent,
+    borderRadius: theme.radius.xl,
+    padding: theme.spacing.xl,
+    gap: 4,
+    overflow: 'hidden',
+    position: 'relative',
+    shadowColor: theme.colors.accent,
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+  balanceGlow: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    top: -60,
+    right: -50,
+  },
+  balanceEyebrow: {
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: 12,
+    fontFamily: theme.typography.fa,
+    fontWeight: '600',
+  },
+  balanceLoading: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 20,
+    fontFamily: theme.typography.fa,
+    marginTop: 4,
+  },
+  balanceError: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 16,
+    fontFamily: theme.typography.fa,
+  },
+  balanceAmount: {
+    color: '#fff',
+    fontSize: 38,
+    fontWeight: '800',
+    letterSpacing: -1,
+    fontFamily: theme.typography.fa,
+    marginTop: 4,
+  },
+  balanceCurrency: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 13,
+    fontFamily: theme.typography.fa,
+  },
+  balanceNote: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 10,
+    fontFamily: theme.typography.latin,
+    marginTop: 6,
+  },
+
+  topupSection: { gap: 12 },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  sectionTitle: {
+    color: theme.colors.ink,
+    fontSize: 16,
+    fontWeight: '800',
+    fontFamily: theme.typography.fa,
+  },
+  sectionCount: {
+    color: theme.colors.subtle,
+    fontSize: 12,
+    fontFamily: theme.typography.fa,
+  },
+  topupGrid: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  topupChip: {
+    flex: 1,
+    backgroundColor: theme.colors.surface2,
+    borderWidth: 1,
+    borderColor: theme.colors.line,
+    borderRadius: theme.radius.md,
+    padding: 12,
+    alignItems: 'center',
+    gap: 4,
+  },
+  topupChipLabel: {
+    color: theme.colors.muted,
+    fontSize: 10,
+    fontFamily: theme.typography.fa,
+    fontWeight: '600',
+  },
+  topupChipAmount: {
+    color: theme.colors.ink,
+    fontSize: 12,
+    fontWeight: '800',
+    fontFamily: theme.typography.fa,
+  },
+
+  txRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 13,
+    gap: 12,
+  },
+  txIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: theme.radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  txIcon: { fontSize: 18 },
   txLeft: { flex: 1, gap: 3 },
-  txLabel: { color: theme.colors.ink, fontSize: 13, fontWeight: '600' },
-  txMeta: { color: theme.colors.subtle, fontSize: 10 },
-  txAmount: { fontSize: 13, fontWeight: '800' },
-  debit: { color: theme.colors.danger },
-  credit: { color: theme.colors.success },
+  txLabel: {
+    color: theme.colors.ink,
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: theme.typography.fa,
+  },
+  txMeta: {
+    color: theme.colors.subtle,
+    fontSize: 10,
+    fontFamily: theme.typography.fa,
+  },
+  txRight: { alignItems: 'flex-end', gap: 2 },
+  txAmount: {
+    fontSize: 14,
+    fontWeight: '800',
+    fontFamily: theme.typography.fa,
+    letterSpacing: -0.3,
+  },
+  txDebit: { color: theme.colors.danger },
+  txCredit: { color: theme.colors.success },
+  txCurrency: {
+    color: theme.colors.subtle,
+    fontSize: 9,
+    fontFamily: theme.typography.fa,
+  },
+
+  emptyState: {
+    alignItems: 'center',
+    padding: theme.spacing.xxl,
+    gap: 10,
+  },
+  emptyIcon: { fontSize: 40 },
+  emptyTitle: {
+    color: theme.colors.ink,
+    fontSize: 15,
+    fontWeight: '700',
+    fontFamily: theme.typography.fa,
+  },
+  emptyDesc: {
+    color: theme.colors.muted,
+    fontSize: 12,
+    fontFamily: theme.typography.fa,
+  },
 });

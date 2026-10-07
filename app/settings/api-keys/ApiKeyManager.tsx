@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Copy, KeyRound, Plus, Trash2, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Copy, KeyRound, Loader2, Plus, Trash2, X } from 'lucide-react';
 
 type ApiKey = {
   id: string;
@@ -23,6 +23,7 @@ export function ApiKeyManager({ initialKeys, workspaceId }: { initialKeys: ApiKe
   const [newScopes, setNewScopes] = useState<string[]>(['orders.read', 'wallet.read']);
   const [newEnv, setNewEnv] = useState<'live' | 'test'>('test');
   const [createdKey, setCreatedKey] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -75,79 +76,260 @@ export function ApiKeyManager({ initialKeys, workspaceId }: { initialKeys: ApiKe
     setNewScopes(prev => prev.includes(scope) ? prev.filter(s => s !== scope) : [...prev, scope]);
   }
 
+  async function handleCopy() {
+    if (!createdKey) return;
+    await navigator.clipboard.writeText(createdKey).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   return (
     <>
+      {/* Newly created key reveal banner */}
       {createdKey && (
-        <div style={{ background: 'var(--surface-2)', border: '1px solid var(--success)', borderRadius: 10, padding: '14px 16px', marginBottom: 16 }}>
-          <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 700, color: 'var(--success)' }}>کلید API ساخته شد — یک بار نمایش داده می‌شود</p>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <code style={{ flex: 1, fontSize: 11, fontFamily: 'monospace', direction: 'ltr', wordBreak: 'break-all' }}>{createdKey}</code>
+        <div
+          style={{
+            background: 'var(--success-soft)',
+            border: '1px solid rgba(22,163,74,.2)',
+            borderRadius: 12,
+            padding: '16px 18px',
+            marginBottom: 20,
+          }}
+          role="alert"
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <span
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 7,
+                fontSize: 12,
+                fontWeight: 700,
+                color: 'var(--success)',
+              }}
+            >
+              <CheckCircle2 size={14} />
+              کلید API ساخته شد — فقط یک بار نمایش داده می‌شود
+            </span>
             <button
               type="button"
-              style={{ background: 'none', border: '1px solid var(--line)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', fontSize: 11 }}
-              onClick={() => { navigator.clipboard.writeText(createdKey).catch(() => {}); }}
+              onClick={() => setCreatedKey(null)}
+              style={{ background: 'none', color: 'var(--subtle)', display: 'flex', padding: 2 }}
+              aria-label="بستن"
             >
-              <Copy size={12}/>
+              <X size={14} />
             </button>
-            <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)' }} onClick={() => setCreatedKey(null)}><X size={14}/></button>
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              gap: 10,
+              alignItems: 'center',
+              background: '#fff',
+              border: '1px solid var(--line)',
+              borderRadius: 9,
+              padding: '10px 14px',
+            }}
+          >
+            <code
+              style={{
+                flex: 1,
+                fontSize: 12,
+                fontFamily: 'var(--font-latin), monospace',
+                direction: 'ltr',
+                wordBreak: 'break-all',
+                color: 'var(--ink)',
+              }}
+            >
+              {createdKey}
+            </code>
+            <button
+              type="button"
+              onClick={() => void handleCopy()}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '6px 12px',
+                background: copied ? 'var(--success-soft)' : 'var(--surface-2)',
+                border: '1px solid var(--line)',
+                borderRadius: 7,
+                fontSize: 11,
+                color: copied ? 'var(--success)' : 'var(--ink)',
+                cursor: 'pointer',
+                flex: 'none',
+              }}
+              aria-label="کپی کلید"
+            >
+              {copied ? <CheckCircle2 size={13} /> : <Copy size={13} />}
+              {copied ? 'کپی شد' : 'کپی'}
+            </button>
           </div>
         </div>
       )}
 
+      {/* Create form */}
       {creating ? (
-        <div style={{ background: 'var(--surface-2)', borderRadius: 10, padding: '16px', marginBottom: 16, border: '1px solid var(--line)' }}>
-          <h3 style={{ margin: '0 0 12px', fontSize: 13 }}>کلید API جدید</h3>
-          {error && <p style={{ color: 'var(--danger)', fontSize: 11, margin: '0 0 8px' }}>{error}</p>}
-          <div className="form-row" style={{ marginBottom: 12 }}>
-            <label style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>نام کلید</label>
-            <input
-              className="input"
-              placeholder="مثال: Mobile App"
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
-              style={{ width: '100%' }}
-            />
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ fontSize: 11, display: 'block', marginBottom: 6 }}>محیط</label>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {(['live', 'test'] as const).map(e => (
-                <button key={e} type="button"
-                  style={{ fontSize: 10, padding: '4px 12px', borderRadius: 6, border: `1px solid ${newEnv === e ? 'var(--accent)' : 'var(--line)'}`, background: newEnv === e ? 'var(--accent)' : 'var(--surface-2)', color: newEnv === e ? '#fff' : 'var(--ink)', cursor: 'pointer' }}
-                  onClick={() => setNewEnv(e)}
-                >{e === 'live' ? 'Live' : 'Test'}</button>
-              ))}
+        <div
+          style={{
+            background: 'var(--surface-2)',
+            borderRadius: 14,
+            padding: 20,
+            marginBottom: 20,
+            border: '1px solid var(--line)',
+          }}
+        >
+          <h3 style={{ margin: '0 0 16px', fontSize: 14, fontWeight: 700 }}>کلید API جدید</h3>
+
+          {error && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 7,
+                padding: '9px 12px',
+                background: 'var(--danger-soft)',
+                border: '1px solid rgba(220,38,38,.18)',
+                borderRadius: 9,
+                fontSize: 12,
+                color: 'var(--danger)',
+                marginBottom: 14,
+              }}
+              role="alert"
+            >
+              <AlertCircle size={13} style={{ flex: 'none' }} />
+              {error}
             </div>
-          </div>
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ fontSize: 11, display: 'block', marginBottom: 6 }}>Scopeها</label>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {SCOPE_OPTIONS.map(s => (
-                <button key={s} type="button"
-                  style={{ fontSize: 9, padding: '3px 8px', borderRadius: 5, fontFamily: 'monospace', border: `1px solid ${newScopes.includes(s) ? 'var(--accent)' : 'var(--line)'}`, background: newScopes.includes(s) ? 'var(--accent)' : 'var(--surface-2)', color: newScopes.includes(s) ? '#fff' : 'var(--muted)', cursor: 'pointer', direction: 'ltr' }}
-                  onClick={() => toggleScope(s)}
-                >{s}</button>
-              ))}
+          )}
+
+          <div className="settings-form" style={{ margin: 0 }}>
+            <label style={{ fontSize: 12, fontWeight: 700, display: 'grid', gap: 7 }}>
+              نام کلید
+              <input
+                style={{
+                  padding: '10px 13px',
+                  border: '1px solid var(--line)',
+                  borderRadius: 10,
+                  fontSize: 13,
+                  background: '#fff',
+                }}
+                placeholder="مثال: Mobile App Production"
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+              />
+            </label>
+
+            <div>
+              <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 700 }}>محیط</p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {(['live', 'test'] as const).map(e => (
+                  <button
+                    key={e}
+                    type="button"
+                    style={{
+                      fontSize: 12,
+                      padding: '7px 18px',
+                      borderRadius: 8,
+                      border: `1px solid ${newEnv === e ? 'var(--accent)' : 'var(--line)'}`,
+                      background: newEnv === e ? 'var(--accent)' : '#fff',
+                      color: newEnv === e ? '#fff' : 'var(--ink)',
+                      cursor: 'pointer',
+                      fontWeight: newEnv === e ? 700 : 400,
+                      transition: 'all .13s',
+                    }}
+                    onClick={() => setNewEnv(e)}
+                  >
+                    {e === 'live' ? '🔴 Live' : '🧪 Test'}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="button primary" type="button" disabled={loading} onClick={handleCreate}>{loading ? '...' : 'ایجاد کلید'}</button>
-            <button className="button secondary" type="button" onClick={() => { setCreating(false); setError(null); }}>انصراف</button>
+
+            <div>
+              <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 700 }}>Scopeها</p>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {SCOPE_OPTIONS.map(s => (
+                  <button
+                    key={s}
+                    type="button"
+                    style={{
+                      fontSize: 11,
+                      padding: '5px 11px',
+                      borderRadius: 7,
+                      fontFamily: 'var(--font-latin), monospace',
+                      border: `1px solid ${newScopes.includes(s) ? 'var(--accent)' : 'var(--line)'}`,
+                      background: newScopes.includes(s) ? 'var(--accent-soft)' : '#fff',
+                      color: newScopes.includes(s) ? 'var(--accent-strong)' : 'var(--muted)',
+                      cursor: 'pointer',
+                      direction: 'ltr',
+                      fontWeight: newScopes.includes(s) ? 700 : 400,
+                      transition: 'all .13s',
+                    }}
+                    onClick={() => toggleScope(s)}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+              <button className="button primary" type="button" disabled={loading} onClick={handleCreate}>
+                {loading ? (
+                  <>
+                    <Loader2 size={14} className="spin-icon" />
+                    در حال ایجاد...
+                  </>
+                ) : (
+                  'ایجاد کلید'
+                )}
+              </button>
+              <button
+                className="button secondary"
+                type="button"
+                onClick={() => { setCreating(false); setError(null); }}
+              >
+                انصراف
+              </button>
+            </div>
           </div>
         </div>
       ) : (
-        <button className="button primary" type="button" onClick={() => setCreating(true)} style={{ marginBottom: 16 }}>
-          <Plus size={15}/>کلید جدید
+        <button
+          className="button primary"
+          type="button"
+          onClick={() => setCreating(true)}
+          style={{ marginBottom: 20 }}
+        >
+          <Plus size={15} />
+          کلید جدید
         </button>
       )}
 
+      {/* Keys list */}
       {keys.length === 0 ? (
-        <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--muted)', fontSize: 12 }}>
-          <KeyRound size={24} style={{ marginBottom: 8, display: 'block', margin: '0 auto 8px' }}/>
-          هنوز کلید API ایجاد نشده است.
+        <div
+          style={{
+            padding: '36px 20px',
+            textAlign: 'center',
+            background: 'var(--surface-2)',
+            borderRadius: 14,
+            border: '1px dashed var(--line-strong)',
+          }}
+        >
+          <KeyRound
+            size={28}
+            style={{ color: 'var(--subtle)', display: 'block', margin: '0 auto 12px' }}
+          />
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', fontWeight: 600 }}>
+            هنوز کلید API ایجاد نشده
+          </p>
+          <p style={{ margin: '6px 0 0', fontSize: 11, color: 'var(--subtle)' }}>
+            کلید بسازید و API را به سرویس‌های خارجی وصل کنید.
+          </p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gap: 14 }}>
+        <div style={{ display: 'grid', gap: 10 }}>
           {keys.map(k => {
             const created = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(new Date(k.createdAt));
             const lastUsed = k.lastUsedAt
@@ -155,30 +337,86 @@ export function ApiKeyManager({ initialKeys, workspaceId }: { initialKeys: ApiKe
               : 'استفاده نشده';
             return (
               <div key={k.id} className="api-key-row">
-                <div className="api-key-icon"><KeyRound size={16}/></div>
+                <div
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 10,
+                    background: k.environment === 'live' ? 'var(--success-soft)' : 'var(--info-soft)',
+                    color: k.environment === 'live' ? 'var(--success)' : 'var(--info)',
+                    display: 'grid',
+                    placeItems: 'center',
+                    flex: 'none',
+                  }}
+                >
+                  <KeyRound size={16} />
+                </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <b style={{ fontSize: 12 }}>{k.name}</b>
-                    <span className={`status-pill ${k.environment === 'live' ? 'success' : 'info'}`} style={{ fontSize: 9 }}>{k.environment === 'live' ? 'Live' : 'Test'}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <b style={{ fontSize: 13, color: 'var(--ink)' }}>{k.name}</b>
+                    <span
+                      className={`status-pill ${k.environment === 'live' ? 'success' : 'info'}`}
+                      style={{ fontSize: 8 }}
+                    >
+                      {k.environment === 'live' ? 'Live' : 'Test'}
+                    </span>
                   </div>
-                  <code style={{ display: 'block', fontSize: 10, color: 'var(--muted)', marginTop: 4, fontFamily: 'monospace', direction: 'ltr', textAlign: 'right' }}>{k.keyPrefix}••••••••••••••••</code>
+                  <code
+                    style={{
+                      display: 'block',
+                      fontSize: 11,
+                      color: 'var(--subtle)',
+                      fontFamily: 'var(--font-latin), monospace',
+                      direction: 'ltr',
+                      textAlign: 'right',
+                    }}
+                  >
+                    {k.keyPrefix}••••••••••••••••
+                  </code>
                   {k.scopes.length > 0 && (
-                    <div style={{ display: 'flex', gap: 12, marginTop: 6, flexWrap: 'wrap' }}>
-                      {k.scopes.map(s => <span key={s} style={{ fontSize: 9, background: 'var(--surface-2)', border: '1px solid var(--line)', borderRadius: 6, padding: '2px 7px', fontFamily: 'monospace', direction: 'ltr' }}>{s}</span>)}
+                    <div style={{ display: 'flex', gap: 5, marginTop: 8, flexWrap: 'wrap' }}>
+                      {k.scopes.map(s => (
+                        <span
+                          key={s}
+                          style={{
+                            fontSize: 9,
+                            background: 'var(--surface-3)',
+                            border: '1px solid var(--line)',
+                            borderRadius: 5,
+                            padding: '2px 8px',
+                            fontFamily: 'var(--font-latin), monospace',
+                            direction: 'ltr',
+                            color: 'var(--muted)',
+                          }}
+                        >
+                          {s}
+                        </span>
+                      ))}
                     </div>
                   )}
-                  <p style={{ margin: '6px 0 0', fontSize: 10, color: 'var(--muted)' }}>ساخته‌شده: {created} · آخرین استفاده: {lastUsed}</p>
+                  <p style={{ margin: '7px 0 0', fontSize: 10, color: 'var(--subtle)' }}>
+                    ساخته‌شده: {created} · آخرین استفاده: {lastUsed}
+                  </p>
                 </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                  <button
-                    aria-label="حذف کلید"
-                    disabled={deletingId === k.id}
-                    style={{ background: 'none', color: 'var(--danger)', height: 34, width: 34, border: '1px solid rgba(255,113,135,.3)', borderRadius: 8, display: 'grid', placeItems: 'center', cursor: 'pointer' }}
-                    onClick={() => handleDelete(k.id)}
-                  >
-                    <Trash2 size={14}/>
-                  </button>
-                </div>
+                <button
+                  aria-label="حذف کلید"
+                  disabled={deletingId === k.id}
+                  style={{
+                    background: 'none',
+                    color: deletingId === k.id ? 'var(--subtle)' : 'var(--danger)',
+                    height: 36,
+                    width: 36,
+                    border: '1px solid rgba(220,38,38,.2)',
+                    borderRadius: 9,
+                    display: 'grid',
+                    placeItems: 'center',
+                    cursor: deletingId === k.id ? 'not-allowed' : 'pointer',
+                    flex: 'none',
+                  }}
+                  onClick={() => void handleDelete(k.id)}
+                >
+                  {deletingId === k.id ? <Loader2 size={14} className="spin-icon" /> : <Trash2 size={14} />}
+                </button>
               </div>
             );
           })}

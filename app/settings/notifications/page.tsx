@@ -1,17 +1,16 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Bell, CheckCircle2, Loader2, Lock } from 'lucide-react';
 import { AppShell } from '../../../components/AppShell';
-import { SystemStrip } from '../../../components/ProductSurface';
 
 const CHANNELS = [
   { key: 'email', label: 'ایمیل', desc: 'دریافت اعلان‌های مهم به ایمیل' },
-  { key: 'push', label: 'Push notification', desc: 'اعلان فوری در مرورگر یا اپ موبایل' },
+  { key: 'push', label: 'Push', desc: 'اعلان فوری در مرورگر یا اپ موبایل' },
   { key: 'sms', label: 'پیامک', desc: 'رویدادهای مهم از جمله ورود و تراکنش' },
-];
+] as const;
 
-const CATEGORIES = [
+const CATEGORIES: Array<{ key: string; label: string; desc: string; alwaysOn?: boolean }> = [
   { key: 'orders', label: 'سفارش‌ها', desc: 'تغییر وضعیت، تکمیل یا لغو سفارش' },
   { key: 'payments', label: 'پرداخت و کیف پول', desc: 'واریز، برداشت، تمدید اشتراک' },
   { key: 'security', label: 'امنیت', desc: 'ورود جدید، تغییر رمز، رویدادهای حساس', alwaysOn: true },
@@ -83,44 +82,125 @@ export default function NotificationSettings() {
     <AppShell>
       <main className="workspace-page-content">
         <header className="page-header">
-          <div><span className="eyebrow">SETTINGS / NOTIFICATIONS</span><h1>اعلان‌ها</h1><p>کانال‌های اطلاع‌رسانی و دسته‌بندی رویدادهایی که می‌خواهید دریافت کنید.</p></div>
-          <Link className="button secondary" href="/settings"><ArrowRight size={15}/>تنظیمات</Link>
+          <div>
+            <span className="eyebrow">حساب کاربری · اعلان‌ها</span>
+            <h1>اعلان‌ها</h1>
+            <p>کانال‌های اطلاع‌رسانی و دسته‌بندی رویدادهایی که می‌خواهید دریافت کنید.</p>
+          </div>
+          <Link className="button secondary" href="/settings">
+            <ArrowRight size={15} />
+            تنظیمات
+          </Link>
         </header>
-        <SystemStrip/>
+
         <div className="settings-layout">
-          <article className="surface-panel" style={{ padding: 24 }}>
-            <div className="panel-head"><div><span className="panel-kicker">CHANNELS</span><h2>کانال‌های اطلاع‌رسانی</h2></div></div>
-            <div style={{ display: 'grid', gap: 14, marginTop: 8 }}>
-              {CHANNELS.map(ch => (
-                <label key={ch.key} className="toggle-row">
-                  <div>
-                    <b style={{ fontSize: 12 }}>{ch.label}</b>
-                    <span style={{ display: 'block', fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>{ch.desc}</span>
-                  </div>
-                  <input
-                    type="checkbox"
-                    role="switch"
-                    checked={loaded ? (prefs[`${ch.key}:orders` as PrefKey] ?? defaultEnabled(ch.key, 'orders')) : defaultEnabled(ch.key, 'orders')}
-                    onChange={() => {
-                      for (const cat of CATEGORIES) {
-                        if (!cat.alwaysOn) toggle(ch.key, cat.key);
-                      }
-                    }}
-                    aria-label={ch.label}
-                  />
-                </label>
-              ))}
+          {/* Channels */}
+          <article className="surface-panel" style={{ padding: 28 }}>
+            <div className="panel-head">
+              <div>
+                <span
+                  style={{
+                    display: 'block',
+                    fontSize: 9,
+                    fontWeight: 800,
+                    letterSpacing: '.07em',
+                    color: 'var(--accent)',
+                    marginBottom: 4,
+                    fontFamily: 'var(--font-latin)',
+                  }}
+                >
+                  CHANNELS
+                </span>
+                <h2>کانال‌های اطلاع‌رسانی</h2>
+              </div>
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.8, margin: '0 0 20px' }}>
+              کانال‌هایی که می‌خواهید اعلان‌ها را از طریق آن‌ها دریافت کنید.
+            </p>
+            <div style={{ display: 'grid', gap: 2 }}>
+              {CHANNELS.map(ch => {
+                const isOn = loaded
+                  ? (prefs[`${ch.key}:orders` as PrefKey] ?? defaultEnabled(ch.key, 'orders'))
+                  : defaultEnabled(ch.key, 'orders');
+                return (
+                  <label key={ch.key} className="toggle-row">
+                    <Bell size={15} style={{ color: 'var(--subtle)', flex: 'none' }} />
+                    <div style={{ flex: 1 }}>
+                      <strong style={{ fontSize: 13, color: 'var(--ink)' }}>{ch.label}</strong>
+                      <span style={{ display: 'block', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
+                        {ch.desc}
+                      </span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={isOn}
+                      onChange={() => {
+                        for (const cat of CATEGORIES) {
+                          if (!cat.alwaysOn) toggle(ch.key, cat.key);
+                        }
+                      }}
+                      aria-label={ch.label}
+                    />
+                  </label>
+                );
+              })}
             </div>
           </article>
-          <article className="surface-panel" style={{ padding: 24 }}>
-            <div className="panel-head"><div><span className="panel-kicker">CATEGORIES</span><h2>دسته‌بندی رویدادها</h2></div></div>
-            <div style={{ display: 'grid', gap: 14, marginTop: 8 }}>
+
+          {/* Categories */}
+          <article className="surface-panel" style={{ padding: 28 }}>
+            <div className="panel-head">
+              <div>
+                <span
+                  style={{
+                    display: 'block',
+                    fontSize: 9,
+                    fontWeight: 800,
+                    letterSpacing: '.07em',
+                    color: 'var(--accent)',
+                    marginBottom: 4,
+                    fontFamily: 'var(--font-latin)',
+                  }}
+                >
+                  CATEGORIES
+                </span>
+                <h2>دسته‌بندی رویدادها</h2>
+              </div>
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.8, margin: '0 0 20px' }}>
+              انواع رویدادهایی که می‌خواهید برای آن‌ها اعلان دریافت کنید.
+            </p>
+            <div style={{ display: 'grid', gap: 2 }}>
               {CATEGORIES.map(cat => (
-                <label key={cat.key} className="toggle-row">
+                <label
+                  key={cat.key}
+                  className="toggle-row"
+                  style={cat.alwaysOn ? { cursor: 'default' } : undefined}
+                >
                   <div style={{ flex: 1 }}>
-                    <b style={{ fontSize: 12 }}>{cat.label}</b>
-                    <span style={{ display: 'block', fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>{cat.desc}</span>
-                    {cat.alwaysOn && <span style={{ fontSize: 9, color: 'var(--accent-strong)', display: 'block', marginTop: 3 }}>همیشه فعال — برای امنیت حساب</span>}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <strong style={{ fontSize: 13, color: 'var(--ink)' }}>{cat.label}</strong>
+                      {cat.alwaysOn && (
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            fontSize: 9,
+                            color: 'var(--accent-strong)',
+                            fontWeight: 700,
+                            letterSpacing: '.04em',
+                          }}
+                        >
+                          <Lock size={9} />
+                          همیشه فعال
+                        </span>
+                      )}
+                    </div>
+                    <span style={{ display: 'block', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
+                      {cat.desc}
+                    </span>
                   </div>
                   <input
                     type="checkbox"
@@ -133,14 +213,33 @@ export default function NotificationSettings() {
                 </label>
               ))}
             </div>
-            <div className="form-actions" style={{ marginTop: 20 }}>
+
+            <div className="form-actions" style={{ marginTop: 24 }}>
               {saved && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--success)', marginInlineEnd: 'auto' }}>
-                  <CheckCircle2 size={13}/>ذخیره شد
+                <span
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: 12,
+                    color: 'var(--success)',
+                    marginInlineEnd: 'auto',
+                    fontWeight: 600,
+                  }}
+                >
+                  <CheckCircle2 size={14} />
+                  تنظیمات ذخیره شد
                 </span>
               )}
               <button className="button primary" type="button" onClick={handleSave} disabled={saving}>
-                {saving ? 'در حال ذخیره...' : 'ذخیره تنظیمات'}
+                {saving ? (
+                  <>
+                    <Loader2 size={14} className="spin-icon" />
+                    در حال ذخیره...
+                  </>
+                ) : (
+                  'ذخیره تنظیمات'
+                )}
               </button>
             </div>
           </article>

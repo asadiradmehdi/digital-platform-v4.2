@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Activity, Bot, GitBranch, Play, Plus, Webhook } from 'lucide-react';
+import {
+  Activity, Bot, GitBranch, Play, Plus, Webhook, Zap,
+} from 'lucide-react';
 import { AppShell } from '../../components/AppShell';
-import { ProductCard, SystemStrip } from '../../components/ProductSurface';
 import { requireCurrentUser } from '../../server/identity/request-user';
 import { query } from '../../server/core/db';
 
@@ -33,24 +34,197 @@ export default async function Automation() {
       ).then(r => r.rows)
     : [];
 
+  const active = workflows.filter(w => w.active).length;
+  const draft = workflows.filter(w => !w.active).length;
+
   return (
     <AppShell>
       <main className="workspace-page-content">
-        <header className="page-header" style={{ marginBottom: 22 }}>
+        {/* ── Header ─────────────────────────────────────────────── */}
+        <header className="page-header" style={{ marginBottom: 28 }}>
           <div>
-            <span className="eyebrow">AUTOMATION ENGINE / WORKFLOWS</span>
+            <span className="eyebrow">اتوماسیون · Workflow</span>
             <h1>اتوماسیون</h1>
-            <p>Trigger، شرط، Action، Delay و Webhook را به Workflowهای نسخه‌دار و قابل ردیابی تبدیل کن.</p>
+            <p>
+              Trigger، شرط، Action، Delay و Webhook را به Workflowهای نسخه‌دار و قابل ردیابی تبدیل کنید.
+            </p>
           </div>
-          <Link className="button primary" href="/automation/new"><Plus size={15}/>ساخت Workflow</Link>
+          <Link className="button primary" href="/automation/new">
+            <Plus size={15} />
+            Workflow جدید
+          </Link>
         </header>
-        <SystemStrip/>
 
-        {workflows.length > 0 ? (
-          <article className="surface-panel data-panel" style={{ marginBottom: 20 }}>
-            <div className="panel-head" style={{ marginBottom: 14 }}>
-              <div><span className="panel-kicker">WORKFLOWS</span><h2>Workflow‌های فعال</h2></div>
+        {/* ── Summary strip ─────────────────────────────────────── */}
+        {workflows.length > 0 && (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 12,
+              marginBottom: 20,
+            }}
+          >
+            <div
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--line)',
+                borderRadius: 'var(--radius-md)',
+                padding: '16px 20px',
+              }}
+            >
+              <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 8, textTransform: 'uppercase' }}>
+                کل Workflow
+              </div>
+              <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-.04em', color: 'var(--ink)' }}>
+                {workflows.length}
+              </div>
             </div>
+            <div
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--line)',
+                borderRadius: 'var(--radius-md)',
+                padding: '16px 20px',
+              }}
+            >
+              <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 8, textTransform: 'uppercase' }}>
+                فعال
+              </div>
+              <div
+                style={{
+                  fontSize: 28,
+                  fontWeight: 800,
+                  letterSpacing: '-.04em',
+                  color: active > 0 ? 'var(--success)' : 'var(--ink)',
+                }}
+              >
+                {active}
+              </div>
+            </div>
+            <div
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--line)',
+                borderRadius: 'var(--radius-md)',
+                padding: '16px 20px',
+              }}
+            >
+              <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 8, textTransform: 'uppercase' }}>
+                Draft
+              </div>
+              <div
+                style={{
+                  fontSize: 28,
+                  fontWeight: 800,
+                  letterSpacing: '-.04em',
+                  color: draft > 0 ? 'var(--warning)' : 'var(--ink)',
+                }}
+              >
+                {draft}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Workflow list or empty state ───────────────────────── */}
+        {workflows.length === 0 ? (
+          <div
+            style={{
+              background: 'var(--surface)',
+              border: '1px solid var(--line)',
+              borderRadius: 'var(--radius-xl)',
+              padding: '56px 32px',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 12,
+              marginBottom: 28,
+            }}
+          >
+            <div
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 18,
+                background: 'var(--accent-soft)',
+                display: 'grid',
+                placeItems: 'center',
+                color: 'var(--accent)',
+                marginBottom: 4,
+              }}
+            >
+              <Zap size={24} />
+            </div>
+            <h3 style={{ fontSize: 17, fontWeight: 700, margin: 0, letterSpacing: '-.02em' }}>
+              هنوز Workflow‌ای ندارید
+            </h3>
+            <p
+              style={{
+                color: 'var(--muted)',
+                fontSize: 12,
+                lineHeight: 1.9,
+                maxWidth: 400,
+                margin: 0,
+              }}
+            >
+              اولین Workflow خود را بسازید. Trigger، Actions و شرط‌ها را تعریف کنید تا فرآیندهای تکراری خودکار شوند.
+            </p>
+            <Link
+              href="/automation/new"
+              className="button primary"
+              style={{ marginTop: 8, textDecoration: 'none' }}
+            >
+              <Plus size={14} />
+              ساخت اولین Workflow
+            </Link>
+          </div>
+        ) : (
+          <article
+            style={{
+              background: 'var(--surface)',
+              border: '1px solid var(--line)',
+              borderRadius: 'var(--radius-xl)',
+              overflow: 'hidden',
+              marginBottom: 24,
+            }}
+          >
+            <div
+              style={{
+                padding: '18px 22px 14px',
+                borderBottom: '1px solid var(--line)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div>
+                <span
+                  style={{
+                    fontSize: 9,
+                    fontWeight: 800,
+                    letterSpacing: '.1em',
+                    color: 'var(--accent)',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Workflows
+                </span>
+                <h2 style={{ fontSize: 15, margin: '3px 0 0', fontWeight: 700, letterSpacing: '-.02em' }}>
+                  Workflow‌ها
+                </h2>
+              </div>
+              <Link
+                href="/automation/new"
+                className="button secondary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              >
+                <Plus size={13} />
+                جدید
+              </Link>
+            </div>
+
             <table className="data-table">
               <thead>
                 <tr>
@@ -64,22 +238,65 @@ export default async function Automation() {
               <tbody>
                 {workflows.map(w => (
                   <tr key={w.id}>
-                    <td><strong>{w.name}</strong></td>
-                    <td><span className="text-ltr" style={{ fontSize: 11 }}>v{w.version ?? 1}</span></td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div
+                          style={{
+                            width: 30,
+                            height: 30,
+                            borderRadius: 9,
+                            background: w.active ? 'rgba(22,163,74,.08)' : 'var(--surface-2)',
+                            display: 'grid',
+                            placeItems: 'center',
+                            color: w.active ? 'var(--success)' : 'var(--subtle)',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <Zap size={13} />
+                        </div>
+                        <strong style={{ fontSize: 13 }}>{w.name}</strong>
+                      </div>
+                    </td>
+                    <td>
+                      <span
+                        className="text-ltr"
+                        style={{
+                          fontSize: 10,
+                          fontFamily: 'var(--font-latin)',
+                          background: 'var(--surface-2)',
+                          padding: '2px 7px',
+                          borderRadius: 5,
+                          color: 'var(--muted)',
+                        }}
+                      >
+                        v{w.version ?? 1}
+                      </span>
+                    </td>
                     <td>
                       <span className={`status-pill ${w.active ? 'success' : 'warning'}`}>
                         {w.active ? 'فعال' : 'Draft'}
                       </span>
                     </td>
-                    <td style={{ color: 'var(--muted)', fontSize: 10 }}>
-                      {new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(new Date(w.createdAt))}
+                    <td style={{ color: 'var(--muted)', fontSize: 11 }}>
+                      {new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(
+                        new Date(w.createdAt),
+                      )}
                     </td>
                     <td>
                       <Link
                         href={`/automation/workflow/${w.id}`}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--muted)', fontSize: 11, textDecoration: 'none' }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          color: 'var(--accent)',
+                          fontSize: 11,
+                          textDecoration: 'none',
+                          fontWeight: 600,
+                        }}
                       >
-                        <Activity size={13}/>جزئیات
+                        <Activity size={13} />
+                        جزئیات
                       </Link>
                     </td>
                   </tr>
@@ -87,13 +304,50 @@ export default async function Automation() {
               </tbody>
             </table>
           </article>
-        ) : null}
+        )}
 
-        <section className="product-card-grid-premium">
-          <ProductCard icon={Play} title="Workflow Builder" description="ساخت بصری جریان اجرا با نسخه‌بندی و run history." meta="Draft · Published · Versioned"/>
-          <ProductCard icon={Webhook} title="Triggers & Webhooks" description="شروع فرآیند از رویداد، زمان‌بندی یا Webhook امن." meta="Signed · Idempotent · Audited"/>
-          <ProductCard icon={Bot} title="AI Agents" description="Agentهای دارای ابزار و policy با ثبت تمام side effectها." meta="Policy controlled · Audited"/>
-          <ProductCard icon={GitBranch} title="Conditions" description="Branching، guardها و کنترل خطا برای مسیرهای پیچیده." meta="Deterministic · Observable"/>
+        {/* ── Capability cards ───────────────────────────────────── */}
+        <section>
+          <div style={{ marginBottom: 14 }}>
+            <span className="eyebrow">قابلیت‌ها</span>
+            <h2 style={{ fontSize: 15, fontWeight: 700, margin: '4px 0 0', letterSpacing: '-.02em' }}>
+              آنچه می‌توانید بسازید
+            </h2>
+          </div>
+          <div className="product-card-grid-premium">
+            <article className="product-card">
+              <div className="product-card-icon"><Play size={18} /></div>
+              <div className="product-card-copy">
+                <div className="product-card-title"><h2>Workflow Builder</h2></div>
+                <p>ساخت بصری جریان اجرا با نسخه‌بندی و run history کامل.</p>
+                <span>Draft · Published · Versioned</span>
+              </div>
+            </article>
+            <article className="product-card">
+              <div className="product-card-icon"><Webhook size={18} /></div>
+              <div className="product-card-copy">
+                <div className="product-card-title"><h2>Triggers و Webhooks</h2></div>
+                <p>شروع فرآیند از رویداد، زمان‌بندی یا Webhook امن و idempotent.</p>
+                <span>Signed · Idempotent · Audited</span>
+              </div>
+            </article>
+            <article className="product-card">
+              <div className="product-card-icon"><Bot size={18} /></div>
+              <div className="product-card-copy">
+                <div className="product-card-title"><h2>AI Agents</h2></div>
+                <p>Agentهای دارای ابزار و policy با ثبت تمام side effectها.</p>
+                <span>Policy controlled · Audited</span>
+              </div>
+            </article>
+            <article className="product-card">
+              <div className="product-card-icon"><GitBranch size={18} /></div>
+              <div className="product-card-copy">
+                <div className="product-card-title"><h2>Conditions</h2></div>
+                <p>Branching، guardها و کنترل خطا برای مسیرهای پیچیده.</p>
+                <span>Deterministic · Observable</span>
+              </div>
+            </article>
+          </div>
         </section>
       </main>
     </AppShell>

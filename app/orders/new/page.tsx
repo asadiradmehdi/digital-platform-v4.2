@@ -2,7 +2,10 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, ChevronLeft, Info, ShoppingBag, Zap, AlertCircle } from 'lucide-react';
+import {
+  ArrowRight, ChevronLeft, Info, ShoppingBag, Zap, AlertCircle,
+  CheckCircle2, Wallet, Tag,
+} from 'lucide-react';
 import { AppShell } from '../../../components/AppShell';
 
 const serviceRegistry: Record<string, {
@@ -163,11 +166,17 @@ function OrderNewForm() {
   if (!service) {
     return (
       <main className="workspace-page-content">
-        <div className="state-block state-empty" style={{ marginTop: 40 }}>
-          <ShoppingBag size={28} />
-          <h3>سرویس انتخاب نشده</h3>
-          <p>لطفاً از کاتالوگ خدمات، سرویس موردنظر را انتخاب کنید.</p>
-          <Link href="/services" className="button primary" style={{ marginTop: 14, textDecoration: 'none' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 24px', textAlign: 'center', gap: 16 }}>
+          <div style={{ width: 64, height: 64, borderRadius: 20, background: 'var(--accent-soft)', display: 'grid', placeItems: 'center', color: 'var(--accent)' }}>
+            <ShoppingBag size={28} />
+          </div>
+          <div>
+            <h3 style={{ margin: '0 0 6px', fontSize: 17, letterSpacing: '-.03em' }}>سرویس انتخاب نشده</h3>
+            <p style={{ margin: 0, color: 'var(--muted)', fontSize: 12, lineHeight: 1.8, maxWidth: 340 }}>
+              لطفاً از کاتالوگ خدمات، سرویس موردنظر را انتخاب کنید.
+            </p>
+          </div>
+          <Link href="/services" className="button primary" style={{ textDecoration: 'none' }}>
             مشاهده خدمات
           </Link>
         </div>
@@ -178,11 +187,17 @@ function OrderNewForm() {
   if (submitted) {
     return (
       <main className="workspace-page-content">
-        <div className="state-block state-success" style={{ marginTop: 40 }}>
-          <Zap size={28} />
-          <h3>سفارش ثبت شد</h3>
-          <p>سفارش شما در صف پردازش قرار گرفت. پس از تأیید پرداخت، اجرا آغاز می‌شود.</p>
-          <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 24px', textAlign: 'center', gap: 16 }}>
+          <div style={{ width: 72, height: 72, borderRadius: 22, background: 'var(--success-soft)', display: 'grid', placeItems: 'center', color: 'var(--success)' }}>
+            <CheckCircle2 size={34} />
+          </div>
+          <div>
+            <h3 style={{ margin: '0 0 8px', fontSize: 20, letterSpacing: '-.04em' }}>سفارش با موفقیت ثبت شد</h3>
+            <p style={{ margin: 0, color: 'var(--muted)', fontSize: 12, lineHeight: 1.9, maxWidth: 360 }}>
+              سفارش شما در صف پردازش قرار گرفت. پس از تأیید پرداخت، اجرا آغاز می‌شود.
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
             <Link href="/orders" className="button primary" style={{ textDecoration: 'none' }}>مشاهده سفارش‌ها</Link>
             <Link href="/services" className="button secondary" style={{ textDecoration: 'none' }}>سرویس جدید</Link>
           </div>
@@ -193,30 +208,35 @@ function OrderNewForm() {
 
   return (
     <main className="workspace-page-content">
-      <header className="page-header" style={{ marginBottom: 22 }}>
-        <div>
-          <Link href="/services" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--muted)', fontSize: 11, textDecoration: 'none', marginBottom: 8 }}>
-            <ArrowRight size={13} />خدمات
-          </Link>
-          <span className="eyebrow">{service.category} · سفارش جدید</span>
-          <h1 style={{ marginTop: 4 }}>{service.title}</h1>
-          <p>{service.description}</p>
-        </div>
+      {/* Page header */}
+      <header style={{ marginBottom: 28 }}>
+        <Link
+          href="/services"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--muted)', fontSize: 11, textDecoration: 'none', marginBottom: 10 }}
+        >
+          <ArrowRight size={13} />بازگشت به خدمات
+        </Link>
+        <span className="eyebrow">{service.category} · سفارش جدید</span>
+        <h1 style={{ margin: '4px 0 6px', fontSize: 'clamp(20px,3vw,28px)', letterSpacing: '-.04em' }}>{service.title}</h1>
+        <p style={{ margin: 0, color: 'var(--muted)', fontSize: 12 }}>{service.description}</p>
       </header>
 
       <form className="order-new-layout" onSubmit={handleSubmit}>
-        {/* Config panel */}
+        {/* Configuration panel */}
         <article className="surface-panel">
-          <div className="panel-head" style={{ marginBottom: 18 }}>
+          <div className="panel-head" style={{ marginBottom: 20 }}>
             <div>
-              <p className="panel-kicker">CONFIGURATION</p>
-              <h2>پیکربندی سفارش</h2>
+              <p className="panel-kicker" style={{ margin: '0 0 2px' }}>CONFIGURATION</p>
+              <h2 style={{ margin: 0 }}>پیکربندی سفارش</h2>
             </div>
           </div>
 
           {service.quantities && (
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, marginBottom: 10 }}>مقدار</label>
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.04em', marginBottom: 10 }}>
+                <Tag size={11} style={{ display: 'inline', marginLeft: 5 }} />
+                مقدار ({service.unitLabel})
+              </label>
               <div className="qty-grid">
                 {service.quantities.map(q => (
                   <button
@@ -232,10 +252,10 @@ function OrderNewForm() {
             </div>
           )}
 
-          <div className="settings-form" style={{ gap: 16 }}>
+          <div className="settings-form" style={{ gap: 18, marginTop: 0 }}>
             {service.fields.map(f => (
               <label key={f.id}>
-                {f.label}
+                <span style={{ fontSize: 12, fontWeight: 700 }}>{f.label}</span>
                 <input
                   type={f.type}
                   placeholder={f.placeholder}
@@ -243,10 +263,11 @@ function OrderNewForm() {
                   onChange={e => setFields(prev => ({ ...prev, [f.id]: e.target.value }))}
                   required={f.id === 'target'}
                   dir={f.type === 'url' ? 'ltr' : undefined}
+                  style={{ marginTop: 0 }}
                 />
                 {f.hint && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--muted)', fontSize: 9, marginTop: 5 }}>
-                    <Info size={11} />{f.hint}
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--muted)', fontSize: 10, marginTop: 4 }}>
+                    <Info size={11} style={{ flexShrink: 0 }} />{f.hint}
                   </span>
                 )}
               </label>
@@ -254,53 +275,85 @@ function OrderNewForm() {
           </div>
         </article>
 
-        {/* Summary panel */}
-        <aside style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {/* Summary sidebar */}
+        <aside style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* Order summary */}
           <article className="surface-panel">
-            <div className="panel-head" style={{ marginBottom: 14 }}>
+            <div className="panel-head" style={{ marginBottom: 16 }}>
               <div>
-                <p className="panel-kicker">SUMMARY</p>
-                <h2>خلاصه سفارش</h2>
+                <p className="panel-kicker" style={{ margin: '0 0 2px' }}>SUMMARY</p>
+                <h2 style={{ margin: 0 }}>خلاصه سفارش</h2>
               </div>
             </div>
-            <div className="order-meta-list">
-              <div className="order-meta-row">
-                <span>سرویس</span>
-                <strong>{service.title}</strong>
+            <div style={{ display: 'grid', gap: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--surface-2)', borderRadius: 12, fontSize: 11 }}>
+                <span style={{ color: 'var(--muted)' }}>سرویس</span>
+                <strong style={{ fontSize: 12 }}>{service.title}</strong>
               </div>
-              <div className="order-meta-row">
-                <span>مقدار</span>
-                <strong>{unitsLabel}</strong>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--surface-2)', borderRadius: 12, fontSize: 11 }}>
+                <span style={{ color: 'var(--muted)' }}>مقدار</span>
+                <strong style={{ fontSize: 12 }}>{unitsLabel}</strong>
               </div>
-              <div className="order-meta-row" style={{ background: 'var(--accent-soft)', borderColor: 'rgba(155,124,255,.2)' }}>
-                <span style={{ color: 'var(--accent-strong)', fontWeight: 700 }}>مبلغ نهایی</span>
-                <strong style={{ fontSize: 16 }}>{formatPrice(totalMinor)}</strong>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '14px 16px', background: 'var(--accent-soft)',
+                border: '1px solid rgba(26,86,219,.15)', borderRadius: 14,
+              }}>
+                <span style={{ color: 'var(--accent-strong)', fontWeight: 700, fontSize: 12 }}>مبلغ نهایی</span>
+                <strong style={{ fontSize: 18, letterSpacing: '-.04em', color: 'var(--accent-strong)', fontVariantNumeric: 'tabular-nums' }}>
+                  {formatPrice(totalMinor)}
+                </strong>
               </div>
             </div>
           </article>
 
+          {/* Payment panel */}
           <article className="surface-panel">
             <div className="panel-head" style={{ marginBottom: 14 }}>
               <div>
-                <p className="panel-kicker">PAYMENT</p>
-                <h2>پرداخت</h2>
+                <p className="panel-kicker" style={{ margin: '0 0 2px' }}>PAYMENT</p>
+                <h2 style={{ margin: 0 }}>پرداخت از کیف پول</h2>
               </div>
             </div>
             <div style={{ display: 'grid', gap: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--muted)', padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
-                <span>موجودی کیف پول</span>
-                <span style={{ color: 'var(--success)' }}>{walletBalance ?? '...'}</span>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '10px 14px', background: 'var(--surface-2)', borderRadius: 12, fontSize: 11,
+              }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--muted)' }}>
+                  <Wallet size={12} />موجودی کیف پول
+                </span>
+                <span style={{ color: walletBalance ? 'var(--success)' : 'var(--subtle)', fontWeight: 700 }}>
+                  {walletBalance ?? '...'}
+                </span>
               </div>
+
               {submitError && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 12px', background: 'rgba(255,113,135,.08)', border: '1px solid rgba(255,113,135,.2)', borderRadius: 10, fontSize: 11, color: 'var(--danger)' }}>
-                  <AlertCircle size={14}/>{submitError}
+                <div style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 8,
+                  padding: '10px 12px', background: 'var(--danger-soft)',
+                  border: '1px solid rgba(220,38,38,.2)', borderRadius: 12, fontSize: 11, color: 'var(--danger)',
+                }}>
+                  <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
+                  <span>{submitError}</span>
                 </div>
               )}
-              <button type="submit" className="button primary" style={{ width: '100%', justifyContent: 'center', marginTop: 4 }} disabled={submitting}>
-                <Zap size={14} />{submitting ? 'در حال ثبت...' : 'ثبت و پرداخت سفارش'}
+
+              <button
+                type="submit"
+                className="button primary"
+                style={{ width: '100%', justifyContent: 'center', marginTop: 2 }}
+                disabled={submitting}
+              >
+                <Zap size={14} />
+                {submitting ? 'در حال ثبت سفارش...' : 'ثبت و پرداخت سفارش'}
               </button>
-              <Link href="/services" className="button secondary" style={{ width: '100%', justifyContent: 'center', textDecoration: 'none' }}>
-                <ChevronLeft size={14} />بازگشت
+              <Link
+                href="/services"
+                className="button secondary"
+                style={{ width: '100%', justifyContent: 'center', textDecoration: 'none' }}
+              >
+                <ChevronLeft size={14} />بازگشت به خدمات
               </Link>
             </div>
           </article>
@@ -315,7 +368,7 @@ export default function OrderNewPage() {
     <AppShell>
       <Suspense fallback={
         <main className="workspace-page-content">
-          <div className="state-block state-loading" style={{ marginTop: 40 }}>
+          <div style={{ marginTop: 40 }}>
             <div className="skeleton skeleton-panel" style={{ width: '100%' }} />
           </div>
         </main>

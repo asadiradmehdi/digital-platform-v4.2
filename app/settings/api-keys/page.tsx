@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
 import { AppShell } from '../../../components/AppShell';
-import { SystemStrip } from '../../../components/ProductSurface';
 import { requireCurrentUser } from '../../../server/identity/request-user';
 import { query, withWorkspaceTransaction } from '../../../server/core/db';
 import { ApiKeyManager } from './ApiKeyManager';
@@ -46,26 +45,132 @@ export default async function ApiKeysSettings() {
     <AppShell>
       <main className="workspace-page-content">
         <header className="page-header">
-          <div><span className="eyebrow">SETTINGS / API KEYS</span><h1>API و دسترسی‌ها</h1><p>کلیدهای API، scopeها و کنترل دسترسی سرویس‌های خارجی به workspace.</p></div>
-          <Link className="button secondary" href="/settings"><ArrowRight size={15}/>تنظیمات</Link>
+          <div>
+            <span className="eyebrow">حساب کاربری · API</span>
+            <h1>API و دسترسی‌ها</h1>
+            <p>کلیدهای API، scopeها و کنترل دسترسی سرویس‌های خارجی به workspace.</p>
+          </div>
+          <Link className="button secondary" href="/settings">
+            <ArrowRight size={15} />
+            تنظیمات
+          </Link>
         </header>
-        <SystemStrip/>
+
         <div className="settings-layout">
-          <article className="surface-panel" style={{ padding: 24 }}>
-            <div className="panel-head"><div><span className="panel-kicker">ACTIVE KEYS</span><h2>کلیدهای فعال</h2></div></div>
-            <div style={{ marginTop: 8 }}>
-              <ApiKeyManager initialKeys={keys} workspaceId={workspaceId ?? ''} />
-            </div>
-          </article>
-          <article className="surface-panel" style={{ padding: 24 }}>
-            <div className="panel-head"><div><span className="panel-kicker">DOCUMENTATION</span><h2>راهنمای استفاده</h2></div></div>
-            <div style={{ display: 'grid', gap: 12, marginTop: 8 }}>
-              <div style={{ background: 'var(--surface-2)', borderRadius: 10, padding: '12px 14px' }}>
-                <p style={{ margin: 0, fontSize: 11, color: 'var(--muted)', lineHeight: 1.9 }}>کلیدهای Live از پیشوند <code dir="ltr" style={{ fontFamily: 'monospace', color: 'var(--accent-strong)' }}>dp_live_</code> و کلیدهای Test از <code dir="ltr" style={{ fontFamily: 'monospace', color: 'var(--info)' }}>dp_test_</code> استفاده می‌کنند.</p>
+          {/* Key manager */}
+          <article className="surface-panel" style={{ padding: 28 }}>
+            <div className="panel-head">
+              <div>
+                <span
+                  style={{
+                    display: 'block',
+                    fontSize: 9,
+                    fontWeight: 800,
+                    letterSpacing: '.07em',
+                    color: 'var(--accent)',
+                    marginBottom: 4,
+                    fontFamily: 'var(--font-latin)',
+                  }}
+                >
+                  ACTIVE KEYS
+                </span>
+                <h2>کلیدهای فعال</h2>
               </div>
-              <div style={{ background: 'var(--surface-2)', borderRadius: 10, padding: '12px 14px' }}>
-                <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700 }}>نمونه header</p>
-                <code style={{ display: 'block', fontSize: 10, color: 'var(--muted)', fontFamily: 'monospace', direction: 'ltr', textAlign: 'left', lineHeight: 1.9 }}>Authorization: Bearer dp_live_xxxxxxxxxxxx</code>
+            </div>
+            <ApiKeyManager initialKeys={keys} workspaceId={workspaceId ?? ''} />
+          </article>
+
+          {/* Usage guide */}
+          <article className="surface-panel" style={{ padding: 28 }}>
+            <div className="panel-head">
+              <div>
+                <span
+                  style={{
+                    display: 'block',
+                    fontSize: 9,
+                    fontWeight: 800,
+                    letterSpacing: '.07em',
+                    color: 'var(--accent)',
+                    marginBottom: 4,
+                    fontFamily: 'var(--font-latin)',
+                  }}
+                >
+                  DOCUMENTATION
+                </span>
+                <h2>راهنمای استفاده</h2>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gap: 12, marginTop: 8 }}>
+              <div
+                style={{
+                  background: 'var(--surface-2)',
+                  borderRadius: 12,
+                  padding: '14px 16px',
+                  border: '1px solid var(--line)',
+                }}
+              >
+                <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)', lineHeight: 2 }}>
+                  کلیدهای Live از پیشوند{' '}
+                  <code
+                    dir="ltr"
+                    style={{
+                      fontFamily: 'var(--font-latin), monospace',
+                      color: 'var(--success)',
+                      background: 'var(--success-soft)',
+                      padding: '1px 6px',
+                      borderRadius: 4,
+                      fontSize: 11,
+                    }}
+                  >
+                    dp_live_
+                  </code>{' '}
+                  و کلیدهای Test از{' '}
+                  <code
+                    dir="ltr"
+                    style={{
+                      fontFamily: 'var(--font-latin), monospace',
+                      color: 'var(--info)',
+                      background: 'var(--info-soft)',
+                      padding: '1px 6px',
+                      borderRadius: 4,
+                      fontSize: 11,
+                    }}
+                  >
+                    dp_test_
+                  </code>{' '}
+                  استفاده می‌کنند.
+                </p>
+              </div>
+
+              <div
+                style={{
+                  background: 'var(--surface-2)',
+                  borderRadius: 12,
+                  padding: '14px 16px',
+                  border: '1px solid var(--line)',
+                }}
+              >
+                <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, color: 'var(--ink)' }}>
+                  نمونه Authorization header
+                </p>
+                <code
+                  style={{
+                    display: 'block',
+                    fontSize: 11,
+                    color: 'var(--muted)',
+                    fontFamily: 'var(--font-latin), monospace',
+                    direction: 'ltr',
+                    textAlign: 'left',
+                    lineHeight: 2,
+                    background: '#fff',
+                    border: '1px solid var(--line)',
+                    borderRadius: 8,
+                    padding: '10px 14px',
+                  }}
+                >
+                  Authorization: Bearer dp_live_xxxxxxxxxxxx
+                </code>
               </div>
             </div>
           </article>

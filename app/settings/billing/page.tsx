@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ArrowRight, CreditCard, Download, ExternalLink, Sparkles } from 'lucide-react';
 import { AppShell } from '../../../components/AppShell';
-import { SystemStrip } from '../../../components/ProductSurface';
 import { formatTomanFromIRR, statusLabel } from '../../../lib/format';
 import { requireCurrentUser } from '../../../server/identity/request-user';
 import { query, withWorkspaceTransaction } from '../../../server/core/db';
@@ -66,70 +65,258 @@ export default async function BillingSettings() {
     <AppShell>
       <main className="workspace-page-content">
         <header className="page-header">
-          <div><span className="eyebrow">SETTINGS / BILLING</span><h1>پرداخت و صورتحساب</h1><p>روش پرداخت، تاریخچه فاکتورها و مدیریت اشتراک.</p></div>
-          <Link className="button secondary" href="/settings"><ArrowRight size={15}/>تنظیمات</Link>
+          <div>
+            <span className="eyebrow">حساب کاربری · پرداخت</span>
+            <h1>پرداخت و صورتحساب</h1>
+            <p>اشتراک فعال، کیف پول و تاریخچه فاکتورها.</p>
+          </div>
+          <Link className="button secondary" href="/settings">
+            <ArrowRight size={15} />
+            تنظیمات
+          </Link>
         </header>
-        <SystemStrip/>
+
         <div className="settings-layout">
-          <article className="surface-panel" style={{ padding: 24 }}>
+          {/* Subscription */}
+          <article className="surface-panel" style={{ padding: 28 }}>
             <div className="panel-head">
-              <div><span className="panel-kicker">CURRENT PLAN</span><h2>اشتراک فعال</h2></div>
-              {sub ? <span className={`status-pill ${sub.status === 'TRIALING' ? 'info' : 'success'}`}>{statusLabel(sub.status)}</span> : <span className="status-pill warning">بدون اشتراک</span>}
+              <div>
+                <span
+                  style={{
+                    display: 'block',
+                    fontSize: 9,
+                    fontWeight: 800,
+                    letterSpacing: '.07em',
+                    color: 'var(--accent)',
+                    marginBottom: 4,
+                    fontFamily: 'var(--font-latin)',
+                  }}
+                >
+                  SUBSCRIPTION
+                </span>
+                <h2>اشتراک فعال</h2>
+              </div>
+              {sub ? (
+                <span className={`status-pill ${sub.status === 'TRIALING' ? 'info' : 'success'}`}>
+                  {statusLabel(sub.status)}
+                </span>
+              ) : (
+                <span className="status-pill warning">بدون اشتراک</span>
+              )}
             </div>
+
             {sub ? (
-              <div className="metric-grid-4" style={{ marginTop: 16 }}>
-                <div className="metric-tile"><span>پلن</span><strong>{sub.planName}</strong></div>
-                <div className="metric-tile"><span>هزینه ماهانه</span><strong>{sub.priceMinor ? formatTomanFromIRR(Number(sub.priceMinor)) : '—'}</strong></div>
-                <div className="metric-tile"><span>تمدید بعدی</span><strong style={{ fontSize: 14 }}>{new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(new Date(sub.currentPeriodEnd))}</strong></div>
-                <div className="metric-tile"><span>روش پرداخت</span><strong>کیف پول</strong></div>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                  gap: 10,
+                  marginTop: 16,
+                  marginBottom: 20,
+                }}
+              >
+                {[
+                  { label: 'پلن', value: sub.planName },
+                  {
+                    label: 'هزینه ماهانه',
+                    value: sub.priceMinor ? formatTomanFromIRR(Number(sub.priceMinor)) : '—',
+                  },
+                  {
+                    label: 'تمدید بعدی',
+                    value: new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(new Date(sub.currentPeriodEnd)),
+                  },
+                  { label: 'روش پرداخت', value: 'کیف پول' },
+                ].map(({ label, value }) => (
+                  <div
+                    key={label}
+                    style={{
+                      padding: '14px 16px',
+                      background: 'var(--surface-2)',
+                      borderRadius: 12,
+                      border: '1px solid var(--line)',
+                    }}
+                  >
+                    <span style={{ display: 'block', fontSize: 10, color: 'var(--subtle)', marginBottom: 6 }}>
+                      {label}
+                    </span>
+                    <strong style={{ fontSize: 14, color: 'var(--ink)', letterSpacing: '-.015em' }}>
+                      {value}
+                    </strong>
+                  </div>
+                ))}
               </div>
             ) : (
-              <div className="state-block state-empty" style={{ padding: '20px 0' }}>
-                <Sparkles size={20}/>
-                <p>اشتراک فعالی ندارید.</p>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  padding: '28px 20px',
+                  textAlign: 'center',
+                  gap: 10,
+                }}
+              >
+                <Sparkles size={24} style={{ color: 'var(--subtle)' }} />
+                <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)' }}>
+                  اشتراک فعالی ندارید.
+                </p>
               </div>
             )}
-            <div className="hero-actions" style={{ marginTop: 16 }}>
+
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <Link className="button secondary" href="/pricing">مقایسه پلن‌ها</Link>
-              {sub && workspaceId && <CancelSubscriptionButton subscriptionId={sub.id} workspaceId={workspaceId}/>}
+              {sub && workspaceId && (
+                <CancelSubscriptionButton subscriptionId={sub.id} workspaceId={workspaceId} />
+              )}
             </div>
           </article>
 
-          <article className="surface-panel" style={{ padding: 24 }}>
+          {/* Wallet */}
+          <article className="surface-panel" style={{ padding: 28 }}>
             <div className="panel-head">
-              <div><span className="panel-kicker">WALLET</span><h2>کیف پول</h2></div>
-              <Link className="button secondary" style={{ padding: '0 14px', height: 34, fontSize: 11 }} href="/wallet">مشاهده کامل</Link>
+              <div>
+                <span
+                  style={{
+                    display: 'block',
+                    fontSize: 9,
+                    fontWeight: 800,
+                    letterSpacing: '.07em',
+                    color: 'var(--accent)',
+                    marginBottom: 4,
+                    fontFamily: 'var(--font-latin)',
+                  }}
+                >
+                  WALLET
+                </span>
+                <h2>کیف پول</h2>
+              </div>
+              <Link
+                className="button secondary"
+                style={{ padding: '0 14px', height: 34, fontSize: 11 }}
+                href="/wallet"
+              >
+                مشاهده کامل
+              </Link>
             </div>
-            <div className="metric-grid-4" style={{ marginTop: 16 }}>
-              <div className="metric-tile"><span>موجودی</span><strong>{formatTomanFromIRR(balanceMinor)}</strong></div>
-              <div className="metric-tile"><span>معلق</span><strong>{formatTomanFromIRR(0)}</strong></div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 10,
+                marginTop: 8,
+                marginBottom: 20,
+              }}
+            >
+              {[
+                { label: 'موجودی', value: formatTomanFromIRR(balanceMinor) },
+                { label: 'معلق', value: formatTomanFromIRR(0) },
+              ].map(({ label, value }) => (
+                <div
+                  key={label}
+                  style={{
+                    padding: '16px',
+                    background: 'var(--surface-2)',
+                    borderRadius: 12,
+                    border: '1px solid var(--line)',
+                  }}
+                >
+                  <span style={{ display: 'block', fontSize: 10, color: 'var(--subtle)', marginBottom: 6 }}>
+                    {label}
+                  </span>
+                  <strong style={{ fontSize: 16, color: 'var(--ink)', letterSpacing: '-.02em' }}>
+                    {value}
+                  </strong>
+                </div>
+              ))}
             </div>
-            <Link className="button primary" style={{ marginTop: 16, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }} href="/wallet#topup">
-              <CreditCard size={15}/>افزایش موجودی
+
+            <Link
+              className="button primary"
+              href="/wallet#topup"
+              style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}
+            >
+              <CreditCard size={15} />
+              افزایش موجودی
             </Link>
           </article>
 
-          <article className="surface-panel data-panel" style={{ padding: 24 }}>
+          {/* Invoices */}
+          <article className="surface-panel" style={{ padding: 28 }}>
             <div className="panel-head">
-              <div><span className="panel-kicker">INVOICES</span><h2>فاکتورها</h2></div>
+              <div>
+                <span
+                  style={{
+                    display: 'block',
+                    fontSize: 9,
+                    fontWeight: 800,
+                    letterSpacing: '.07em',
+                    color: 'var(--accent)',
+                    marginBottom: 4,
+                    fontFamily: 'var(--font-latin)',
+                  }}
+                >
+                  INVOICES
+                </span>
+                <h2>فاکتورها</h2>
+              </div>
             </div>
+
             {invoices.length === 0 ? (
-              <p style={{ fontSize: 12, color: 'var(--muted)', margin: '16px 0 0' }}>هنوز فاکتوری صادر نشده.</p>
+              <div
+                style={{
+                  padding: '28px 20px',
+                  textAlign: 'center',
+                  color: 'var(--muted)',
+                  fontSize: 12,
+                  background: 'var(--surface-2)',
+                  borderRadius: 12,
+                  marginTop: 8,
+                }}
+              >
+                هنوز فاکتوری صادر نشده.
+              </div>
             ) : (
               <table className="data-table" style={{ marginTop: 8 }}>
-                <thead><tr><th>کد فاکتور</th><th>تاریخ</th><th>مبلغ</th><th>وضعیت</th><th></th></tr></thead>
+                <thead>
+                  <tr>
+                    <th>کد فاکتور</th>
+                    <th>تاریخ</th>
+                    <th>مبلغ</th>
+                    <th>وضعیت</th>
+                    <th></th>
+                  </tr>
+                </thead>
                 <tbody>
                   {invoices.map(inv => {
-                    const date = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(new Date(inv.issuedAt ?? inv.createdAt));
+                    const date = new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(
+                      new Date(inv.issuedAt ?? inv.createdAt),
+                    );
                     return (
                       <tr key={inv.id}>
-                        <td><strong className="text-ltr">{inv.invoiceNumber}</strong></td>
+                        <td>
+                          <strong className="text-ltr">{inv.invoiceNumber}</strong>
+                        </td>
                         <td>{date}</td>
                         <td>{formatTomanFromIRR(Number(inv.totalMinor))}</td>
-                        <td><span className={`status-pill ${inv.status === 'PAID' ? 'success' : 'warning'}`}>{statusLabel(inv.status)}</span></td>
+                        <td>
+                          <span className={`status-pill ${inv.status === 'PAID' ? 'success' : 'warning'}`}>
+                            {statusLabel(inv.status)}
+                          </span>
+                        </td>
                         <td style={{ display: 'flex', gap: 8 }}>
-                          <button aria-label="دانلود" style={{ background: 'none', color: 'var(--muted)' }}><Download size={14}/></button>
-                          <button aria-label="مشاهده" style={{ background: 'none', color: 'var(--muted)' }}><ExternalLink size={14}/></button>
+                          <button
+                            aria-label="دانلود"
+                            style={{ background: 'none', color: 'var(--subtle)' }}
+                          >
+                            <Download size={14} />
+                          </button>
+                          <button
+                            aria-label="مشاهده"
+                            style={{ background: 'none', color: 'var(--subtle)' }}
+                          >
+                            <ExternalLink size={14} />
+                          </button>
                         </td>
                       </tr>
                     );

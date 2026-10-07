@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { AlertCircle, Loader2 } from 'lucide-react';
 
 export function CancelSubscriptionButton({ subscriptionId, workspaceId }: { subscriptionId: string; workspaceId: string }) {
   const router = useRouter();
@@ -33,9 +34,35 @@ export function CancelSubscriptionButton({ subscriptionId, workspaceId }: { subs
   return (
     <>
       <button className="button danger" type="button" disabled={loading} onClick={handleCancel}>
-        {loading ? '...' : 'لغو اشتراک'}
+        {loading ? (
+          <>
+            <Loader2 size={14} className="spin-icon" />
+            در حال لغو...
+          </>
+        ) : (
+          'لغو اشتراک'
+        )}
       </button>
-      {error && <span style={{ fontSize: 11, color: 'var(--danger)', marginInlineStart: 8 }}>{error}</span>}
+      {error && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            marginTop: 10,
+            padding: '8px 12px',
+            background: 'var(--danger-soft)',
+            border: '1px solid rgba(220,38,38,.18)',
+            borderRadius: 8,
+            fontSize: 11,
+            color: 'var(--danger)',
+          }}
+          role="alert"
+        >
+          <AlertCircle size={12} style={{ flex: 'none' }} />
+          {error}
+        </div>
+      )}
     </>
   );
 }

@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowDownLeft, ArrowUpLeft, Plus, ShieldCheck, TrendingUp, WalletCards } from 'lucide-react';
+import {
+  ArrowDownLeft, ArrowUpLeft, Plus, ShieldCheck, TrendingUp,
+  WalletCards, Package, RotateCcw, CreditCard, ChevronDown,
+} from 'lucide-react';
 import { AppShell } from '../../components/AppShell';
 import { SystemStrip } from '../../components/ProductSurface';
 import { formatTomanFromIRR } from '../../lib/format';
@@ -18,6 +21,16 @@ const referenceTypeLabel: Record<string, string> = {
   SUBSCRIPTION: 'اشتراک',
   TOPUP: 'افزایش موجودی',
 };
+
+function txBadge(direction: string, refType: string) {
+  if (direction === 'CREDIT') {
+    return { cls: 'success', icon: <ArrowUpLeft size={11} />, label: 'واریز' };
+  }
+  if (refType === 'REFUND') {
+    return { cls: 'warning', icon: <RotateCcw size={11} />, label: 'بازگشت' };
+  }
+  return { cls: 'danger', icon: <ArrowDownLeft size={11} />, label: 'برداشت' };
+}
 
 async function getWalletData(workspaceId: string) {
   return withWorkspaceTransaction(workspaceId, undefined, async client => {
@@ -82,119 +95,196 @@ export default async function Wallet() {
     .filter(e => e.direction === 'DEBIT' && new Date(e.createdAt).getMonth() === new Date().getMonth())
     .reduce((sum, e) => sum + Number(e.amountMinor), 0);
 
+  const totalDeposited = entries
+    .filter(e => e.direction === 'CREDIT')
+    .reduce((sum, e) => sum + Number(e.amountMinor), 0);
+
   return (
     <AppShell>
       <main className="workspace-page-content">
-        <header className="page-header" style={{ marginBottom: 22 }}>
+        {/* Page header */}
+        <header className="page-header" style={{ marginBottom: 24 }}>
           <div>
             <span className="eyebrow">مالی · کیف پول</span>
             <h1>کیف پول</h1>
             <p>موجودی، تراکنش‌ها و افزایش اعتبار — همه از Ledger سمت سرور.</p>
           </div>
-          <Link className="button primary" href="#topup"><Plus size={15} />افزایش موجودی</Link>
+          <a href="#topup" className="button primary" style={{ textDecoration: 'none' }}>
+            <Plus size={15} />افزایش موجودی
+          </a>
         </header>
 
         <SystemStrip />
 
-        <section className="metric-grid-4" style={{ marginBottom: 16 }}>
-          <article className="metric-tile" style={{ gridColumn: 'span 2' }}>
-            <span>موجودی قابل استفاده</span>
-            <strong style={{ fontSize: 32, letterSpacing: '-.04em' }}>
-              {formatTomanFromIRR(balanceMinor)}
-            </strong>
-            <small style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--success)' }}>
-              <ShieldCheck size={11} />موجودی تأییدشده
-            </small>
-          </article>
-          <article className="metric-tile">
-            <span>معلق</span>
-            <strong>{formatTomanFromIRR(0)}</strong>
-            <small>در انتظار تسویه</small>
-          </article>
-          <article className="metric-tile">
+        {/* Balance hero + metrics */}
+        <section style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.2fr) repeat(2,minmax(0,1fr))', gap: 12, marginBottom: 20 }}>
+          {/* Balance hero card */}
+          <div style={{
+            border: '1px solid rgba(26,86,219,.2)',
+            borderRadius: 20,
+            padding: '28px 28px 24px',
+            background: 'linear-gradient(135deg, rgba(26,86,219,.06) 0%, var(--surface) 60%)',
+            display: 'flex', flexDirection: 'column', gap: 10,
+            position: 'relative', overflow: 'hidden',
+          }}>
+            <div style={{ position: 'absolute', width: 180, height: 180, borderRadius: '50%', background: 'rgba(26,86,219,.04)', top: -60, left: -60, pointerEvents: 'none' }} />
+            <span style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 800, letterSpacing: '.08em' }}>موجودی قابل استفاده</span>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
+              <strong style={{ fontSize: 'clamp(26px,4vw,38px)', fontWeight: 800, letterSpacing: '-.055em', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+                {formatTomanFromIRR(balanceMinor)}
+              </strong>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--success)', fontSize: 10, fontWeight: 700, background: 'var(--success-soft)', padding: '3px 8px', borderRadius: 999 }}>
+                <ShieldCheck size={10} />تأییدشده
+              </span>
+            </div>
+          </div>
+
+          {/* Spend this month */}
+          <div className="metric-tile" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <span>خرج این ماه</span>
-            <strong>{formatTomanFromIRR(thisMonthSpend)}</strong>
-            <small style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <TrendingUp size={11} />ماه جاری
+            <strong style={{ color: 'var(--danger)' }}>{formatTomanFromIRR(thisMonthSpend)}</strong>
+            <small style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <TrendingUp size={10} />ماه جاری
             </small>
-          </article>
+          </div>
+
+          {/* Total deposited */}
+          <div className="metric-tile" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <span>کل واریزی‌ها</span>
+            <strong style={{ color: 'var(--success)' }}>{formatTomanFromIRR(totalDeposited)}</strong>
+            <small style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <CreditCard size={10} />از ابتدا تاکنون
+            </small>
+          </div>
         </section>
 
+        {/* Main layout */}
         <div className="wallet-layout">
-          <article className="surface-panel data-panel">
-            <div className="panel-head" style={{ marginBottom: 16 }}>
+          {/* Transaction history */}
+          <article className="surface-panel data-panel" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '20px 22px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
               <div>
-                <p className="panel-kicker">LEDGER</p>
-                <h2>تراکنش‌های اخیر</h2>
+                <p className="panel-kicker" style={{ margin: '0 0 2px' }}>LEDGER</p>
+                <h2 style={{ margin: 0 }}>تراکنش‌های اخیر</h2>
               </div>
+              {entries.length > 0 && (
+                <span style={{ fontSize: 10, color: 'var(--muted)' }}>
+                  {new Intl.NumberFormat('fa-IR').format(entries.length)} تراکنش
+                </span>
+              )}
             </div>
+
             {entries.length === 0 ? (
-              <div className="state-block state-empty" style={{ padding: '32px 0' }}>
-                <WalletCards size={24}/>
-                <p>هنوز تراکنشی ثبت نشده است.</p>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 24px', gap: 12, textAlign: 'center' }}>
+                <div style={{ width: 52, height: 52, borderRadius: 16, background: 'var(--surface-2)', display: 'grid', placeItems: 'center', color: 'var(--muted)' }}>
+                  <WalletCards size={22} />
+                </div>
+                <div>
+                  <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>هنوز تراکنشی ثبت نشده</p>
+                  <p style={{ margin: 0, fontSize: 11, color: 'var(--muted)' }}>پس از اولین افزایش موجودی، تراکنش‌ها اینجا نمایش داده می‌شوند.</p>
+                </div>
+                <a href="#topup" className="button primary" style={{ textDecoration: 'none', marginTop: 4 }}>
+                  <Plus size={13} />افزایش موجودی
+                </a>
               </div>
             ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>نوع</th>
-                    <th>شرح</th>
-                    <th>تاریخ</th>
-                    <th>مبلغ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {entries.map(e => {
-                    const isCredit = e.direction === 'CREDIT';
-                    const label = (e.metadata?.label as string | undefined) ?? referenceTypeLabel[e.referenceType] ?? e.referenceType;
-                    return (
-                      <tr key={e.id}>
-                        <td>
-                          <span className={`status-pill ${isCredit ? 'success' : 'danger'}`}>
-                            {isCredit ? <><ArrowUpLeft size={12} /> ورود</> : <><ArrowDownLeft size={12} /> خروج</>}
-                          </span>
-                        </td>
-                        <td><strong>{label}</strong></td>
-                        <td style={{ color: 'var(--muted)', fontSize: 10 }}>
-                          {new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(e.createdAt))}
-                        </td>
-                        <td>
-                          <span style={{ color: isCredit ? 'var(--success)' : 'var(--danger)', fontVariantNumeric: 'tabular-nums', fontWeight: 700, fontSize: 12 }}>
-                            {isCredit ? '+' : '−'}{formatTomanFromIRR(Number(e.amountMinor))}
-                          </span>
-                        </td>
+              <>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th style={{ paddingRight: 22 }}>نوع</th>
+                        <th>شرح</th>
+                        <th>تاریخ</th>
+                        <th style={{ paddingLeft: 22 }}>مبلغ</th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody>
+                      {entries.map(e => {
+                        const isCredit = e.direction === 'CREDIT';
+                        const label = (e.metadata?.label as string | undefined) ?? referenceTypeLabel[e.referenceType] ?? e.referenceType;
+                        const badge = txBadge(e.direction, e.referenceType);
+                        return (
+                          <tr key={e.id}>
+                            <td style={{ paddingRight: 22 }}>
+                              <span className={`status-pill ${badge.cls}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                {badge.icon}{badge.label}
+                              </span>
+                            </td>
+                            <td>
+                              <strong style={{ fontSize: 11 }}>{label}</strong>
+                            </td>
+                            <td style={{ color: 'var(--muted)', fontSize: 10, fontVariantNumeric: 'tabular-nums' }}>
+                              {new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(e.createdAt))}
+                            </td>
+                            <td style={{ paddingLeft: 22 }}>
+                              <span style={{
+                                color: isCredit ? 'var(--success)' : 'var(--danger)',
+                                fontVariantNumeric: 'tabular-nums', fontWeight: 700, fontSize: 12,
+                              }}>
+                                {isCredit ? '+' : '−'}{formatTomanFromIRR(Number(e.amountMinor))}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {entries.length >= 50 && (
+                  <div style={{ padding: '14px 22px', borderTop: '1px solid var(--line)', display: 'flex', justifyContent: 'center' }}>
+                    <button type="button" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+                      <ChevronDown size={13} />نمایش بیشتر
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </article>
 
-          <aside id="topup" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Sidebar */}
+          <aside id="topup" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {/* Top-up panel */}
             <article className="surface-panel">
-              <div className="panel-head" style={{ marginBottom: 16 }}>
+              <div className="panel-head" style={{ marginBottom: 18 }}>
                 <div>
-                  <p className="panel-kicker">TOPUP</p>
-                  <h2>افزایش موجودی</h2>
+                  <p className="panel-kicker" style={{ margin: '0 0 2px' }}>TOPUP</p>
+                  <h2 style={{ margin: 0 }}>افزایش موجودی</h2>
                 </div>
               </div>
               <WalletTopup />
             </article>
 
+            {/* Quick links */}
             <article className="surface-panel">
               <div className="panel-head" style={{ marginBottom: 14 }}>
                 <div>
-                  <p className="panel-kicker">QUICK ACTIONS</p>
-                  <h2>عملیات سریع</h2>
+                  <p className="panel-kicker" style={{ margin: '0 0 2px' }}>QUICK ACTIONS</p>
+                  <h2 style={{ margin: 0 }}>عملیات سریع</h2>
                 </div>
               </div>
               <div style={{ display: 'grid', gap: 8 }}>
-                <Link href="/orders" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', border: '1px solid var(--line)', borderRadius: 12, textDecoration: 'none', color: 'var(--muted)', fontSize: 11 }}>
-                  <ArrowDownLeft size={15} />سفارش‌های من
+                <Link
+                  href="/orders"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '11px 14px',
+                    border: '1px solid var(--line)', borderRadius: 12, textDecoration: 'none',
+                    color: 'var(--muted)', fontSize: 11,
+                  }}
+                >
+                  <Package size={14} />سفارش‌های من
                 </Link>
-                <Link href="/subscriptions" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', border: '1px solid var(--line)', borderRadius: 12, textDecoration: 'none', color: 'var(--muted)', fontSize: 11 }}>
-                  <ShieldCheck size={15} />اشتراک‌ها
+                <Link
+                  href="/subscriptions"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '11px 14px',
+                    border: '1px solid var(--line)', borderRadius: 12, textDecoration: 'none',
+                    color: 'var(--muted)', fontSize: 11,
+                  }}
+                >
+                  <ShieldCheck size={14} />اشتراک‌ها
                 </Link>
               </div>
             </article>
