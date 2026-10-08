@@ -105,9 +105,11 @@ export const orders = {
       headers: idempotencyKey ? { 'idempotency-key': idempotencyKey } : {},
       body: JSON.stringify(body),
     }),
-  cancel: (orderId: string, body: { workspaceId: string }) =>
+  /** The server requires an Idempotency-Key: a retried cancel must never refund twice. */
+  cancel: (orderId: string, body: { workspaceId: string }, idempotencyKey: string) =>
     apiFetch<{ id: string; status: string }>(`${V1}/orders/${encodeURIComponent(orderId)}/cancel`, {
       method: 'POST',
+      headers: { 'idempotency-key': idempotencyKey },
       body: JSON.stringify(body),
     }),
 };

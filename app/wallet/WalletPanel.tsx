@@ -1,18 +1,16 @@
 'use client';
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { ZIcon, type IconName } from '../../components/zp/ZIcon';
 import { Tile } from '../../components/zp/brand';
 import { apiErrorMessage } from '../../lib/api-error';
-import { formatTomanWordsFromIRR, magnitudeParts } from '../../lib/format';
+import { formatQuantityWords, magnitudeParts } from '../../lib/format';
 
 export type TxView = { id: string; title: string; when: string; amount: string; credit: boolean; icon: IconName };
 
 /** Top-up amounts in toman, labelled in words (۲ میلیون تومان — never ۲٬۰۰۰ meaning millions). */
 const AMOUNTS_TOMAN = [100_000, 200_000, 500_000, 1_000_000, 2_000_000, 5_000_000];
 
-export function WalletPanel({ workspaceId, walletId, currency, tx }: { workspaceId: string; walletId: string; currency: string; tx: TxView[] }) {
-  const router = useRouter();
+export function WalletPanel({ workspaceId, tx }: { workspaceId: string; tx: TxView[] }) {
   const [toman, setToman] = useState(500_000);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,24 +29,25 @@ export function WalletPanel({ workspaceId, walletId, currency, tx }: { workspace
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  // Wallet ledgers are kept in rial; the chips are chosen in toman.
-  const amountMinor = currency.trim() === 'IRR' ? toman * 10 : toman;
-  const words = formatTomanWordsFromIRR(toman * 10);
+  const words = `${formatQuantityWords(toman)} تومان`;
 
   const topup = async () => {
     setBusy(true); setError(null);
     idem.current ??= crypto.randomUUID();
     try {
+      // The server only creates a gateway payment for this toman amount; the wallet is credited after
+      // the gateway confirms the payment, never by this request.
       const res = await fetch('/api/v1/wallet', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idem.current },
-        body: JSON.stringify({ workspaceId, walletId, amountMinor, currency, referenceType: 'TOPUP' }),
+        body: JSON.stringify({ workspaceId, amountToman: toman }),
       });
       if (!res.ok) throw new Error(await apiErrorMessage(res, 'افزایش موجودی انجام نشد.'));
+      const { checkoutUrl } = await res.json() as { checkoutUrl: string };
       idem.current = null;
-      setToast(`${words} به کیف پول اضافه شد`);
-      router.refresh();
+      setToast('در حال انتقال به درگاه پرداخت…');
+      window.location.assign(checkoutUrl);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'افزایش موجودی انجام نشد.');
     } finally {
