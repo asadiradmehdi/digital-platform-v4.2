@@ -1,10 +1,10 @@
 -- Migration: 0051_customer_messaging
--- Customer messaging: order/payment lifecycle events captured at the database edge, an SMS outbox drained
+-- Customer messaging: order lifecycle and invoice events captured at the database edge, an SMS outbox drained
 -- by a worker outside any request transaction, and the inbound «استعلام وضعیت با پیامک» lookup.
 BEGIN;
 
--- 1) Lifecycle events. Written by triggers on orders/payments in the same transaction as the status
---    change, so a message is never announced for a change that rolled back, and no order/payment code has
+-- 1) Lifecycle events. Written by the orders trigger (and the invoice hook) in the same transaction as the status
+--    change, so a message is never announced for a change that rolled back, and no order code has
 --    to remember to call the notifier. The workspace id travels in the payload (system queue, read only by
 --    the internal worker, like outbox_events); the worker does the per-tenant work in a tenant transaction.
 CREATE TABLE IF NOT EXISTS customer_message_events (
@@ -51,26 +51,9 @@ CREATE TRIGGER trg_orders_customer_message
 AFTER INSERT OR UPDATE OF status ON orders
 FOR EACH ROW EXECUTE FUNCTION capture_order_message_event();
 
-CREATE OR REPLACE FUNCTION capture_payment_message_event() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  IF NEW.status <> 'PAID' OR (TG_OP = 'UPDATE' AND OLD.status = 'PAID') THEN RETURN NEW; END IF;
-  BEGIN
-    INSERT INTO customer_message_events(event_type, entity_id, dedupe_key, payload)
-    VALUES ('payment.paid', NEW.id, 'payment.paid:' || NEW.id::text,
-            jsonb_build_object('workspaceId', NEW.workspace_id, 'paymentId', NEW.id, 'orderId', NEW.order_id,
-                               'amountMinor', NEW.amount_minor::text, 'currency', NEW.currency, 'purpose', NEW.purpose,
-                               'reference', NEW.gateway_reference))
-    ON CONFLICT (dedupe_key) DO NOTHING;
-  EXCEPTION WHEN OTHERS THEN
-    RAISE WARNING 'customer message capture failed for payment %: %', NEW.id, SQLERRM;
-  END;
-  RETURN NEW;
-END $$;
-
-DROP TRIGGER IF EXISTS trg_payments_customer_message ON payments;
-CREATE TRIGGER trg_payments_customer_message
-AFTER INSERT OR UPDATE OF status ON payments
-FOR EACH ROW EXECUTE FUNCTION capture_payment_message_event();
+-- Payment receipts are not captured here: every successful payment issues an invoice, and the invoice
+-- hook (server/payments/invoice-notify.ts → queueInvoiceReceiptSms) writes an 'invoice.issued' event in
+-- the payment transaction. The in-app entry for it is written by the invoices module itself.
 
 -- 2) SMS outbox. Provider calls happen only in the worker, never inside a request/DB transaction.
 --    `template` names a configured pattern; args are the pattern variables (never a code for LOGIN: OTPs

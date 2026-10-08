@@ -1,8 +1,8 @@
-// Customer messaging worker. Turns order/payment lifecycle events (captured by DB triggers, migration 0051)
-// into in-app notifications and queued SMS, then drains the SMS outbox through the provider adapter.
+// Customer messaging worker. Turns order lifecycle events (DB trigger, migration 0051) and issued invoices
+// (invoice hook) into in-app notifications and queued SMS, then drains the SMS outbox through the provider adapter.
 // Runs from POST /api/internal/queue/messages (cron), never inside a customer request.
 import { query, withTenantTransaction } from '../core/db';
-import { orderCode, formatTomanNumber, toToman } from '../../lib/format';
+import { orderCode, formatTomanNumber } from '../../lib/format';
 import { notifyUser, type InboxMessage } from './inbox';
 import { getSmsProvider } from './sms/config';
 import { smsAllowedFor } from './sms/policy';
@@ -34,24 +34,27 @@ export function composeMessages(e: CustomerEvent, owner: Owner): { inbox: Omit<I
       return { inbox: { type: e.event_type, category: 'orders', title: `سفارش ${code} متوقف شد`, body: 'جزئیات و وضعیت بازگشت وجه را در صفحه‌ی سفارش ببینید.', link }, sms: null };
     case 'order.refunded':
       return { inbox: { type: e.event_type, category: 'orders', title: `وجه سفارش ${code} بازگشت داده شد`, link }, sms: null };
-    case 'payment.paid': {
-      const amount = formatTomanNumber(toToman(String(e.payload.amountMinor ?? '0'), String(e.payload.currency ?? 'IRR')));
-      const purpose = e.payload.purpose === 'TOPUP' || (!orderId && !e.payload.purpose) ? 'شارژ کیف پول' : 'پرداخت';
-      const reference = typeof e.payload.reference === 'string' && e.payload.reference ? e.payload.reference.slice(0, 24) : orderCode(e.entity_id);
-      return {
-        inbox: { type: e.event_type, category: 'payments', title: `${purpose} ${amount} تومان انجام شد`, body: `کد پیگیری: ${reference}`, link: orderId ? link : '/wallet' },
-        sms: owner.phone ? { template: 'payment_receipt', args: [amount, reference] } : null,
-      };
+    case 'invoice.issued': {
+      // Receipt SMS only: the invoices module already wrote the in-app entry in the payment transaction.
+      const invoiceId = String(e.payload.invoiceId ?? e.entity_id);
+      const amount = formatTomanNumber(Number(e.payload.totalToman ?? 0));
+      const number = String(e.payload.invoiceNumber ?? '');
+      return { inbox: null, sms: owner.phone && number ? { template: 'payment_receipt', args: [amount, number, invoiceId] } : null };
     }
     default:
       return { inbox: null, sms: null };
   }
 }
 
-async function ownerOf(workspaceId: string): Promise<Owner | null> {
+async function recipient(workspaceId: string, userId?: unknown): Promise<Owner | null> {
+  // The invoice names its buyer; order events go to the workspace owner.
+  const byUser = typeof userId === 'string' && /^[0-9a-f-]{36}$/i.test(userId);
   const r = await query<{ id: string; phone: string | null; verified: boolean; status: string }>(
-    `SELECT u.id, u.phone, (u.phone_verified_at IS NOT NULL) AS verified, u.status
-       FROM workspaces w JOIN users u ON u.id=w.owner_user_id WHERE w.id=$1`, [workspaceId],
+    byUser
+      ? `SELECT u.id, u.phone, (u.phone_verified_at IS NOT NULL) AS verified, u.status FROM users u WHERE u.id=$1`
+      : `SELECT u.id, u.phone, (u.phone_verified_at IS NOT NULL) AS verified, u.status
+           FROM workspaces w JOIN users u ON u.id=w.owner_user_id WHERE w.id=$1`,
+    [byUser ? userId : workspaceId],
   );
   const row = r.rows[0];
   if (!row || row.status !== 'ACTIVE') return null;
@@ -70,15 +73,15 @@ export async function processCustomerMessageEvents(limit = 25) {
   for (const e of claimed.rows) {
     try {
       const workspaceId = String(e.payload.workspaceId ?? '');
-      const owner = workspaceId ? await ownerOf(workspaceId) : null;
+      const owner = workspaceId ? await recipient(workspaceId, e.payload.buyerUserId) : null;
       const { inbox, sms } = owner ? composeMessages(e, owner) : { inbox: null, sms: null };
       const sendSms = Boolean(owner && sms && owner.phone && await smsAllowedFor(owner.userId, sms.template));
-      if (!owner || !inbox) {
+      if (!owner || (!inbox && !sendSms)) {
         await query(`UPDATE customer_message_events SET processed_at=now(), locked_until=NULL, last_error=$2 WHERE id=$1`, [e.id, owner ? null : 'no active owner']);
       } else {
         // Notification, queued SMS and the processed mark commit together.
         await withTenantTransaction(workspaceId, owner.userId, async client => {
-          await notifyUser({ ...inbox, workspaceId, userId: owner.userId }, client);
+          if (inbox) await notifyUser({ ...inbox, workspaceId, userId: owner.userId }, client);
           if (sendSms && sms) {
             await client.query(
               `INSERT INTO sms_outbox(template, to_phone, user_id, args, dedupe_key) VALUES($1,$2,$3,$4::jsonb,$5) ON CONFLICT (dedupe_key) DO NOTHING`,

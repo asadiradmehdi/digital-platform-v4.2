@@ -25,15 +25,15 @@ describe('customer messaging policy', () => {
     }
   });
 
-  it('payment receipt: toman amount with Persian digits and the gateway reference', () => {
-    const r = composeMessages({ ...ev('payment.paid', { amountMinor: '12480000', currency: 'IRR', purpose: 'TOPUP', reference: 'A1B2', orderId: null }) }, owner);
-    expect(r.sms).toEqual({ template: 'payment_receipt', args: ['۱٬۲۴۸٬۰۰۰', 'A1B2'] });
-    expect(r.inbox?.title).toBe('شارژ کیف پول ۱٬۲۴۸٬۰۰۰ تومان انجام شد');
-    expect(r.inbox?.link).toBe('/wallet');
+  it('invoice receipt: SMS only (the invoice already wrote the in-app entry), toman amount, invoice number and link id', () => {
+    const INV = '9b2f0c00-2222-4222-8222-222222222222';
+    const r = composeMessages({ ...ev('invoice.issued', { invoiceId: INV, invoiceNumber: '1405-000123', totalToman: '1248000', orderId: null }), entity_id: INV }, owner);
+    expect(r.inbox).toBeNull();
+    expect(r.sms).toEqual({ template: 'payment_receipt', args: ['۱٬۲۴۸٬۰۰۰', '1405-000123', INV] });
   });
 
-  it('never queues SMS to an owner without a verified number', () => {
-    expect(composeMessages(ev('payment.paid', { amountMinor: '10', currency: 'IRR' }), { userId: 'u', phone: null }).sms).toBeNull();
+  it('never queues SMS to a recipient without a verified number', () => {
+    expect(composeMessages(ev('invoice.issued', { invoiceId: 'i', invoiceNumber: '1', totalToman: '10' }), { userId: 'u', phone: null }).sms).toBeNull();
   });
 
   it('keeps sign-in codes, receipts and status replies always on', () => {

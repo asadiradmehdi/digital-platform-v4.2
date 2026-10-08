@@ -1,4 +1,5 @@
 import type { PoolClient } from 'pg';
+import { queueInvoiceReceiptSms } from '../notifications/invoice-receipt';
 
 type Queryable = Pick<PoolClient, 'query'>;
 
@@ -20,13 +21,11 @@ export type IssuedInvoice = {
 
 /**
  * SMS hook for «رسید پرداخت». Called once per issued document, inside the payment transaction, after
- * the in-app notification is written. Deliberately a no-op here: the SMS notifier
- * (server/notifications/sms, built separately) replaces this body with an outbox write so the SMS is
- * sent after commit by a worker. It must never call a provider synchronously from this transaction
- * and must not throw for delivery problems (a failed SMS must not undo a payment).
+ * the in-app notification is written. It only records an outbox event (inside a savepoint); the SMS is
+ * sent after commit by the messaging worker, and a failure here never throws or undoes the payment.
  */
-export async function onInvoiceIssued(_client: Queryable, _invoice: IssuedInvoice): Promise<void> {
-  // Intentionally empty until the SMS notifier is wired in.
+export async function onInvoiceIssued(client: Queryable, invoice: IssuedInvoice): Promise<void> {
+  await queueInvoiceReceiptSms(client, invoice);
 }
 
 /**
