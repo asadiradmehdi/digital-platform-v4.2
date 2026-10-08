@@ -1,197 +1,143 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowLeft, Bot, CreditCard, Globe, Layers3, Lock, ShieldCheck, Sparkles, Workflow, Zap } from 'lucide-react';
-import { MarketingJsonLd } from '../components/seo/MarketingJsonLd';
-import { Wordmark } from '../components/zp/brand';
-import { siteConfig } from '../lib/seo/site';
+import { BrandTile, Ornament, Tile } from '../components/zp/brand';
+import { ZIcon } from '../components/zp/ZIcon';
+import { SiteShell } from '../components/site/SiteShell';
+import { Mixed, CtaBand, FaqList, LdScript, SectionTitle, ServiceLinkCard, Steps, TrustStrip } from '../components/site/bits';
+import { CATEGORIES, serviceBrand } from '../lib/catalog-ui';
+import { fromPrice, listPrice, serviceHref } from '../lib/seo/catalog-seo';
+import { ENTITY_FACTS, homeFaq } from '../lib/seo/entity';
+import { faqLd, graph, organizationLd, webPageLd, websiteLd } from '../lib/seo/jsonld';
+import { metadataForPage, siteConfig } from '../lib/seo/site';
+import { optionalViewer } from '../server/account/page-context';
+import { supportHours, supportPhones } from '../server/content/trust';
+import { getPublicCatalog, type PublicService } from '../server/seo/public-catalog';
 
-export const metadata = {
-  title: siteConfig.name,
-  description: siteConfig.description,
-  alternates: { canonical: '/' },
-  openGraph: { title: siteConfig.name, description: siteConfig.description, type: 'website', locale: siteConfig.locale },
-  twitter: { card: 'summary_large_image', title: siteConfig.name, description: siteConfig.description },
-};
+const TITLE = 'زُحل پی | خرید فالوور، ممبر و اشتراک هوش مصنوعی';
+const DESCRIPTION = 'خرید فالوور، لایک و بازدید اینستاگرام، ممبر تلگرام، سابسکرایبر یوتیوب و اشتراک ChatGPT، Claude و Gemini با قیمت شفاف و پیگیری لحظه‌ای سفارش در زُحل پی (ZOHALPAY).';
 
-export default function MarketingHome() {
+export const metadata: Metadata = metadataForPage({ title: TITLE, description: DESCRIPTION, path: '/', absoluteTitle: true });
+
+const POPULAR = ['ig-followers', 'ig-likes', 'ig-views', 'tg-members', 'yt-subscribers', 'tt-followers', 'ig-story-views', 'yt-views'];
+
+export default async function Home() {
+  const [catalog, viewer] = await Promise.all([getPublicCatalog(), optionalViewer()]);
+  const signedIn = Boolean(viewer);
+  const fa = (n: number) => new Intl.NumberFormat('fa-IR').format(n);
+  const pick = (slug: string) => catalog.find(s => s.slug === slug);
+  const popular = POPULAR.map(pick).filter((s): s is PublicService => Boolean(s));
+  const ai = catalog.filter(s => s.category === 'ai-subscriptions' && serviceBrand(s.slug));
+  const liveKeys = new Set(catalog.map(s => s.category));
+  const cats = [...CATEGORIES.filter(c => liveKeys.has(c.key)), ...CATEGORIES.filter(c => !liveKeys.has(c.key))];
+  const igFollowers = pick('ig-followers');
+  const tgMembers = pick('tg-members');
+  const chatgpt = pick('sub-chatgpt-plus');
+  const faq = homeFaq(supportHours());
+  const register = signedIn ? '/dashboard' : '/auth?mode=register';
+
   return (
-    <main className="marketing-shell">
-      <MarketingJsonLd />
+    <SiteShell signedIn={signedIn} catalog={catalog}>
+      <LdScript data={graph(
+        organizationLd({ phones: supportPhones() }),
+        websiteLd(),
+        webPageLd({ path: '/', name: TITLE, description: DESCRIPTION }),
+        faqLd(faq),
+      )} />
 
-      {/* ── Header ── */}
-      <header className="marketing-header">
-        <Link href="/" className="brand zp-root" aria-label="زُحل پی"><Wordmark id="mk-mark" /></Link>
-        <nav aria-label="ناوبری اصلی">
-          <Link href="/services">خدمات</Link>
-          <Link href="/ai">هوش مصنوعی</Link>
-          <Link href="/automation">اتوماسیون</Link>
-          <Link href="/pricing">قیمت‌گذاری</Link>
+      <section className="zs-hero" aria-labelledby="home-h1">
+        <Ornament id="hero-orn" w={1200} h={520} cx={180} cy={470} rot={-14} alpha={0.85} />
+        <div className="copy">
+          <span className="kick">زُحل پی · خدمات رشد و اشتراک هوش مصنوعی</span>
+          <h1 id="home-h1">خرید فالوور، لایک، ممبر و <em className="zp-gtext">اشتراک هوش مصنوعی</em></h1>
+          <p><Mixed text="خدمات اینستاگرام، تلگرام، یوتیوب، تیک‌تاک، روبیکا، آپارات، بله و ایتا، و اشتراک ChatGPT، Claude و Gemini با پرداخت تومانی. قیمت هر سفارش پیش از پرداخت مشخص است و وضعیتش را لحظه‌به‌لحظه می‌بینید." /></p>
+          <div className="acts">
+            <Link href={register} className="zp-cta big zp-press">{signedIn ? 'رفتن به حساب' : 'ثبت‌نام رایگان'}<ZIcon name="chevL" /></Link>
+            <Link href="/services" className="zs-ghost on-dark zp-press">قیمت خدمات</Link>
+          </div>
+          <ul className="chips" aria-label="شروع قیمت‌ها">
+            {igFollowers && <li><Link href={serviceHref(igFollowers)}>فالوور اینستاگرام <b>{listPrice(igFollowers).perLabel} {listPrice(igFollowers).text}</b> تومان</Link></li>}
+            {tgMembers && <li><Link href={serviceHref(tgMembers)}>ممبر تلگرام <b>{listPrice(tgMembers).perLabel} {listPrice(tgMembers).text}</b> تومان</Link></li>}
+            {chatgpt && <li><Link href={serviceHref(chatgpt)}>ChatGPT Plus <b>ماهانه {listPrice(chatgpt).text}</b> تومان</Link></li>}
+          </ul>
+        </div>
+        <div className="art" aria-hidden="true">
+          {CATEGORIES.slice(0, 9).map((c, i) => <span key={c.key} style={{ '--i': i } as React.CSSProperties}><Tile icon={c.icon} gold={i === 4} /></span>)}
+        </div>
+      </section>
+
+      <section aria-labelledby="cats">
+        <SectionTitle id="cats" note={`${fa(catalog.length)} سرویس فعال`}>دسته‌های خدمات</SectionTitle>
+        <nav className="zs-cats" aria-label="دسته‌های خدمات">
+          {cats.map(c => {
+            const from = fromPrice(catalog, c.key);
+            const soon = !liveKeys.has(c.key);
+            return (
+              <Link key={c.key} href={`/services/${c.key}`} className={`zp-press${soon ? ' soon' : ''}`}>
+                <Tile icon={c.icon} />
+                <b>{c.name}</b>
+                <small>{soon ? 'به‌زودی' : from ? `از ${from.text} تومان` : ''}</small>
+              </Link>
+            );
+          })}
         </nav>
-        <div className="marketing-actions">
-          <Link className="marketing-login" href="/auth">ورود</Link>
-          <Link className="marketing-cta" href="/auth?mode=register">ثبت‌نام <ArrowLeft size={15} /></Link>
-        </div>
-      </header>
-
-      {/* ── Hero ── */}
-      <section className="marketing-hero landing-hero-v2">
-        <div className="hero-copy">
-          <span className="eyebrow">زیرساخت دیجیتال فارسی</span>
-          <h1>خدمات دیجیتال، هوش مصنوعی و اتوماسیون — در یک محیط حرفه‌ای</h1>
-          <p>
-            از خرید خدمات اینستاگرام تا اجرای مدل‌های AI و ساخت فرآیند خودکار؛
-            همه در یک پلتفرم یکپارچه با کیف پول، اشتراک و مدیریت کامل.
-          </p>
-          <div className="hero-actions" style={{ marginTop: 28 }}>
-            <Link className="marketing-cta large" href="/auth?mode=register">
-              شروع رایگان <ArrowLeft size={17} />
-            </Link>
-            <Link className="marketing-secondary" href="/services">مشاهده خدمات</Link>
-          </div>
-          <div className="hero-trust">
-            <span><ShieldCheck size={14} /> رمزگذاری AES-256</span>
-            <span><CreditCard size={14} /> کیف پول یکپارچه</span>
-            <span><Globe size={14} /> فارسی‌سرا، RTL‌محور</span>
-          </div>
-        </div>
       </section>
 
-      {/* ── Platform pillars ── */}
-      <div className="marketing-section-head">
-        <span className="eyebrow">سه دامنه، یک پلتفرم</span>
-        <h2 className="marketing-section-title">هر چیزی که برای رشد دیجیتال نیاز دارید</h2>
-      </div>
+      {popular.length > 0 && (
+        <section aria-labelledby="popular">
+          <SectionTitle id="popular" note={<Link href="/services">همه‌ی خدمات</Link>}>پرطرفدارترین سرویس‌ها</SectionTitle>
+          <div className="zs-svcs">{popular.map(s => <ServiceLinkCard key={s.slug} service={s} showCategory />)}</div>
+        </section>
+      )}
 
-      <div className="landing-platform-grid">
-        {/* Pillar 1 — Services */}
-        <div className="landing-pillar">
-          <div className="landing-pillar-head">
-            <div className="landing-pillar-icon"><Layers3 size={20} /></div>
-            <h2>خدمات شبکه‌های اجتماعی</h2>
-          </div>
-          <p>
-            کاتالوگ کامل خدمات اینستاگرام، تلگرام، یوتیوب و سایر پلتفرم‌ها.
-            سفارش، پیگیری و مدیریت همه‌چیز از یک پنل.
-          </p>
-          <ul className="landing-pillar-list">
-            <li>فالوور، لایک، ویو، ممبر و ری‌اکشن</li>
-            <li>قیمت‌گذاری پویا از موتور سرور‌ساید</li>
-            <li>پیگیری بلادرنگ وضعیت سفارش</li>
-            <li>تاریخچه کامل و فیلتر پیشرفته</li>
+      {ai.length > 0 && (
+        <section className="zs-ai" aria-labelledby="ai-subs">
+          <SectionTitle id="ai-subs" note={<Link href="/services/ai-subscriptions">همه‌ی اشتراک‌ها</Link>}>اشتراک هوش مصنوعی با پرداخت تومانی</SectionTitle>
+          <p className="zs-p"><Mixed text={ENTITY_FACTS.ai} /></p>
+          <ul>
+            {ai.map(s => {
+              const brand = serviceBrand(s.slug)!;
+              return (
+                <li key={s.slug}>
+                  <Link href={serviceHref(s)} className="zp-press">
+                    <BrandTile brand={brand} />
+                    <b className="zp-ltr">{s.name}</b>
+                    <small>ماهانه {listPrice(s).text} تومان</small>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
-          <Link href="/services" className="pillar-link">مشاهده کاتالوگ <ArrowLeft size={13} /></Link>
-        </div>
+        </section>
+      )}
 
-        {/* Pillar 2 — AI */}
-        <div className="landing-pillar">
-          <div className="landing-pillar-head">
-            <div className="landing-pillar-icon"><Sparkles size={20} /></div>
-            <h2>هوش مصنوعی</h2>
-          </div>
-          <p>
-            دسترسی یکپارچه به مدل‌های برجسته با مدیریت اعتبار، اشتراک و محیط
-            کاری حرفه‌ای برای پروژه‌های AI.
-          </p>
-          <ul className="landing-pillar-list">
-            <li>مدل‌های Claude، GPT و Gemini</li>
-            <li>پروژه RAG با Knowledge Base</li>
-            <li>اجرای Agent‌ها با tool‌call audit</li>
-            <li>مدیریت مصرف و بودجه‌بندی</li>
-          </ul>
-          <Link href="/ai" className="pillar-link">فضای هوش مصنوعی <ArrowLeft size={13} /></Link>
-        </div>
-
-        {/* Pillar 3 — Automation */}
-        <div className="landing-pillar">
-          <div className="landing-pillar-head">
-            <div className="landing-pillar-icon"><Workflow size={20} /></div>
-            <h2>اتوماسیون</h2>
-          </div>
-          <p>
-            ساخت فرآیندهای خودکار با trigger زمان‌بندی‌شده، webhook و agent.
-            اجرای قابل اعتماد با مانیتورینگ کامل.
-          </p>
-          <ul className="landing-pillar-list">
-            <li>Trigger زمان‌بندی و Webhook ورودی</li>
-            <li>گام‌های شرطی و branching</li>
-            <li>تأخیر، تکرار و مدیریت خطا</li>
-            <li>گزارش اجرا و لاگ کامل</li>
-          </ul>
-          <Link href="/automation" className="pillar-link">ساخت workflow <ArrowLeft size={13} /></Link>
-        </div>
-      </div>
-
-      {/* ── How it works ── */}
-      <div className="marketing-section-head">
-        <span className="eyebrow">چگونه شروع کنید</span>
-        <h2 className="marketing-section-title">سه قدم تا اولین نتیجه</h2>
-      </div>
-
-      <div className="landing-how-grid">
-        <div className="landing-how-step">
-          <div className="landing-how-num">۱</div>
-          <h3>حساب بسازید</h3>
-          <p>ثبت‌نام رایگان، بدون نیاز به کارت اعتباری. فضای کاری شما فوری آماده است.</p>
-        </div>
-        <div className="landing-how-arrow" aria-hidden="true">←</div>
-        <div className="landing-how-step">
-          <div className="landing-how-num">۲</div>
-          <h3>کیف پول شارژ کنید</h3>
-          <p>اعتبار به کیف پول اضافه کنید. تمام پرداخت‌ها از همین کیف پول کسر می‌شود.</p>
-        </div>
-        <div className="landing-how-arrow" aria-hidden="true">←</div>
-        <div className="landing-how-step">
-          <div className="landing-how-num">۳</div>
-          <h3>سفارش دهید</h3>
-          <p>سرویس انتخاب کنید، پارامتر بدهید و تأیید کنید. اجرا و پیگیری خودکار است.</p>
-        </div>
-      </div>
-
-      {/* ── Differentiators ── */}
-      <div className="marketing-section-head">
-        <span className="eyebrow">چرا این پلتفرم</span>
-        <h2 className="marketing-section-title">ساخته‌شده برای مقیاس</h2>
-      </div>
-
-      <div className="landing-diff-grid">
-        <div className="landing-diff-item">
-          <div className="landing-diff-icon"><Lock size={18} /></div>
-          <h3>امنیت از ابتدا</h3>
-          <p>
-            رمزگذاری AES-256-GCM برای اطلاعات حساس. RBAC چندسطحی.
-            Session‌های چرخشی. احراز هویت چندعاملی و Passkey.
-          </p>
-        </div>
-        <div className="landing-diff-item">
-          <div className="landing-diff-icon"><Zap size={18} /></div>
-          <h3>مالی یکپارچه</h3>
-          <p>
-            کیف پول با دفترچه دوطرفه. اشتراک‌های تجدیدشونده. فاکتور خودکار.
-            هیچ محاسبه مالی سمت کلاینت انجام نمی‌شود.
-          </p>
-        </div>
-        <div className="landing-diff-item">
-          <div className="landing-diff-icon"><Bot size={18} /></div>
-          <h3>فارسی‌سرا</h3>
-          <p>
-            RTL کامل، اعداد فارسی، تقویم شمسی. رابط کاربری بهینه‌شده برای
-            بازار ایران، با پشتیبانی از عربی و ترکی.
-          </p>
-        </div>
-      </div>
-
-      {/* ── Final CTA ── */}
-      <section className="marketing-cta-section">
-        <div className="cta-section-content">
-          <h2>آماده‌اید شروع کنید؟</h2>
-          <p>از پلن رایگان شروع کنید. بدون نیاز به کارت اعتباری.</p>
-          <div className="cta-section-actions">
-            <Link className="marketing-cta large" href="/auth?mode=register">
-              حساب رایگان بسازید <ArrowLeft size={17} />
-            </Link>
-            <Link className="marketing-secondary" href="/pricing">مشاهده پلن‌ها</Link>
-          </div>
-        </div>
+      <section aria-labelledby="how">
+        <SectionTitle id="how">خرید از زُحل پی در ۴ قدم</SectionTitle>
+        <Steps steps={[
+          { t: 'ثبت‌نام رایگان', d: 'ساخت حساب فقط چند ثانیه طول می‌کشد.' },
+          { t: 'شارژ کیف پول', d: 'پرداخت آنلاین؛ موجودی همیشه در حساب‌تان پیداست.' },
+          { t: 'انتخاب سرویس و تعداد', d: 'لینک یا نام کاربری را وارد کنید؛ رمز عبور لازم نیست.' },
+          { t: 'پیگیری لحظه‌ای', d: 'مرحله‌ی هر سفارش را در بخش «سفارش‌ها» می‌بینید.' },
+        ]} />
       </section>
-    </main>
+
+      <section aria-labelledby="trust">
+        <SectionTitle id="trust" note={<Link href="/licenses">مجوزها و نمادها</Link>}>چرا زُحل پی؟</SectionTitle>
+        <TrustStrip />
+      </section>
+
+      <section className="zs-entity" aria-labelledby="glance">
+        <SectionTitle id="glance">زُحل پی در یک نگاه</SectionTitle>
+        <p><Mixed text={`${ENTITY_FACTS.what} ${ENTITY_FACTS.platforms}`} /></p>
+        <p><Mixed text={`${ENTITY_FACTS.pricing} ${ENTITY_FACTS.noPassword}`} /></p>
+        <p>{ENTITY_FACTS.tracking} <Link href="/about">بیشتر درباره‌ی {siteConfig.name}</Link></p>
+      </section>
+
+      <section aria-labelledby="faq-h">
+        <SectionTitle id="faq-h">سؤالات متداول</SectionTitle>
+        <FaqList faq={faq} />
+      </section>
+
+      <CtaBand title="همین حالا شروع کنید" text="ثبت‌نام رایگان است؛ قیمت هر سرویس را پیش از پرداخت می‌بینید." href={register} label={signedIn ? 'رفتن به حساب' : 'ثبت‌نام رایگان'} />
+    </SiteShell>
   );
 }

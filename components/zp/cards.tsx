@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { ZIcon } from './ZIcon';
 import { Ornament, Tile } from './brand';
-import { categoryMeta, KINDS, serviceKind } from '../../lib/catalog-ui';
+import { categoryMeta, isTeamFulfilled, serviceIcon } from '../../lib/catalog-ui';
 import { formatQuantityWords, formatTomanNumber, formatWhen, orderCode, toToman } from '../../lib/format';
 import { orderStage } from '../../lib/order-progress';
 import type { OrderCard } from '../../server/account/overview';
@@ -33,13 +33,13 @@ export function orderTitle(o: Pick<OrderCard, 'serviceName' | 'quantity' | 'id'>
 }
 
 export function OrderItem({ order }: { order: OrderCard }) {
-  const stage = orderStage(order.status);
-  const kind = KINDS[serviceKind(order.serviceSlug ?? '')];
+  const stage = orderStage(order.status, isTeamFulfilled(order.productSlug));
+  const icon = serviceIcon(order.serviceSlug ?? '');
   const cat = categoryMeta(order.productSlug ?? '');
   return (
     <Link href={`/orders/${order.id}`} className="zp-ord zp-press">
       <div className="r">
-        <Tile icon={kind.icon} />
+        <Tile icon={icon} />
         <span className="t">
           <b>{orderTitle(order)}</b>
           <span>{cat ? `${cat.name} · ` : ''}{formatWhen(order.createdAt)}</span>

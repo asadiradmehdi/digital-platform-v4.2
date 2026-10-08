@@ -66,7 +66,7 @@ export function AppShell({ children, title, back, aside }: AppShellProps) {
           {sub ? (
             <>
               <button type="button" className="zp-ibtn zp-press" aria-label="بازگشت" onClick={goBack}><ZIcon name="chevR" /></button>
-              <h1 className="zp-btitle">{title}</h1>
+              <span className="zp-btitle">{title}</span>
             </>
           ) : (
             <Link href="/dashboard" className="zp-logo" aria-label="زُحل پی، خانه"><Wordmark id="bar-mark" /></Link>

@@ -30,6 +30,7 @@ vi.mock('../../server/commerce/orders', () => ({
 vi.mock('../../server/payments/service', () => ({
   payOrderFromWallet: vi.fn(),
 }));
+vi.mock('../../server/commerce/catalog', () => ({ getService: vi.fn() }));
 
 import { requireRequestUser } from '../../server/identity/request-user';
 import { requireWorkspacePermission } from '../../server/identity/rbac';
@@ -38,6 +39,7 @@ import { withSpan } from '../../server/observability/tracing';
 import { listOrders, createOrder } from '../../server/commerce/orders';
 import { payOrderFromWallet } from '../../server/payments/service';
 import { AppError } from '../../server/core/errors';
+import { getService } from '../../server/commerce/catalog';
 
 const mockRequireUser = vi.mocked(requireRequestUser);
 const mockRequirePermission = vi.mocked(requireWorkspacePermission);
@@ -48,7 +50,13 @@ const mockListOrders = vi.mocked(listOrders);
 const mockCreateOrder = vi.mocked(createOrder);
 const mockPayFromWallet = vi.mocked(payOrderFromWallet);
 
-beforeEach(() => vi.resetAllMocks());
+const mockGetService = vi.mocked(getService);
+const service = (slug: string, active = true) => ({ id: 'svc-1', slug, active, name: slug, serviceType: 'X', productName: 'p', productSlug: 'p', productId: 'p', description: null });
+
+beforeEach(() => {
+  vi.resetAllMocks();
+  mockGetService.mockResolvedValue(service('ig-likes') as never);
+});
 
 type RouteModule = typeof import('../../app/api/v1/orders/route');
 let GET: RouteModule['GET'];
@@ -175,5 +183,69 @@ describe('POST /api/v1/orders', () => {
 
     const response = await POST(makePostRequest({ workspaceId: 'ws-1', serviceId: 'svc-1', quantity: 1000 }));
     expect(response.status).toBe(409);
+  });
+
+  describe('creative services (design, automation, AI content)', () => {
+    function arrange(slug: string) {
+      mockRequireUser.mockResolvedValueOnce('user-1' as never);
+      mockRequireUuid.mockReturnValueOnce('ws-1' as never).mockReturnValueOnce('svc-1' as never);
+      mockSafeInt.mockReturnValueOnce(3 as never);
+      mockRequirePermission.mockResolvedValueOnce(undefined as never);
+      mockGetService.mockResolvedValueOnce(service(slug) as never);
+      mockWithSpan.mockImplementationOnce((_n, _m, fn) => Promise.resolve((fn as () => unknown)()).then(value => ({ value, durationMs: 1, trace: { traceId: 'a'.repeat(32), spanId: 'b'.repeat(16), traceFlags: '01' } })) as never);
+      mockCreateOrder.mockResolvedValueOnce({ id: 'ord-9', status: 'PAYMENT_PENDING' } as never);
+      mockPayFromWallet.mockResolvedValueOnce({ id: 'pay-9', status: 'PAID' } as never);
+    }
+
+    it('stores a trimmed brief and optional page for a design order', async () => {
+      arrange('ds-post');
+      const res = await POST(makePostRequest({ workspaceId: 'ws-1', serviceId: 'svc-1', quantity: 3, parameters: { target: ' @brand ', brief: '  پست معرفی محصول جدید با رنگ سرمه‌ای  ', extra: 'x' } }));
+      expect(res.status).toBe(201);
+      expect(mockCreateOrder.mock.calls[0][0].parameters).toEqual({ target: '@brand', brief: 'پست معرفی محصول جدید با رنگ سرمه‌ای' });
+    });
+
+    it('rejects a design order without a usable brief (400, nothing charged)', async () => {
+      arrange('ds-logo');
+      const res = await POST(makePostRequest({ workspaceId: 'ws-1', serviceId: 'svc-1', quantity: 1, parameters: { brief: 'لوگو' } }));
+      expect(res.status).toBe(400);
+      expect((await res.json()).error.message).toContain('شرح سفارش');
+      expect(mockCreateOrder).not.toHaveBeenCalled();
+      expect(mockPayFromWallet).not.toHaveBeenCalled();
+    });
+
+    it('requires the page or channel for a monthly automation', async () => {
+      arrange('au-dm-reply');
+      const res = await POST(makePostRequest({ workspaceId: 'ws-1', serviceId: 'svc-1', quantity: 3, parameters: { brief: 'پاسخ به سؤال‌های قیمت و ارسال' } }));
+      expect(res.status).toBe(400);
+      expect(mockCreateOrder).not.toHaveBeenCalled();
+    });
+
+    it('rejects an oversized brief or target', async () => {
+      arrange('ai-caption');
+      const res = await POST(makePostRequest({ workspaceId: 'ws-1', serviceId: 'svc-1', quantity: 5, parameters: { brief: 'ب'.repeat(3001) } }));
+      expect(res.status).toBe(400);
+      arrange('ai-caption');
+      const res2 = await POST(makePostRequest({ workspaceId: 'ws-1', serviceId: 'svc-1', quantity: 5, parameters: { target: 'x'.repeat(501), brief: 'کپشن برای کافه' } }));
+      expect(res2.status).toBe(400);
+      expect(mockCreateOrder).not.toHaveBeenCalled();
+    });
+
+    it('refuses an inactive service before charging', async () => {
+      mockRequireUser.mockResolvedValueOnce('user-1' as never);
+      mockRequireUuid.mockReturnValueOnce('ws-1' as never).mockReturnValueOnce('svc-1' as never);
+      mockRequirePermission.mockResolvedValueOnce(undefined as never);
+      mockGetService.mockResolvedValueOnce(service('ai-content', false) as never);
+      const res = await POST(makePostRequest({ workspaceId: 'ws-1', serviceId: 'svc-1', quantity: 1, parameters: { topic: 'x' } }));
+      expect(res.status).toBe(409);
+      expect(mockCreateOrder).not.toHaveBeenCalled();
+      expect(mockPayFromWallet).not.toHaveBeenCalled();
+    });
+
+    it('keeps social-service parameters as before but bounds the target', async () => {
+      arrange('ig-likes');
+      const res = await POST(makePostRequest({ workspaceId: 'ws-1', serviceId: 'svc-1', quantity: 3, parameters: { target: 'https://instagram.com/p/x' } }));
+      expect(res.status).toBe(201);
+      expect(mockCreateOrder.mock.calls[0][0].parameters).toEqual({ target: 'https://instagram.com/p/x' });
+    });
   });
 });
