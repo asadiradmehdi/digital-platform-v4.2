@@ -9,9 +9,9 @@ import { apiErrorMessage } from '../../lib/api-error';
 type Mode = 'login' | 'register';
 type Status = 'idle' | 'loading' | 'error';
 
-export default function AuthForm() {
+export default function AuthForm({ initialMode = 'login' }: { initialMode?: Mode }) {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>('login');
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [status, setStatus] = useState<Status>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 

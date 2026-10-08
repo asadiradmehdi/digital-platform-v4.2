@@ -11,12 +11,13 @@ describe('tierFor', () => {
     expect(t.progress).toBe(0);
   });
   it('promotes exactly at a threshold and reports progress to the next', () => {
-    expect(tierFor(20_000_000).tier.name).toBe('تیتان');
-    expect(tierFor(35_000_000).progress).toBeCloseTo(0.5);
+    expect(tierFor(5_000_000).tier.name).toBe('ریچی');
+    expect(tierFor(10_000_000).tier.name).toBe('تایتان');
+    expect(tierFor(17_500_000).progress).toBeCloseTo(0.5);
   });
-  it('caps at کیوان with full progress', () => {
+  it('caps at اسد with full progress', () => {
     const t = tierFor(900_000_000);
-    expect(t.tier.name).toBe('کیوان');
+    expect(t.tier.name).toBe('اسد');
     expect(t.next).toBeNull();
     expect(t.progress).toBe(1);
   });

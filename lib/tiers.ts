@@ -1,13 +1,13 @@
-// Loyalty levels named after the moons of Saturn, crowned by «کیوان» (Saturn in Persian astronomy).
+// Loyalty levels: Saturn's moons, «ریچی» and, at the top, «اسد» (named by the owner, 2026-10-08).
 // Display only: a level is derived from lifetime paid spend and grants no price change by itself.
 export type Tier = { name: string; minToman: number };
 
 export const TIERS: Tier[] = [
   { name: 'میماس', minToman: 0 },
   { name: 'تتیس', minToman: 1_000_000 },
-  { name: 'رئا', minToman: 5_000_000 },
-  { name: 'تیتان', minToman: 20_000_000 },
-  { name: 'کیوان', minToman: 50_000_000 },
+  { name: 'ریچی', minToman: 5_000_000 },
+  { name: 'تایتان', minToman: 10_000_000 },
+  { name: 'اسد', minToman: 25_000_000 },
 ];
 
 export function tierFor(spentToman: number) {

@@ -27,6 +27,8 @@ export default async function Account() {
     { href: '/settings/profile', icon: 'userCard', label: 'اطلاعات حساب', note: 'نام، شماره و ایمیل' },
     { href: '/settings/security', icon: 'shield', label: 'امنیت و ورود', note: mfa ? 'ورود دومرحله‌ای فعال' : 'فعال‌سازی ورود دومرحله‌ای', tag: mfa },
     { href: '/settings/notifications', icon: 'bell', label: 'اعلان‌ها', note: 'وضعیت سفارش و پیشنهادها' },
+    { href: '/support', icon: 'chat', label: 'پشتیبانی', note: 'تیکت و تماس تلفنی' },
+    { href: '/licenses', icon: 'cert', label: 'مجوزها و نمادها', note: 'اینماد و ساماندهی' },
   ];
 
   return (

@@ -60,7 +60,7 @@ describe('GET /api/v1/app/overview', () => {
     expect(body.wallet).toMatchObject({ balanceToman: 3_048_000, currency: 'IRR' });
     expect(body.wallet.entries[0]).toMatchObject({ title: 'شارژ کیف پول', amountToman: 500_000, credit: true });
     expect(body.activeOrders[0]).toMatchObject({ title: '۵ هزار ویو Reel اینستاگرام', amountToman: 900_000, stage: { steps: 3, tone: 'live' } });
-    expect(body.tier).toMatchObject({ name: 'تتیس', level: 2, next: 'رئا' });
+    expect(body.tier).toMatchObject({ name: 'تتیس', level: 2, next: 'ریچی' });
   });
 });
 

@@ -810,6 +810,9 @@ h1,h2,h3,h4{letter-spacing:-.02em;line-height:1.25}
 }
 .marketing-header nav a:hover,.public-page-header nav a:hover{color:var(--ink);background:var(--surface-2)}
 .marketing-actions{display:flex;align-items:center;gap:12px;font-size:13px;font-weight:600}
+/* sign-in stays visible at every width: returning customers must find it at a glance */
+.marketing-login{display:inline-flex;align-items:center;padding:10px 16px;border-radius:var(--radius-md);border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);transition:background .14s}
+.marketing-login:hover{background:var(--surface-2)}
 .marketing-cta{
   display:inline-flex;align-items:center;justify-content:center;gap:7px;
   padding:10px 16px;border-radius:var(--radius-md);
@@ -1143,7 +1146,8 @@ h1,h2,h3,h4{letter-spacing:-.02em;line-height:1.25}
   .public-card-grid{grid-template-columns:1fr}
   .marketing-grid{grid-template-columns:1fr}
   .marketing-shell,.public-page{padding-inline:20px}
-  .marketing-actions>a:first-child{display:none}
+  .marketing-actions{gap:8px}
+  .marketing-actions .marketing-cta,.marketing-login{padding:9px 14px}
   .app-topbar{padding:0 20px}
   .dashboard-content{padding:38px 20px}
 }

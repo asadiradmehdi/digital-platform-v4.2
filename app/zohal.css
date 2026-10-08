@@ -378,6 +378,20 @@
 @media (min-width:1000px){.zp-sgrid{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.zp-scard{padding:18px 10px 14px}.zp-scard .zp-tile{--s:56px}.zp-scard b{font-size:14.08px}}
 @media (prefers-reduced-motion:reduce){.zp-scard{opacity:1}}
 
+/* licences (مجوزها) */
+.zp-lic{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.zp-licard{display:flex;align-items:flex-start;gap:12px;background:var(--surface);border-radius:20px;padding:14px;box-shadow:0 3px 14px var(--zp-shadow),inset 0 0 0 1px var(--line)}
+.zp-licard .zp-tile{--s:46px}
+.zp-licard .t{flex:1;min-width:0;display:grid;gap:2px}
+.zp-licard .t b{font-size:14.4px;font-weight:700}
+.zp-licard .t span{font-size:11.2px;color:var(--gold-text);font-weight:600}
+.zp-licard .t p{margin:4px 0 0;font-size:12px;line-height:1.8;color:var(--muted)}
+.zp-licard .s{display:grid;justify-items:end;gap:8px}
+.zp-verify{display:inline-flex;align-items:center;gap:2px;font-size:11.5px;font-weight:700;color:var(--brand)}
+.zp-verify .zp-ico{width:14px;height:14px}
+.zp-lic-links{display:grid;gap:8px}
+@media (min-width:1000px){.zp-lic{grid-template-columns:1fr 1fr 1fr}.zp-licard{flex-direction:column}.zp-licard .s{justify-items:start}.zp-lic-links{grid-template-columns:1fr 1fr}}
+
 /* auth: same brand language as the app shell */
 .auth-brand.zp-root{margin-bottom:22px}
 .auth-card h1{font-family:var(--font-display);font-weight:800;letter-spacing:0}

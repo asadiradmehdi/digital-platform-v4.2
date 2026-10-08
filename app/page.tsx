@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft, Bot, CreditCard, Globe, Layers3, Lock, ShieldCheck, Sparkles, Workflow, Zap } from 'lucide-react';
 import { MarketingJsonLd } from '../components/seo/MarketingJsonLd';
+import { Wordmark } from '../components/zp/brand';
 import { siteConfig } from '../lib/seo/site';
 
 export const metadata = {
@@ -18,10 +19,7 @@ export default function MarketingHome() {
 
       {/* ── Header ── */}
       <header className="marketing-header">
-        <Link href="/" className="brand" aria-label={siteConfig.name}>
-          <span className="logo" aria-hidden="true">✦</span>
-          <span><b>ZOHALPAY</b><small>خدمات دیجیتال</small></span>
-        </Link>
+        <Link href="/" className="brand zp-root" aria-label="زُحل پی"><Wordmark id="mk-mark" /></Link>
         <nav aria-label="ناوبری اصلی">
           <Link href="/services">خدمات</Link>
           <Link href="/ai">هوش مصنوعی</Link>
@@ -29,8 +27,8 @@ export default function MarketingHome() {
           <Link href="/pricing">قیمت‌گذاری</Link>
         </nav>
         <div className="marketing-actions">
-          <Link href="/auth">ورود</Link>
-          <Link className="marketing-cta" href="/auth">شروع کنید <ArrowLeft size={15} /></Link>
+          <Link className="marketing-login" href="/auth">ورود</Link>
+          <Link className="marketing-cta" href="/auth?mode=register">ثبت‌نام <ArrowLeft size={15} /></Link>
         </div>
       </header>
 
@@ -44,7 +42,7 @@ export default function MarketingHome() {
             همه در یک پلتفرم یکپارچه با کیف پول، اشتراک و مدیریت کامل.
           </p>
           <div className="hero-actions" style={{ marginTop: 28 }}>
-            <Link className="marketing-cta large" href="/auth">
+            <Link className="marketing-cta large" href="/auth?mode=register">
               شروع رایگان <ArrowLeft size={17} />
             </Link>
             <Link className="marketing-secondary" href="/services">مشاهده خدمات</Link>
@@ -187,7 +185,7 @@ export default function MarketingHome() {
           <h2>آماده‌اید شروع کنید؟</h2>
           <p>از پلن رایگان شروع کنید. بدون نیاز به کارت اعتباری.</p>
           <div className="cta-section-actions">
-            <Link className="marketing-cta large" href="/auth">
+            <Link className="marketing-cta large" href="/auth?mode=register">
               حساب رایگان بسازید <ArrowLeft size={17} />
             </Link>
             <Link className="marketing-secondary" href="/pricing">مشاهده پلن‌ها</Link>
