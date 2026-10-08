@@ -1,108 +1,88 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowLeft, Bot, Lock, ShieldCheck, Zap } from 'lucide-react';
-import { PublicPage } from '../../components/seo/PublicPage';
+import { SiteShell } from '../../components/site/SiteShell';
+import { Mixed, Breadcrumbs, CtaBand, Facts, LdScript, SectionTitle, TrustStrip } from '../../components/site/bits';
+import { BrandMark } from '../../components/zp/brand';
+import { liveCategories } from '../../lib/seo/catalog-seo';
+import { ENTITY_FACTS } from '../../lib/seo/entity';
+import { breadcrumbLd, graph, organizationLd, webPageLd } from '../../lib/seo/jsonld';
+import { absoluteUrl, metadataForPage, ogImage, siteConfig } from '../../lib/seo/site';
+import { optionalViewer } from '../../server/account/page-context';
+import { supportHours, supportPhones } from '../../server/content/trust';
+import { getPublicCatalog } from '../../server/seo/public-catalog';
 
-export const metadata: Metadata = {
-  title: 'درباره ما',
-  description: 'معرفی ZOHALPAY — معماری محصول، اصول امنیت و ارزش‌های تیم.',
-  alternates: { canonical: '/about' },
-};
+const TITLE = 'درباره‌ی زُحل پی (ZOHALPAY)';
+const DESCRIPTION = 'زُحل پی (ZOHALPAY) فروشگاه آنلاین ایرانی خدمات رشد شبکه‌های اجتماعی و اشتراک هوش مصنوعی است؛ معرفی، شیوه‌ی کار، اصول قیمت‌گذاری و راه‌های ارتباط.';
 
-const principles = [
-  {
-    icon: Zap,
-    title: 'سرعت قابل اندازه‌گیری',
-    body: 'هر ماژول باید در شرایط بار واقعی پاسخ‌دهی قابل قبول داشته باشد. مصرف منابع، SLA سفارش و تأخیر API با ابزار‌های observability داخلی رصد می‌شوند.',
-  },
-  {
-    icon: Lock,
-    title: 'امنیت پیش‌فرض',
-    body: 'معماری از ابتدا برای tenant isolation، RLS، MFA، session rotation، HMAC webhook و rate-limit بر پایه OWASP ASVS 5.0 طراحی شده — نه به‌عنوان پچ نهایی.',
-  },
-  {
-    icon: Bot,
-    title: 'AI بدون هزینه پنهان',
-    body: 'هر درخواست AI مدل، token مصرفی، هزینه و وضعیت اعتبار را ثبت می‌کند. سیستم AI Router کم‌هزینه‌ترین مدل کافی برای task را انتخاب می‌کند.',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'شفافیت در عملیات',
-    body: 'تراکنش‌های مالی idempotent هستند، هر تغییر حساسیت‌دار در audit log ثبت می‌شود، و refund workflow با guard از بازپرداخت مازاد جلوگیری می‌کند.',
-  },
-];
+export const metadata: Metadata = metadataForPage({ title: TITLE, description: DESCRIPTION, path: '/about', image: ogImage('/og/home.jpg', TITLE) });
 
-const stack: [string, string][] = [
-  ['زبان و فریمورک', 'TypeScript · Next.js · React'],
-  ['پایگاه داده', 'PostgreSQL با RLS row-level isolation'],
-  ['صف و زمان‌بندی', 'Job queue با SKIP LOCKED · scheduled triggers'],
-  ['هوش مصنوعی', 'Anthropic Claude · OpenAI — با AI Router و usage tracking'],
-  ['اتوماسیون', 'Workflow engine با branching، delay، Webhook و agent run'],
-  ['رابط‌های اجتماعی', 'Instagram · Telegram · TikTok · YouTube · Twitter/X'],
-  ['API B2B', 'REST API نسخه‌دار با API Key، scope، sandbox و rate-limit'],
-  ['طراحی', 'RTL-first فارسی · design tokens · responsive/mobile'],
-];
+export default async function AboutPage() {
+  const [catalog, viewer] = await Promise.all([getPublicCatalog(), optionalViewer()]);
+  const phones = supportPhones();
+  const cats = liveCategories(catalog);
+  const fa = (n: number) => new Intl.NumberFormat('fa-IR').format(n);
+  const crumbs = [{ name: 'زُحل پی', path: '/' }, { name: 'درباره‌ی ما', path: '/about' }];
+  const facts = [
+    { k: 'نام', v: 'زُحل پی' },
+    { k: 'نام لاتین', v: 'ZOHALPAY' },
+    { k: 'حوزه', v: 'خدمات رشد شبکه‌های اجتماعی و اشتراک هوش مصنوعی' },
+    { k: 'بازار', v: 'ایران · رابط کاملاً فارسی' },
+    { k: 'خدمات فعال', v: `${fa(catalog.length)} سرویس در ${fa(cats.length)} دسته` },
+    { k: 'واحد قیمت', v: 'تومان، برای هر واحد مشخص' },
+    { k: 'پرداخت', v: 'آنلاین، از کیف پول زُحل پی' },
+    { k: 'پشتیبانی', v: `تیکت · ${supportHours()}` },
+  ];
 
-export default function About() {
   return (
-    <PublicPage
-      eyebrow="ABOUT"
-      title="ZOHALPAY چیست؟"
-      description="یک پلتفرم یکپارچه برای خدمات دیجیتال، AI، اتوماسیون و عملیات کسب‌وکار — با معماری مدولار، امنیت پیش‌فرض و رابط فارسی‌محور."
-    >
-      <div className="public-info-card" style={{ marginBottom: 24 }}>
-        <h2>چرا این پلتفرم ساخته شد؟</h2>
-        <p>
-          کسب‌وکارهای دیجیتال فارسی‌زبان به ابزاری نیاز داشتند که همزمان خدمات شبکه‌های اجتماعی، AI تولید محتوا،
-          اتوماسیون فرآیند و مدیریت مالی را در یک محیط یکپارچه ارائه دهد — بدون نیاز به چند ابزار موازی
-          و بدون محدودیت زبان و رابط کاربری.
-        </p>
-        <p style={{ marginBottom: 0 }}>
-          هدف این است که هر تیم — از سولوپرنر تا آژانس سازمانی — بتواند عملیات دیجیتال خود را
-          از یک داشبورد فارسی‌محور و امن مدیریت کند.
-        </p>
-      </div>
+    <SiteShell signedIn={Boolean(viewer)} catalog={catalog}>
+      <LdScript data={graph(
+        organizationLd({ phones }),
+        webPageLd({ path: '/about', name: TITLE, description: DESCRIPTION, type: 'AboutPage' }),
+        breadcrumbLd(crumbs),
+      )} />
+      <Breadcrumbs items={crumbs} />
 
-      <section style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: 13, fontWeight: 700, color: 'var(--subtle)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 16 }}>
-          اصول محصول
-        </h2>
-        <div className="public-card-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
-          {principles.map(({ icon: Icon, title, body }) => (
-            <article className="public-info-card" key={title}>
-              <span className="marketing-icon"><Icon size={18} /></span>
-              <h3 style={{ fontSize: 15, fontWeight: 600, margin: '10px 0 6px' }}>{title}</h3>
-              <p style={{ margin: 0 }}>{body}</p>
-            </article>
-          ))}
+      <section className="zs-phero" aria-labelledby="about-h1">
+        <span className="zp-tile zp-btile" style={{ '--s': '64px' } as React.CSSProperties}><BrandMark id="about-mark" size={40} /></span>
+        <div className="t">
+          <h1 id="about-h1">درباره‌ی زُحل پی</h1>
+          <p className="lead"><Mixed text={`${ENTITY_FACTS.what} ${ENTITY_FACTS.platforms}`} /></p>
         </div>
       </section>
 
-      <section style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: 13, fontWeight: 700, color: 'var(--subtle)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
-          معماری و فناوری
-        </h2>
-        <div className="public-info-card">
-          <dl style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '10px 24px', margin: 0 }}>
-            {stack.map(([label, value]) => (
-              <><dt key={`dt-${label}`} style={{ fontWeight: 600, fontSize: 13, color: 'var(--subtle)', whiteSpace: 'nowrap' }}>{label}</dt>
-              <dd key={`dd-${label}`} style={{ margin: 0, fontSize: 13 }}>{value}</dd></>
-            ))}
-          </dl>
-        </div>
+      <Facts facts={facts} title="مشخصات زُحل پی" />
+
+      <section className="zs-entity" aria-labelledby="what">
+        <SectionTitle id="what">زُحل پی چه می‌کند؟</SectionTitle>
+        <p><Mixed text={ENTITY_FACTS.ai} /></p>
+        <p>{ENTITY_FACTS.ordering} {ENTITY_FACTS.pricing}</p>
+        <p>{ENTITY_FACTS.tracking} {ENTITY_FACTS.support}</p>
       </section>
 
-      <div className="public-info-card">
-        <h2>بیشتر بدانید</h2>
-        <p style={{ marginBottom: 16 }}>
-          برای دیدن ویژگی‌های دقیق هر ماژول، صفحه خدمات را ببینید. برای همکاری یا سؤال‌های سازمانی، با تیم ما در تماس باشید.
+      <section className="zs-entity" aria-labelledby="principles">
+        <SectionTitle id="principles">اصول کار ما</SectionTitle>
+        <p><b>قیمت شفاف:</b> قیمت هر سرویس روی صفحه‌ی همان سرویس منتشر شده و مبلغ کل پیش از پرداخت نمایش داده می‌شود؛ هزینه‌ی پنهان وجود ندارد.</p>
+        <p><b>بدون رمز عبور:</b> {ENTITY_FACTS.noPassword}</p>
+        <p><b>حساب امن:</b> ورود دومرحله‌ای و مدیریت نشست‌ها و دستگاه‌ها از بخش تنظیمات امنیت حساب در دسترس است.</p>
+        <p><b>ادعای بی‌پشتوانه نداریم:</b> هر مجوز فقط وقتی «فعال» نمایش داده می‌شود که از سایت رسمی صادرکننده قابل استعلام باشد. <Link href="/licenses">مجوزها و نمادها</Link></p>
+      </section>
+
+      <section className="zs-entity" aria-labelledby="name">
+        <SectionTitle id="name">چرا «زُحل»؟</SectionTitle>
+        <p>زُحل نام فارسی سیاره‌ی کیوان (Saturn) است. حلقه‌های زُحل در نشان ما دیده می‌شوند و سطح‌های وفاداری مشتریان هم به نام قمرهای زُحل، مثل میماس، تتیس و تایتان، نام‌گذاری شده‌اند.</p>
+      </section>
+
+      <section aria-labelledby="contact">
+        <SectionTitle id="contact">راه‌های ارتباط</SectionTitle>
+        <p className="zs-p">
+          پشتیبانی از طریق تیکت در حساب کاربری انجام می‌شود ({supportHours()}).
+          {phones.map(p => <span key={p.tel}> {p.label}: <a href={`tel:${p.tel}`} className="zp-ltr">{p.display}</a>.</span>)}
+          {' '}<Link href="/contact">صفحه‌ی تماس</Link> · وب‌سایت رسمی: <span className="zp-ltr">{absoluteUrl('/').replace(/\/$/, '')}</span>
         </p>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <Link href="/services" className="card-link">خدمات <ArrowLeft size={13} /></Link>
-          <Link href="/pricing" className="card-link">پلن‌ها <ArrowLeft size={13} /></Link>
-          <Link href="/contact" className="card-link">تماس با ما <ArrowLeft size={13} /></Link>
-        </div>
-      </div>
-    </PublicPage>
+      </section>
+
+      <TrustStrip />
+      <CtaBand title={`شروع با ${siteConfig.name}`} text="ثبت‌نام رایگان است؛ قیمت هر سرویس را پیش از پرداخت می‌بینید." href={viewer ? '/dashboard' : '/auth?mode=register'} label={viewer ? 'رفتن به حساب' : 'ثبت‌نام رایگان'} />
+    </SiteShell>
   );
 }
