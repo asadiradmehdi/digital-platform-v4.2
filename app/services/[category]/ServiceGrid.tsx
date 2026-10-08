@@ -8,7 +8,8 @@ export type ServiceCard = { slug: string; name: string; icon: IconName; brand?: 
 /** Every service of a category as one grid, so the whole offer is visible without scrolling. */
 export function ServiceGrid({ cards }: { cards: ServiceCard[] }) {
   return (
-    <nav className={`zp-sgrid${cards.length > 9 ? ' compact' : ''}`} aria-label="سرویس‌ها">
+    // 9 or 6 services fill a 3-column desktop grid exactly; 4 columns would leave a lone card.
+    <nav className={`zp-sgrid${cards.length > 9 ? ' compact' : ''}${cards.length % 3 === 0 && cards.length % 4 !== 0 ? ' thirds' : ''}`} aria-label="سرویس‌ها">
       {cards.map((c, i) => (
         <Link key={c.slug} href={`/orders/new?service=${c.slug}`} className="zp-scard zp-press" style={{ '--i': i } as React.CSSProperties}
           aria-label={`${c.name}، ${c.perLabel} ${c.price} تومان`}>

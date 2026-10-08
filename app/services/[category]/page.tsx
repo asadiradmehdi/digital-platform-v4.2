@@ -4,7 +4,7 @@ import { AppShell } from '../../../components/AppShell';
 import { ShellAside } from '../../../components/zp/ShellAside';
 import { Tile } from '../../../components/zp/brand';
 import { EmptyState } from '../../../components/zp/cards';
-import { categoryMeta, KINDS, perLabel, serviceBrand, serviceIcon, serviceKind, shortServiceName, sortServices } from '../../../lib/catalog-ui';
+import { categoryMeta, perLabel, serviceBrand, serviceIcon, serviceMeta, shortServiceName, sortServices } from '../../../lib/catalog-ui';
 import { formatTomanNumber } from '../../../lib/format';
 import { optionalViewer } from '../../../server/account/page-context';
 import { listCatalogWithPrices } from '../../../server/account/overview';
@@ -20,7 +20,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
   const items = (await listCatalogWithPrices(cat.key).catch(() => [])).filter(i => i.unitPriceMinor);
 
   const cards: ServiceCard[] = sortServices(items).map(it => {
-    const kind = KINDS[serviceKind(it.slug)];
+    const kind = serviceMeta(it.slug);
     return {
       slug: it.slug,
       name: shortServiceName(it.name, cat.name),

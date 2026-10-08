@@ -206,6 +206,13 @@
 .zp-fld input{font:inherit;padding:14px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface-2);font-size:14.4px;outline:none;color:var(--ink);transition:border-color .2s,box-shadow .2s}
 .zp-fld input.ltr{direction:ltr;text-align:left}
 .zp-fld input:focus{border-color:var(--gold-2);box-shadow:0 0 0 4px rgba(214,165,76,.16)}
+.zp-fld textarea{font:inherit;font-size:14.4px;line-height:1.75;padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface-2);color:var(--ink);outline:none;resize:vertical;min-height:92px;max-height:40dvh;transition:border-color .2s,box-shadow .2s}
+.zp-fld textarea:focus{border-color:var(--gold-2);box-shadow:0 0 0 4px rgba(214,165,76,.16)}
+.zp-fld .hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.zp-fld .hd small{font-size:10.56px;font-weight:500;color:var(--subtle);font-variant-numeric:tabular-nums}
+.zp-facts{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px;flex:none}
+.zp-facts li{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:999px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);font-size:11.2px;font-weight:600;color:var(--ink-2);line-height:1.4}
+.zp-facts .zp-ico{width:14px;height:14px;color:var(--gold-3)}
 .zp-sum{background:var(--surface-2);border-radius:16px;padding:12px 14px;display:grid;gap:9px;font-size:13.44px}
 .zp-sum div{display:flex;justify-content:space-between;gap:10px}
 .zp-sum div span{color:var(--ink-2)}
@@ -375,7 +382,7 @@
 .zp-sgrid.compact .zp-scard{padding:9px 6px 8px}
 .zp-sgrid.compact .zp-scard .zp-tile{--s:clamp(36px,10vw,42px);margin-bottom:3px}
 .zp-sgrid.compact .zp-scard b{min-height:auto;-webkit-line-clamp:1;font-size:12.16px}
-@media (min-width:1000px){.zp-sgrid{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.zp-scard{padding:18px 10px 14px}.zp-scard .zp-tile{--s:56px}.zp-scard b{font-size:14.08px}}
+@media (min-width:1000px){.zp-sgrid{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.zp-sgrid.thirds{grid-template-columns:repeat(3,minmax(0,1fr))}.zp-scard{padding:18px 10px 14px}.zp-scard .zp-tile{--s:56px}.zp-scard b{font-size:14.08px}}
 @media (prefers-reduced-motion:reduce){.zp-scard{opacity:1}}
 
 /* licences (مجوزها) */

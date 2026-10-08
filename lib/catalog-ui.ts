@@ -21,9 +21,9 @@ export const CATEGORIES: CategoryMeta[] = [
   { key: 'aparat', name: 'آپارات', icon: 'ap' },
   { key: 'bale', name: 'بله', icon: 'bl' },
   { key: 'eitaa', name: 'ایتا', icon: 'et' },
-  { key: 'ai', name: 'تولید محتوا با AI', icon: 'ai', title: 'تولید محتوا با AI' },
-  { key: 'automation', name: 'اتوماسیون', icon: 'au' },
-  { key: 'design', name: 'طراحی و گرافیک', icon: 'ds' },
+  { key: 'ai', name: 'تولید محتوا با AI', icon: 'ai', title: 'تولید محتوا با AI', note: 'تولید با AI، بازبینی تیم' },
+  { key: 'automation', name: 'اتوماسیون', icon: 'au', note: 'راه‌اندازی و پشتیبانی توسط تیم' },
+  { key: 'design', name: 'طراحی و گرافیک', icon: 'ds', title: 'طراحی و گرافیک', note: 'طراحی اختصاصی، ۲ بار اصلاح' },
 ];
 
 export function categoryMeta(key: string): CategoryMeta | undefined {

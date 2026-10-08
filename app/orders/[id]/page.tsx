@@ -4,7 +4,9 @@ import { redirect } from 'next/navigation';
 import { ArrowRight, CheckCircle2, Circle, Clock, Package, ShoppingBag, XCircle, Loader2, ExternalLink } from 'lucide-react';
 import { OrderActions } from './OrderActions';
 import { AppShell } from '../../../components/AppShell';
-import { formatTomanFromIRR, statusLabel } from '../../../lib/format';
+import { formatTomanNumber, toToman } from '../../../lib/format';
+import { isTeamFulfilled, serviceMeta } from '../../../lib/catalog-ui';
+import { orderStage } from '../../../lib/order-progress';
 import { requireCurrentUser } from '../../../server/identity/request-user';
 import { query, withWorkspaceTransaction } from '../../../server/core/db';
 
@@ -18,13 +20,21 @@ const statusEventLabel: Record<string, string> = {
   QUEUED: 'در صف پردازش',
   PROCESSING: 'در حال پردازش توسط تأمین‌کننده',
   PROVIDER_SUBMITTED: 'ارسال به تأمین‌کننده',
+  IN_PROGRESS: 'در حال انجام',
   COMPLETED: 'تحویل کامل',
   FAILED: 'ناموفق',
   CANCELLED: 'لغو شده',
   REFUNDED: 'مرجوع شده',
 };
 
-function StatusBadge({ status }: { status: string }) {
+/** Team-fulfilled orders (design, automation, AI content) are worked on by people, not a provider. */
+const teamEventLabel: Record<string, string> = {
+  QUEUED: 'سپرده‌شده به تیم',
+  IN_PROGRESS: 'در حال انجام توسط تیم',
+  COMPLETED: 'تحویل شد',
+};
+
+function StatusBadge({ status, team }: { status: string; team: boolean }) {
   const isSuccess = status === 'COMPLETED';
   const isDanger = status === 'FAILED' || status === 'CANCELLED';
   const isInfo = status === 'PROCESSING' || status === 'PROVIDER_SUBMITTED';
@@ -32,7 +42,7 @@ function StatusBadge({ status }: { status: string }) {
   const icon = isSuccess ? <CheckCircle2 size={12} /> : isDanger ? <XCircle size={12} /> : isInfo ? <Loader2 size={12} /> : <Clock size={12} />;
   return (
     <span className={`status-pill ${cls}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', fontSize: 10 }}>
-      {icon}{statusLabel(status)}
+      {icon}{orderStage(status, team).label}
     </span>
   );
 }
@@ -50,10 +60,11 @@ async function getOrderDetail(orderId: string, workspaceId: string) {
     if (!order.rows[0]) return null;
 
     const items = await client.query<{
-      serviceName: string; quantity: string; parameters: Record<string, unknown>;
+      serviceName: string; serviceSlug: string; productSlug: string; quantity: string; parameters: Record<string, unknown>;
     }>(
-      `SELECT s.name AS "serviceName", oi.quantity::text AS quantity, oi.parameters
-       FROM order_items oi JOIN services s ON s.id=oi.service_id WHERE oi.order_id=$1 LIMIT 1`,
+      `SELECT s.name AS "serviceName", s.slug AS "serviceSlug", p.slug AS "productSlug", oi.quantity::text AS quantity, oi.parameters
+       FROM order_items oi JOIN services s ON s.id=oi.service_id JOIN products p ON p.id=s.product_id
+       WHERE oi.order_id=$1 ORDER BY oi.id LIMIT 1`,
       [orderId],
     );
 
@@ -127,7 +138,10 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
   const { order, item, events, provider } = data;
   const target = item?.parameters?.target ? String(item.parameters.target) : null;
-  const isUrl = target?.startsWith('http');
+  const isUrl = /^https?:\/\//i.test(target ?? '');
+  const brief = typeof item?.parameters?.brief === 'string' ? item.parameters.brief : null;
+  const team = isTeamFulfilled(item?.productSlug);
+  const qtyLabel = item?.quantity ? `${new Intl.NumberFormat('fa-IR').format(Number(item.quantity))} ${serviceMeta(item.serviceSlug).unit}` : '—';
 
   return (
     <AppShell>
@@ -147,10 +161,10 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                 <h1 style={{ margin: 0, fontSize: 'clamp(20px,3vw,28px)', letterSpacing: '-.05em' }} className="text-ltr">
                   {orderCode(order.id)}
                 </h1>
-                <StatusBadge status={order.status} />
+                <StatusBadge status={order.status} team={team} />
               </div>
               <p style={{ margin: '6px 0 0', color: 'var(--muted)', fontSize: 12 }}>
-                {item?.serviceName ?? '—'} · {item?.quantity ?? '—'} واحد
+                {item?.serviceName ?? '—'} · {qtyLabel}
               </p>
             </div>
             <OrderActions status={order.status} orderId={order.id} />
@@ -180,7 +194,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                       {i < events.length - 1 && <div className="timeline-line" />}
                     </div>
                     <div className="timeline-body">
-                      <b>{statusEventLabel[ev.toStatus] ?? ev.toStatus}</b>
+                      <b>{(team ? teamEventLabel[ev.toStatus] : undefined) ?? statusEventLabel[ev.toStatus] ?? ev.toStatus}</b>
                       <time>{new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(ev.createdAt))}</time>
                     </div>
                   </div>
@@ -216,9 +230,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                 {[
                   { label: 'کد سفارش', value: orderCode(order.id), ltr: true },
                   { label: 'سرویس', value: item?.serviceName ?? '—' },
-                  { label: 'مقدار', value: item?.quantity ? `${new Intl.NumberFormat('fa-IR').format(Number(item.quantity))} واحد` : '—' },
-                  { label: 'تأمین‌کننده', value: provider?.providerType ?? '—', ltr: !!provider?.providerType },
-                  { label: 'مبلغ', value: formatTomanFromIRR(Number(order.totalMinor)), mono: true },
+                  { label: 'مقدار', value: qtyLabel },
+                  team
+                    ? { label: 'انجام‌دهنده', value: 'تیم زُحل پی' }
+                    : { label: 'تأمین‌کننده', value: provider?.providerType ?? '—', ltr: !!provider?.providerType },
+                  { label: 'مبلغ', value: `${formatTomanNumber(toToman(order.totalMinor, order.currency))} تومان`, mono: true },
                   { label: 'تاریخ ثبت', value: new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(order.createdAt)) },
                 ].map(row => (
                   <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 13px', background: 'var(--surface-2)', borderRadius: 12 }}>
@@ -251,6 +267,19 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                       <strong style={{ fontSize: 11, direction: 'ltr', unicodeBidi: 'isolate' }}>{target}</strong>
                     )}
                   </div>
+                )}
+
+                {brief && (
+                  <div style={{ display: 'grid', gap: 6, padding: '10px 13px', background: 'var(--surface-2)', borderRadius: 12 }}>
+                    <span style={{ fontSize: 10, color: 'var(--subtle)' }}>شرح سفارش</span>
+                    <p dir="auto" style={{ margin: 0, fontSize: 12, lineHeight: 1.8, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', unicodeBidi: 'plaintext' }}>{brief}</p>
+                  </div>
+                )}
+
+                {team && !['COMPLETED', 'CANCELLED', 'REFUNDED', 'FAILED'].includes(order.status) && (
+                  <p style={{ margin: 0, fontSize: 11, color: 'var(--muted)', lineHeight: 1.8 }}>
+                    تیم زُحل پی روی سفارش شما کار می‌کند و فایل‌ها یا دسترسی‌ها از طریق پشتیبانی تحویل می‌شود. هر بخشی که تحویل نشود، مبلغش به کیف پول برمی‌گردد.
+                  </p>
                 )}
               </div>
             </article>
