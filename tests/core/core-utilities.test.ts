@@ -4,9 +4,16 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../server/core/db', () => ({
-  query: vi.fn(),
-}));
+// The tx helpers hand their callback a client whose query is the shared mockQuery and record the context.
+const txContext: Array<{ kind: 'tenant' | 'user'; workspaceId?: string; userId?: string }> = [];
+vi.mock('../../server/core/db', () => {
+  const query = vi.fn();
+  return {
+    query,
+    withTenantTransaction: vi.fn(async (workspaceId: string, userId: string | undefined, fn: (c: { query: typeof query }) => unknown) => { txContext.push({ kind: 'tenant', workspaceId, userId }); return fn({ query }); }),
+    withUserTransaction: vi.fn(async (userId: string, fn: (c: { query: typeof query }) => unknown) => { txContext.push({ kind: 'user', userId }); return fn({ query }); }),
+  };
+});
 
 import { query } from '../../server/core/db';
 import { money, addMoney, subtractMoney } from '../../server/core/money';
@@ -202,7 +209,9 @@ describe('requestHash()', () => {
 // ─── audit ────────────────────────────────────────────────────────────────────
 
 describe('writeAudit()', () => {
-  it('inserts an audit log row with all fields', async () => {
+  beforeEach(() => { txContext.length = 0; });
+
+  it('writes a workspace row inside that workspace\'s RLS context', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
     await writeAudit({
       workspaceId: 'ws-1',
@@ -214,23 +223,37 @@ describe('writeAudit()', () => {
       userAgent: 'test-agent',
       metadata: { reason: 'test' },
     });
+    expect(txContext).toEqual([{ kind: 'tenant', workspaceId: 'ws-1', userId: 'user-1' }]);
     expect(mockQuery).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO audit_logs'),
       expect.arrayContaining(['ws-1', 'user-1', 'UPDATE', 'subscription'])
     );
   });
 
-  it('uses null for optional fields when omitted', async () => {
+  it('writes an account-level row (no workspace) in the actor\'s user context', async () => {
+    // Regression: these rows were written with no context, which audit_logs RLS rejects in production.
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
-    await writeAudit({ action: 'READ', entityType: 'workspace' });
+    await writeAudit({ actorUserId: 'user-1', action: 'LOGOUT', entityType: 'session' });
+    expect(txContext).toEqual([{ kind: 'user', userId: 'user-1' }]);
     expect(mockQuery).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO audit_logs'),
-      expect.arrayContaining([null, null, 'READ', 'workspace'])
+      expect.arrayContaining([null, 'user-1', 'LOGOUT', 'session'])
     );
+  });
+
+  it('uses the caller\'s transaction client when one is passed', async () => {
+    const client = { query: vi.fn().mockResolvedValue({ rows: [] }) };
+    await writeAudit({ workspaceId: 'ws-1', action: 'order.created', entityType: 'order' }, client as never);
+    expect(client.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO audit_logs'), expect.arrayContaining(['ws-1', null, 'order.created']));
+    expect(txContext).toEqual([]);
+  });
+
+  it('refuses a row with neither workspace nor actor, which no policy could accept', async () => {
+    await expect(writeAudit({ action: 'READ', entityType: 'workspace' })).rejects.toThrow(/workspaceId or an actorUserId/);
   });
 
   it('propagates DB errors', async () => {
     mockQuery.mockRejectedValueOnce(new Error('DB error') as never);
-    await expect(writeAudit({ action: 'DELETE', entityType: 'user' })).rejects.toThrow('DB error');
+    await expect(writeAudit({ actorUserId: 'u', action: 'DELETE', entityType: 'user' })).rejects.toThrow('DB error');
   });
 });

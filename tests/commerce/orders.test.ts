@@ -75,7 +75,9 @@ describe('createOrder', () => {
 
     const result = await createOrder(baseInput);
     expect(result).toEqual(newOrder);
-    expect(clientQuery).toHaveBeenCalledTimes(6);
+    // 6 domain writes + the audit row, which now commits on the same tenant tx client.
+    expect(clientQuery).toHaveBeenCalledTimes(7);
+    expect(clientQuery.mock.calls.some(([sql]) => String(sql).includes("INSERT INTO audit_logs"))).toBe(true);
   });
 
   it('calculates total as quantity * unit_price_minor', async () => {

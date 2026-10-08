@@ -171,6 +171,7 @@ describe('createRefund', () => {
     await createRefund(baseInput);
     expect(mockWriteAudit).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'refund.completed', entityType: 'refund' }),
+      expect.objectContaining({ query: expect.any(Function) }), // written on the tenant tx client
     );
   });
 

@@ -4,7 +4,7 @@
  */
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 
-vi.mock('../../server/core/db', () => ({ withTransaction: vi.fn() }));
+vi.mock('../../server/core/db', () => ({ withTenantTransaction: vi.fn() }));
 vi.mock('../../server/identity/password', () => ({
   hashPassword: vi.fn(),
 }));
@@ -32,7 +32,7 @@ vi.mock('../../server/identity/password-policy', () => ({
   assertStrongPassword: vi.fn(),
 }));
 
-import { withTransaction } from '../../server/core/db';
+import { withTenantTransaction } from '../../server/core/db';
 import { hashPassword } from '../../server/identity/password';
 import { createSession } from '../../server/identity/sessions';
 import { consumeDistributedRateLimit } from '../../server/core/distributed-rate-limit';
@@ -41,7 +41,7 @@ import { requireString } from '../../server/core/validation';
 import { setSessionCookie } from '../../server/identity/session-cookie';
 import { AppError } from '../../server/core/errors';
 
-const mockWithTx = vi.mocked(withTransaction);
+const mockWithTx = vi.mocked(withTenantTransaction);
 const mockHashPassword = vi.mocked(hashPassword);
 const mockCreateSession = vi.mocked(createSession);
 const mockRateLimit = vi.mocked(consumeDistributedRateLimit);
@@ -151,8 +151,26 @@ describe('POST /api/v1/auth/register', () => {
     mockCreateSession.mockResolvedValueOnce('session-tok' as never);
     const sqls: string[] = [];
     const client = { query: vi.fn(async (sql: string) => { sqls.push(sql); return { rows: /SELECT id FROM users/.test(sql) ? [] : [{ id: 'id-1', slug: 's' }] }; }) };
-    mockWithTx.mockImplementationOnce((async (fn: (c: typeof client) => unknown) => fn(client)) as never);
+    mockWithTx.mockImplementationOnce((async (_ws: string, _u: string, fn: (c: typeof client) => unknown) => fn(client)) as never);
     await POST(makeRequest({ email: 'new@example.com', password: 'SuperStrong!1234', name: 'Ali' }));
     expect(sqls.find(q => q.includes('INSERT INTO ledger_accounts'))).toContain("'MAIN'");
+  });
+
+  it('creates the workspace and its wallet inside that workspace\'s RLS context', async () => {
+    // Regression: signup ran in a generic transaction, so under a non-superuser role the wallets
+    // insert failed with "new row violates row-level security policy for table wallets".
+    mockRateLimit.mockResolvedValueOnce(undefined as never);
+    mockHashPassword.mockResolvedValueOnce('hash-abc' as never);
+    mockCreateSession.mockResolvedValueOnce('session-tok' as never);
+    const calls: Array<{ sql: string; values: unknown[] }> = [];
+    const client = { query: vi.fn(async (sql: string, values: unknown[] = []) => { calls.push({ sql, values }); return { rows: /SELECT id FROM users/.test(sql) ? [] : [{ id: String(values[0]), slug: 's' }] }; }) };
+    let ctx: { ws?: string; user?: string } = {};
+    mockWithTx.mockImplementationOnce((async (ws: string, user: string, fn: (c: typeof client) => unknown) => { ctx = { ws, user }; return fn(client); }) as never);
+    const response = await POST(makeRequest({ email: 'new@example.com', password: 'SuperStrong!1234', name: 'Ali' }));
+    expect(response.status).toBe(307);
+    expect(ctx.ws).toMatch(/^[0-9a-f-]{36}$/);
+    expect(calls.find(c => c.sql.includes('INSERT INTO workspaces'))?.values[0]).toBe(ctx.ws);
+    expect(calls.find(c => c.sql.includes('INSERT INTO users'))?.values[0]).toBe(ctx.user);
+    expect(calls.find(c => c.sql.includes('INSERT INTO wallets'))?.values[0]).toBe(ctx.ws);
   });
 });

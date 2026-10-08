@@ -79,7 +79,7 @@ export async function markPaymentPaid(input: { paymentId: string; workspaceId: s
       }
     }
 
-    await writeAudit({ workspaceId: input.workspaceId, action: 'payment.paid', entityType: 'payment', entityId: input.paymentId, metadata: { gatewayReference: input.gatewayReference, orderId: payment.rows[0].order_id } });
+    await writeAudit({ workspaceId: input.workspaceId, action: 'payment.paid', entityType: 'payment', entityId: input.paymentId, metadata: { gatewayReference: input.gatewayReference, orderId: payment.rows[0].order_id } }, client);
     return { ...payment.rows[0], status: 'PAID' };
   });
 }
@@ -166,7 +166,7 @@ export async function payOrderFromWallet(input: {
       [input.orderId, { orderId: input.orderId, paymentId, workspaceId: input.workspaceId }],
     );
 
-    await writeAudit({ workspaceId: input.workspaceId, action: 'payment.paid', entityType: 'payment', entityId: paymentId, metadata: { gateway: 'wallet', orderId: input.orderId } });
+    await writeAudit({ workspaceId: input.workspaceId, action: 'payment.paid', entityType: 'payment', entityId: paymentId, metadata: { gateway: 'wallet', orderId: input.orderId } }, client);
     return payment.rows[0];
   });
 }

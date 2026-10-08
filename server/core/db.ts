@@ -39,3 +39,17 @@ export async function withTenantTransaction<T>(workspaceId: string, userId: stri
   } catch (error) { await client.query('ROLLBACK'); throw error; }
   finally { client.release(); }
 }
+
+/** Account-level work outside any workspace: only app.user_id is set (e.g. the user's own audit rows). */
+export async function withUserTransaction<T>(userId: string, fn: (client: PoolClient) => Promise<T>) {
+  if (!userId) throw new Error('userId is required');
+  const client = await db().connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(`SELECT set_config('app.user_id',$1,true)`, [userId]);
+    const value = await fn(client);
+    await client.query('COMMIT');
+    return value;
+  } catch (error) { await client.query('ROLLBACK'); throw error; }
+  finally { client.release(); }
+}

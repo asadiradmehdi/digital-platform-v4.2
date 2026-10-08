@@ -58,7 +58,8 @@ describe('createOrder — audit trail', () => {
         action: 'order.created',
         entityType: 'order',
         entityId: 'ord-1',
-      })
+      }),
+      expect.objectContaining({ query: expect.any(Function) }), // written on the tenant tx client
     );
   });
 
@@ -108,7 +109,8 @@ describe('markPaymentPaid — audit trail', () => {
         action: 'payment.paid',
         entityType: 'payment',
         entityId: 'pay-1',
-      })
+      }),
+      expect.objectContaining({ query: expect.any(Function) }), // written on the tenant tx client
     );
   });
 
@@ -160,7 +162,8 @@ describe('createRefund — audit trail', () => {
         action: 'refund.completed',
         entityType: 'refund',
         entityId: 'ref-1',
-      })
+      }),
+      expect.objectContaining({ query: expect.any(Function) }), // written on the tenant tx client
     );
   });
 });

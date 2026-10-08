@@ -1,16 +1,19 @@
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 
 vi.mock('../../server/identity/request-user', () => ({ requireRequestUser: vi.fn() }));
-vi.mock('../../server/core/db', () => ({ query: vi.fn() }));
+vi.mock('../../server/core/db', () => {
+  const query = vi.fn();
+  return { query, withUserTransaction: vi.fn(async (_userId: string, fn: (c: { query: typeof query }) => unknown) => fn({ query })) };
+});
 
 import { requireRequestUser } from '../../server/identity/request-user';
-import { query } from '../../server/core/db';
+import { query, withUserTransaction } from '../../server/core/db';
 import { AppError } from '../../server/core/errors';
 
 const mockRequireUser = vi.mocked(requireRequestUser);
 const mockQuery = vi.mocked(query);
 
-beforeEach(() => vi.resetAllMocks());
+beforeEach(() => vi.clearAllMocks());
 
 type RouteModule = typeof import('../../app/api/v1/me/audit-events/route');
 let GET: RouteModule['GET'];
@@ -69,5 +72,7 @@ describe('GET /api/v1/me/audit-events', () => {
     expect(sql).toContain('actor_user_id=$1');
     expect(sql).toContain('LIMIT 20');
     expect(params).toContain('user-1');
+    // Regression: audit_logs is RLS-protected; the read must run in the user's own context.
+    expect(vi.mocked(withUserTransaction)).toHaveBeenCalledWith('user-1', expect.any(Function));
   });
 });

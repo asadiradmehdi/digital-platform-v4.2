@@ -92,7 +92,7 @@ export async function createRefund(input: {
       );
     }
 
-    await writeAudit({ workspaceId: input.workspaceId, action: 'refund.completed', entityType: 'refund', entityId: refundId, metadata: { paymentId: input.paymentId, amountMinor: input.amountMinor.toString(), currency: input.currency } });
+    await writeAudit({ workspaceId: input.workspaceId, action: 'refund.completed', entityType: 'refund', entityId: refundId, metadata: { paymentId: input.paymentId, amountMinor: input.amountMinor.toString(), currency: input.currency } }, client);
     return { id: refundId, status: 'PAID', gatewayReference: gatewayResult.gatewayReference ?? null };
   });
 }
