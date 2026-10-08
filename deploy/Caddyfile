@@ -1,0 +1,8 @@
+{$SITE_HOST} {
+	encode zstd gzip
+	reverse_proxy app:3000 {
+		# Overwrite (never append) client-IP headers: the app trusts them because TRUST_PROXY=true.
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+	}
+}

@@ -1,0 +1,17 @@
+node_modules
+**/node_modules
+.next
+.git
+.claude
+coverage
+e2e
+tests
+docs
+apps/mobile
+!apps/mobile/package.json
+deploy/.env
+.env
+.env.*
+!.env.example
+*.log
+tsconfig.tsbuildinfo

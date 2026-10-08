@@ -1,0 +1,69 @@
+# ZOHALPAY production stack. Lives next to other projects on the same host (e.g. Tiuz):
+# own network, own volumes, app published on 127.0.0.1 only; the TLS proxy is Caddy (profile "caddy")
+# or the host's existing nginx (see install.sh).
+name: zohalpay
+services:
+  db:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in deploy/.env}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?set in deploy/.env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db-init.sh:/docker-entrypoint-initdb.d/10-zohalpay.sh:ro
+      - ./backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d zohalpay"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # One-shot: schema migrations + first-time seeds, as the non-superuser app role (RLS stays enforced).
+  migrate:
+    image: postgres:16-bookworm
+    depends_on: { db: { condition: service_healthy } }
+    environment:
+      DATABASE_URL: postgresql://zp_app:${APP_DB_PASSWORD}@db:5432/zohalpay
+    volumes:
+      - ../db:/work/db:ro
+      - ../scripts/migrate.sh:/work/scripts/migrate.sh:ro
+      - ./seed.sh:/work/deploy/seed.sh:ro
+    working_dir: /work
+    entrypoint: ["bash", "-c", "bash scripts/migrate.sh && bash deploy/seed.sh"]
+    restart: "no"
+
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+    image: zohalpay-app:latest
+    restart: unless-stopped
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://zp_app:${APP_DB_PASSWORD}@db:5432/zohalpay
+      NODE_ENV: production
+    ports:
+      - "127.0.0.1:${APP_PORT:-3100}:3000"
+
+  caddy:
+    image: caddy:2
+    profiles: ["caddy"]
+    restart: unless-stopped
+    depends_on: [app]
+    environment:
+      SITE_HOST: ${SITE_HOST}
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
