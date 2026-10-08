@@ -426,3 +426,90 @@
 .zp-friends .lb{display:grid}
 .zp-invite-empty{margin:0;font-size:12.48px;line-height:1.9;color:var(--muted)}
 @media (min-width:1000px){.zp-invite-friends{display:none}}
+/* ─── support (پشتیبانی و تیکت) ─── */
+.zp-sup{flex:none;border-radius:24px;padding:14px;color:#fff;background:var(--enamel);position:relative;overflow:hidden;isolation:isolate;display:grid;gap:12px;box-shadow:0 18px 30px -20px var(--zp-tile-shadow),inset 0 0 0 1px var(--rim)}
+.zp-sup .h{display:flex;align-items:center;gap:12px}
+.zp-sup .h .zp-tile{--s:46px}
+.zp-sup .h div{flex:1;display:grid;gap:2px;min-width:0}
+.zp-sup .h b{font-family:var(--font-display);font-size:17px;font-weight:800;line-height:1.5}
+.zp-sup .h div>span{display:flex;align-items:center;gap:5px;font-size:11.5px;color:rgba(255,255,255,.78)}
+.zp-sup .h div>span .zp-ico{width:14px;height:14px;color:var(--gold-1)}
+.zp-sup>p{margin:0;font-size:12.5px;line-height:1.9;color:rgba(255,255,255,.82)}
+.zp-tels{display:grid;gap:8px}
+.zp-tel{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 10px;padding-inline-end:14px;border-radius:16px;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(242,211,144,.28)}
+.zp-tel:hover{background:rgba(255,255,255,.12)}
+.zp-tel .zp-tile{--s:40px;border-radius:13px}
+.zp-tel .t{flex:1;display:grid;min-width:0;line-height:1.35}
+.zp-tel .t small{font-size:11px;color:rgba(255,255,255,.72);font-weight:600}
+.zp-tel .t b{font-size:18.5px;font-weight:700;letter-spacing:.02em;direction:ltr;unicode-bidi:isolate;text-align:right;color:#fff}
+.zp-tel em{font-style:normal;font-size:11.5px;font-weight:700;color:var(--on-gold);background:var(--metal);padding:5px 12px;border-radius:999px;white-space:nowrap}
+.zp-sup .zp-cta{justify-self:stretch}
+.zp-qcat{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.zp-qcat a{display:grid;justify-items:center;gap:6px;text-align:center;background:var(--surface);border-radius:18px;padding:10px 4px 9px;box-shadow:0 3px 12px var(--zp-shadow),inset 0 0 0 1px var(--line);font-size:11.8px;font-weight:700;color:var(--ink-2);line-height:1.35}
+.zp-qcat .zp-tile{--s:38px;border-radius:12px}
+.zp-tk{display:flex;align-items:center;gap:12px;background:var(--surface);border-radius:20px;padding:11px 12px;box-shadow:0 3px 14px var(--zp-shadow),inset 0 0 0 1px var(--line)}
+.zp-tk .zp-tile{--s:42px;border-radius:13px}
+.zp-tk .t{flex:1;display:grid;gap:1px;min-width:0}
+.zp-tk .t b{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zp-tk .t span{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zp-tk .t span.pv{color:var(--ink-2)}
+.zp-tk .s{display:grid;justify-items:end;gap:6px;flex:none}
+.zp-tk .s small{font-size:10.4px;color:var(--muted);white-space:nowrap;display:flex;align-items:center;gap:5px}
+.zp-tk .nd{width:8px;height:8px;border-radius:50%;background:var(--vermilion);box-shadow:0 0 0 2px var(--surface);flex:none}
+.zp-tk.closed{opacity:.78}
+.zp-st.idle{background:var(--surface-2);color:var(--muted)}
+.zp-st.idle::before{animation:none}
+.zp-code{direction:ltr;unicode-bidi:isolate;font-weight:700;letter-spacing:.04em}
+/* new ticket form */
+.zp-form{display:grid;gap:14px}
+.zp-chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.zp-chips button{display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:14px;padding:8px 10px;box-shadow:0 2px 10px var(--zp-shadow),inset 0 0 0 1px var(--line);font-size:12.8px;font-weight:600;color:var(--ink-2);text-align:start;transition:box-shadow .25s}
+.zp-chips button .zp-tile{--s:30px;border-radius:9px}
+.zp-chips button[aria-pressed="true"]{color:var(--ink);font-weight:700;box-shadow:0 8px 18px -12px rgba(122,82,24,.6),inset 0 0 0 2px var(--gold-2)}
+.zp-fld input{width:100%}
+.zp-fld textarea,.zp-fld select{font:inherit;padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface-2);font-size:14.4px;outline:none;color:var(--ink);transition:border-color .2s,box-shadow .2s;width:100%}
+.zp-fld textarea{resize:vertical;min-height:112px;line-height:1.9}
+.zp-fld select{appearance:none;-webkit-appearance:none;padding-inline-end:38px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236C6757' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-size:16px;background-position:left 14px center}
+.zp-fld textarea:focus,.zp-fld select:focus{border-color:var(--gold-2);box-shadow:0 0 0 4px rgba(214,165,76,.16)}
+.zp-fld .lh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.zp-fld .lh small{font-size:10.5px;font-weight:500;color:var(--muted)}
+.zp-fld .lh small.over{color:var(--danger);font-weight:700}
+/* ticket thread */
+.zp-tkh{flex:none;display:grid;gap:10px;background:var(--surface);border-radius:20px;padding:12px 14px;box-shadow:0 3px 14px var(--zp-shadow),inset 0 0 0 1px var(--line)}
+.zp-tkh .r{display:flex;align-items:center;gap:12px}
+.zp-tkh .r .zp-tile{--s:42px;border-radius:13px}
+.zp-tkh .r>div{flex:1;display:grid;gap:2px;min-width:0}
+.zp-tkh h1{margin:0;font-size:15.5px;font-weight:700;line-height:1.6}
+.zp-tkh .r>div>span{font-size:11px;color:var(--muted)}
+.zp-tkh .m{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px dashed var(--line);padding-top:9px;font-size:11.5px;color:var(--muted)}
+.zp-tkh .m .st{display:flex;align-items:center;gap:8px;min-width:0;white-space:nowrap}
+.zp-tkh .m a{color:var(--gold-text);font-weight:700}
+.zp-tkh .m button{font-size:11.5px;font-weight:700;color:var(--danger);padding:4px 2px}
+.zp-tkh .m button:disabled{opacity:.5}
+.zp-note{display:flex;gap:8px;align-items:flex-start;border-radius:14px;padding:10px 12px;font-size:12.3px;line-height:1.85;background:var(--surface-2);color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--line)}
+.zp-note .zp-ico{width:17px;height:17px;color:var(--gold-3);margin-top:3px}
+.zp-thread{display:flex;flex-direction:column;gap:12px;flex:1;padding:4px 0}
+.zp-msg{display:grid;gap:4px;max-width:86%}
+.zp-msg .bb{padding:10px 14px;border-radius:18px;font-size:13.8px;line-height:1.95;white-space:pre-wrap;overflow-wrap:anywhere;unicode-bidi:plaintext;text-align:start}
+.zp-msg small{font-size:10.4px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.zp-msg.me{align-self:flex-start;justify-items:start}
+.zp-msg.me .bb{background:var(--enamel);color:#fff;border-start-start-radius:6px;box-shadow:0 10px 20px -14px var(--zp-tile-shadow),inset 0 0 0 1px var(--rim)}
+.zp-msg.staff{align-self:flex-end;justify-items:end}
+.zp-msg.staff .who{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--gold-text)}
+.zp-msg.staff .who .zp-tile{--s:22px;border-radius:7px}
+.zp-msg.staff .bb{background:var(--surface);color:var(--ink);border-start-end-radius:6px;box-shadow:0 3px 14px var(--zp-shadow),inset 0 0 0 1px var(--line)}
+.zp-msg.sending{opacity:.6}
+.zp-compose{position:sticky;bottom:0;z-index:2;display:flex;align-items:flex-end;gap:8px;padding:12px 0 4px;background:linear-gradient(180deg,rgba(247,243,234,0),var(--bg) 24%)}
+.zp-compose textarea{flex:1;font:inherit;font-size:14.2px;line-height:1.8;padding:11px 14px;border-radius:18px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);outline:none;resize:none;min-height:50px;max-height:160px;box-shadow:0 3px 14px var(--zp-shadow)}
+.zp-compose textarea:focus{border-color:var(--gold-2);box-shadow:0 0 0 4px rgba(214,165,76,.16)}
+.zp-send{width:50px;height:50px;border-radius:16px;display:grid;place-items:center;flex:none;background:var(--metal);color:var(--on-gold);box-shadow:0 8px 16px -8px rgba(122,82,24,.6),inset 0 1px 0 rgba(255,255,255,.65)}
+.zp-send .zp-ico{width:21px;height:21px;transform:scaleX(-1)}
+.zp-send:disabled{opacity:.5;cursor:default}
+.zp-done .zp-code{font-size:15px;color:var(--gold-text)}
+@media (min-width:1000px){
+  .zp-qcat{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .zp-tels{grid-template-columns:1fr 1fr}
+  .zp-chips{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .zp-msg{max-width:72%}
+}
+@media (max-height:700px){.zp-sup{padding:12px;gap:10px}.zp-tel{min-height:50px;padding-block:6px}.zp-qcat a{padding:8px 4px 7px}.zp-qcat .zp-tile{--s:34px}.zp-tk{padding:9px 12px}}
