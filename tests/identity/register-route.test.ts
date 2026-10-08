@@ -143,4 +143,16 @@ describe('POST /api/v1/auth/register', () => {
     expect(await response.json()).toEqual({ ok: true });
     expect(vi.mocked(setSessionCookie)).toHaveBeenCalledWith(response, 'session-tok');
   });
+
+  it("creates the wallet's MAIN ledger account that wallet payments post to", async () => {
+    // Regression: only AVAILABLE/HELD/REFUNDS were created, so paying from the wallet always failed.
+    mockRateLimit.mockResolvedValueOnce(undefined as never);
+    mockHashPassword.mockResolvedValueOnce('hash-abc' as never);
+    mockCreateSession.mockResolvedValueOnce('session-tok' as never);
+    const sqls: string[] = [];
+    const client = { query: vi.fn(async (sql: string) => { sqls.push(sql); return { rows: /SELECT id FROM users/.test(sql) ? [] : [{ id: 'id-1', slug: 's' }] }; }) };
+    mockWithTx.mockImplementationOnce((async (fn: (c: typeof client) => unknown) => fn(client)) as never);
+    await POST(makeRequest({ email: 'new@example.com', password: 'SuperStrong!1234', name: 'Ali' }));
+    expect(sqls.find(q => q.includes('INSERT INTO ledger_accounts'))).toContain("'MAIN'");
+  });
 });
