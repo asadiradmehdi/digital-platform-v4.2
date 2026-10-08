@@ -54,6 +54,7 @@ export const ICONS = {
   "clock": "<circle class=\"d\" cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"9\"/><path stroke-width=\"2.2\" d=\"M12 7v5l3.2 2\"/>",
   "rise": "<path class=\"d\" d=\"M3 20.5h18V9l-6 5-4-4-8 7z\"/><path stroke-width=\"2.2\" d=\"M3 16.5l8-7 4 4 6.5-6.5M16 7h5.5v5.5\"/>",
   "story": "<circle cx=\"12\" cy=\"12\" r=\"9.5\" stroke-dasharray=\"4.2 2.4\"/><circle class=\"f\" cx=\"12\" cy=\"12\" r=\"5.5\"/>",
+  "phone": "<path class=\"f\" d=\"M6.6 2.8c.6-.2 1.3 0 1.6.6l1.7 3.3c.3.6.2 1.3-.3 1.7L8.3 9.6c1 2.4 3.1 4.6 5.6 5.7l1.3-1.3c.5-.5 1.2-.6 1.8-.3l3.3 1.7c.6.3.9 1 .7 1.6l-.6 2.1c-.3 1-1.2 1.7-2.3 1.6C10.4 20.3 3.7 13.6 3.1 5.9c-.1-1.1.6-2 1.6-2.3z\"/><path d=\"M14.5 3.2a6.3 6.3 0 0 1 6.3 6.3M14.5 6.8a2.7 2.7 0 0 1 2.7 2.7\"/>",
 } as const;
 
 export type IconName = keyof typeof ICONS;
