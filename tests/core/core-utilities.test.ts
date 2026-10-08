@@ -88,6 +88,14 @@ describe('requireString()', () => {
 });
 
 describe('requireUuid()', () => {
+  it('accepts the fixed catalogue seed ids (regression: every seeded service failed ordering)', () => {
+    expect(requireUuid('10000000-0000-0000-0000-000000000001', 'serviceId')).toBe('10000000-0000-0000-0000-000000000001');
+  });
+  it('still rejects anything that is not 8-4-4-4-12 hex', () => {
+    expect(() => requireUuid('10000000-0000-0000-0000-00000000000g', 'id')).toThrow('must be a UUID');
+    expect(() => requireUuid("1000000'-0000-0000-0000-000000000001", 'id')).toThrow('must be a UUID');
+  });
+
   it('accepts a valid UUID v4', () => {
     const uuid = '550e8400-e29b-41d4-a716-446655440000';
     expect(requireUuid(uuid, 'id')).toBe(uuid);
