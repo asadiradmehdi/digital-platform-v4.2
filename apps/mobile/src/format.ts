@@ -1,11 +1,16 @@
-// Display formatting only (mirrors lib/format.ts on the web). Amounts arrive from the server already in toman.
+// Display formatting only (mirrors lib/format.ts on the web).
 const fa = new Intl.NumberFormat('fa-IR');
 const fa1 = new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 1 });
 
-export function formatToman(minor: number | string): string {
+/**
+ * «۱٬۲۰۰٬۰۰۰ تومان» for an amount in its own currency: IRT minor units are toman, IRR minor units
+ * are rial (÷10). Orders and plan prices are IRT; the wallet ledger is IRR. The currency is required
+ * so a toman amount is never divided by 10.
+ */
+export function formatToman(minor: number | string, currency: string): string {
   const n = typeof minor === 'string' ? parseInt(minor, 10) : minor;
   if (Number.isNaN(n)) return '—';
-  return fa.format(Math.round(n / 10)) + ' تومان';
+  return fa.format(currency.trim() === 'IRR' ? Math.round(n / 10) : Math.round(n)) + ' تومان';
 }
 
 export function formatCount(n: number | string): string {
