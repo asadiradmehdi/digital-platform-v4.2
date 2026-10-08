@@ -1,11 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../server/core/db', () => ({ query: vi.fn(), withWorkspaceTransaction: vi.fn(), withTenantTransaction: vi.fn() }));
+vi.mock('../../server/payments/service', () => ({ verifyPayment: vi.fn() }));
 vi.mock('../../server/observability/logger', () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }));
 
 import { query, withWorkspaceTransaction, withTenantTransaction } from '../../server/core/db';
 import { reconcileUnconfirmedPayments } from '../../server/payments/reconciliation';
-import type { PaymentGateway } from '../../server/payments/service';
+import { verifyPayment, type PaymentGateway } from '../../server/payments/service';
+
+const mockVerify = vi.mocked(verifyPayment);
 
 const mockQuery = vi.mocked(query);
 const mockTransaction = vi.mocked(withWorkspaceTransaction);
@@ -35,21 +38,30 @@ describe('reconcileUnconfirmedPayments', () => {
     mockQuery.mockResolvedValueOnce({ rows: [
       { id: 'pay-1', gateway_reference: 'gw-ref-1', amount_minor: '10000', currency: 'USD' }
     ], rowCount: 1 } as never);
-    vi.mocked(mockGateway.verify).mockResolvedValueOnce({ paid: true, raw: {} });
-    // markPaymentPaid internally uses withWorkspaceTransaction
-    mockTransaction.mockResolvedValueOnce({ id: 'pay-1', status: 'PAID' } as never);
+    mockVerify.mockResolvedValueOnce({ verified: true, alreadyPaid: false });
 
     const result = await reconcileUnconfirmedPayments(mockGateway, 'ws-1');
     expect(result.checked).toBe(1);
     expect(result.reconciled).toBe(1);
     expect(result.failed).toBe(0);
+    // Regression (H-3): reconciliation goes through verifyPayment, which checks amount + currency.
+    expect(mockVerify).toHaveBeenCalledWith({ paymentId: 'pay-1', workspaceId: 'ws-1', gateway: mockGateway });
+  });
+
+  it('counts an amount mismatch as failed and does not reconcile it', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [
+      { id: 'pay-5', gateway_reference: 'gw-ref-5', amount_minor: '10000', currency: 'IRT' }
+    ], rowCount: 1 } as never);
+    mockVerify.mockResolvedValueOnce({ verified: false, alreadyPaid: false, reason: 'AMOUNT_MISMATCH' });
+    const result = await reconcileUnconfirmedPayments(mockGateway, 'ws-1');
+    expect(result).toMatchObject({ reconciled: 0, failed: 1 });
   });
 
   it('does not mark payment paid when gateway says unpaid', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [
       { id: 'pay-2', gateway_reference: 'gw-ref-2', amount_minor: '5000', currency: 'USD' }
     ], rowCount: 1 } as never);
-    vi.mocked(mockGateway.verify).mockResolvedValueOnce({ paid: false });
+    mockVerify.mockResolvedValueOnce({ verified: false, alreadyPaid: false, reason: 'NOT_PAID' });
 
     const result = await reconcileUnconfirmedPayments(mockGateway, 'ws-1');
     expect(result.checked).toBe(1);
@@ -71,7 +83,7 @@ describe('reconcileUnconfirmedPayments', () => {
     mockQuery.mockResolvedValueOnce({ rows: [
       { id: 'pay-4', gateway_reference: 'gw-ref-4', amount_minor: '3000', currency: 'USD' }
     ], rowCount: 1 } as never);
-    vi.mocked(mockGateway.verify).mockRejectedValueOnce(new Error('Gateway timeout'));
+    mockVerify.mockRejectedValueOnce(new Error('Gateway timeout'));
 
     const result = await reconcileUnconfirmedPayments(mockGateway, 'ws-1');
     expect(result.failed).toBe(1);

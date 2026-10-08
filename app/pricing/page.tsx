@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Check, Minus, Sparkles, Zap, Building2, ArrowLeft, HelpCircle, Info } from 'lucide-react';
 import { PublicPage } from '../../components/seo/PublicPage';
+import { formatTomanNumber, toToman } from '../../lib/format';
 
 export const metadata: Metadata = {
   title: 'قیمت‌گذاری',
@@ -111,8 +112,9 @@ const faqs = [
   },
 ];
 
+/** The plan prices above mirror plans.price_minor, which is IRT (toman) — the unit renewals charge. */
 function formatPrice(minor: number) {
-  return new Intl.NumberFormat('fa-IR').format(Math.round(minor / 10));
+  return formatTomanNumber(toToman(minor, 'IRT'));
 }
 
 export default function Pricing() {

@@ -55,12 +55,14 @@ describe('mockGateway.createCheckout', () => {
 
 describe('mockGateway.verify', () => {
   it('always returns paid: true', async () => {
-    const result = await mockGateway.verify({ paymentId: 'pay-1', gatewayReference: 'mock_pay-1' });
+    const result = await mockGateway.verify({ paymentId: 'pay-1', gatewayReference: 'mock_pay-1', amountMinor: 1000n, currency: 'IRT' });
     expect(result.paid).toBe(true);
+    // It reports exactly the amount it was asked about, so service-side amount checks still apply.
+    expect(result).toMatchObject({ amountMinor: 1000n, currency: 'IRT' });
   });
 
   it('includes simulated: true in raw response', async () => {
-    const result = await mockGateway.verify({ paymentId: 'pay-2', gatewayReference: 'mock_pay-2' });
+    const result = await mockGateway.verify({ paymentId: 'pay-2', gatewayReference: 'mock_pay-2', amountMinor: 1000n, currency: 'IRT' });
     expect((result.raw as Record<string, unknown>)?.simulated).toBe(true);
   });
 });

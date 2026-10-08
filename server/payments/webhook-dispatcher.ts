@@ -1,5 +1,6 @@
-import { query, withTenantTransaction } from '../core/db';
-import { markPaymentPaid } from './service';
+import { withTenantTransaction } from '../core/db';
+import { confirmPaymentByGatewayReference } from './service';
+import { resolvePaymentGateway } from './gateways';
 import { generateInvoice } from './invoice';
 
 const PAYMENT_SUCCESS_TYPES = new Set([
@@ -13,6 +14,11 @@ const PAYMENT_SUCCESS_TYPES = new Set([
 /**
  * Dispatches a verified, deduplicated webhook event to the appropriate domain handler.
  * Called only for accepted (non-duplicate) events from the webhook inbox.
+ *
+ * A webhook is only a hint: the payment is marked paid after the gateway named by the webhook source
+ * confirms it server-side for exactly the intent's amount and currency (verifyPayment). The payment
+ * must belong to that gateway, and a gateway that is not usable here (e.g. mock in production) is
+ * ignored.
  */
 export async function dispatchPaymentWebhook(input: {
   source: string;
@@ -25,34 +31,23 @@ export async function dispatchPaymentWebhook(input: {
   const gatewayReference = extractGatewayReference(input.payload);
   if (!gatewayReference) return;
 
-  // The workspace is unknown until the payment is found: system_find_payment_by_gateway_reference()
-  // (migration 0031) returns only (payment_id, workspace_id). An ambiguous reference is refused rather
-  // than guessed. The payment itself is then read inside its own workspace's RLS context.
-  const located = await query<{ payment_id: string; workspace_id: string }>(
-    `SELECT payment_id, workspace_id FROM system_find_payment_by_gateway_reference($1)`,
-    [gatewayReference]
-  );
-  if (located.rows.length !== 1) return;
-  const { payment_id: paymentId, workspace_id: workspaceId } = located.rows[0];
+  let gateway;
+  try { gateway = resolvePaymentGateway(input.source); } catch { return; }
 
-  const r = await withTenantTransaction(workspaceId, undefined, client => client.query<{ id: string; workspace_id: string; order_id: string | null; amount_minor: string; currency: string; status: string }>(
-    `SELECT id, workspace_id, order_id, amount_minor, currency, status
-     FROM payments WHERE id=$1 AND workspace_id=$2`,
+  const outcome = await confirmPaymentByGatewayReference({ gatewayReference, gateway }).catch(() => null);
+  if (!outcome || !outcome.verified || outcome.alreadyPaid || !outcome.paymentId || !outcome.workspaceId) return;
+  const { paymentId, workspaceId } = outcome;
+
+  const r = await withTenantTransaction(workspaceId, undefined, client => client.query<{ id: string; order_id: string | null; amount_minor: string; currency: string }>(
+    `SELECT id, order_id, amount_minor::text AS amount_minor, currency FROM payments WHERE id=$1 AND workspace_id=$2`,
     [paymentId, workspaceId]
   ));
   const payment = r.rows[0];
-  if (!payment || payment.status === 'PAID') return;
-
-  await markPaymentPaid({
-    paymentId: payment.id,
-    workspaceId: payment.workspace_id,
-    gatewayReference,
-    raw: input.payload,
-  });
+  if (!payment) return;
 
   // Generate invoice after confirmed payment.
   await generateInvoice({
-    workspaceId: payment.workspace_id,
+    workspaceId,
     paymentId: payment.id,
     orderId: payment.order_id,
     amountMinor: BigInt(payment.amount_minor),

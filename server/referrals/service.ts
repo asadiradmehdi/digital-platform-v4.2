@@ -10,6 +10,8 @@ export type ReferralTier = { minActive: number; bps: number };
 export type ReferralSettings = {
   enabled: boolean; tiers: ReferralTier[]; welcomeBps: number; welcomeCapMinor: bigint; holdDays: number;
   attributionMonths: number; monthlyCapMinor: bigint; maxSignupsPerIp: number;
+  /** Programme-wide monthly budget for referrer shares; 0n = no programme cap. */
+  programmeBudgetMinor: bigint;
 };
 
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -44,21 +46,22 @@ export function ipHash(ip: string) {
 type SettingsRow = {
   enabled: boolean; tiers: ReferralTier[]; welcome_bps: number; welcome_cap_minor: string; hold_days: number;
   attribution_months: number; monthly_cap_minor: string; max_signups_per_ip: number;
+  programme_monthly_budget_minor: string;
 };
 
 export async function getReferralSettings(client?: PoolClient): Promise<ReferralSettings> {
   const sql = `SELECT enabled, tiers, welcome_bps, welcome_cap_minor::text, hold_days, attribution_months,
-                      monthly_cap_minor::text, max_signups_per_ip FROM referral_settings WHERE id=1`;
+                      monthly_cap_minor::text, max_signups_per_ip, programme_monthly_budget_minor::text FROM referral_settings WHERE id=1`;
   const r = client ? await client.query<SettingsRow>(sql) : await query<SettingsRow>(sql);
   const row = r.rows[0];
-  if (!row) return { enabled: false, tiers: [], welcomeBps: 0, welcomeCapMinor: 0n, holdDays: 7, attributionMonths: 12, monthlyCapMinor: 0n, maxSignupsPerIp: 3 };
+  if (!row) return { enabled: false, tiers: [], welcomeBps: 0, welcomeCapMinor: 0n, holdDays: 7, attributionMonths: 12, monthlyCapMinor: 0n, maxSignupsPerIp: 3, programmeBudgetMinor: 0n };
   const tiers = (Array.isArray(row.tiers) ? row.tiers : [])
     .map(t => ({ minActive: Math.max(0, Math.floor(Number(t.minActive) || 0)), bps: Math.min(10_000, Math.max(0, Math.floor(Number(t.bps) || 0))) }))
     .sort((a, b) => a.minActive - b.minActive);
   return {
     enabled: row.enabled, tiers, welcomeBps: row.welcome_bps, welcomeCapMinor: BigInt(row.welcome_cap_minor),
     holdDays: row.hold_days, attributionMonths: row.attribution_months, monthlyCapMinor: BigInt(row.monthly_cap_minor),
-    maxSignupsPerIp: row.max_signups_per_ip,
+    maxSignupsPerIp: row.max_signups_per_ip, programmeBudgetMinor: BigInt(row.programme_monthly_budget_minor ?? '0'),
   };
 }
 
@@ -136,7 +139,7 @@ export const REFERRAL_TOPUP_EVENT = 'referral.topup_settled';
  * Call inside the transaction that credits a VERIFIED gateway top-up (never for gift, refund or admin
  * credit). The reward work itself runs from the outbox, so the top-up commit never waits on it.
  */
-export async function enqueueReferralTopup(client: PoolClient, input: { workspaceId: string; paymentId: string; amountMinor: bigint; currency: string }) {
+export async function enqueueReferralTopup(client: Pick<PoolClient, 'query'>, input: { workspaceId: string; paymentId: string; amountMinor: bigint; currency: string }) {
   await client.query(
     `INSERT INTO outbox_events(aggregate_type, aggregate_id, event_type, payload) VALUES('payment',$1,$2,$3)`,
     [input.paymentId, REFERRAL_TOPUP_EVENT, { workspaceId: input.workspaceId, paymentId: input.paymentId, amountMinor: input.amountMinor.toString(), currency: input.currency.trim() }],
@@ -243,7 +246,14 @@ export async function releaseDueReferralRewards(limit = 100) {
         `SELECT COALESCE(sum(credited_minor),0)::text AS s FROM referral_rewards
           WHERE workspace_id=$1 AND kind='REFERRER_SHARE' AND credited_at >= date_trunc('month', now())`, [row.workspace_id],
       )).rows[0]?.s ?? '0');
-      const room = settings.monthlyCapMinor > month ? settings.monthlyCapMinor - month : 0n;
+      let room = settings.monthlyCapMinor > month ? settings.monthlyCapMinor - month : 0n;
+      if (settings.programmeBudgetMinor > 0n) {
+        // Programme-wide budget: serialised across workspaces by its own lock.
+        await client.query(`SELECT pg_advisory_xact_lock(hashtext('referral-release:programme'))`);
+        const spent = BigInt((await client.query<{ n: string }>(`SELECT system_referral_month_spend()::text AS n`)).rows[0]?.n ?? '0');
+        const left = settings.programmeBudgetMinor > spent ? settings.programmeBudgetMinor - spent : 0n;
+        if (left < room) room = left;
+      }
       const amount = BigInt(w.amount_minor);
       const pay = amount < room ? amount : room;
       if (pay <= 0n) {

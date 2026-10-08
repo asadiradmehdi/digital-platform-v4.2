@@ -52,7 +52,7 @@ describe('handleReferralTopup', () => {
     expect(vi.mocked(withTenantTransaction)).not.toHaveBeenCalled();
   });
   it('does nothing while the programme is switched off', async () => {
-    vi.mocked(query).mockResolvedValueOnce({ rows: [{ enabled: false, tiers, welcome_bps: 500, welcome_cap_minor: '500000', hold_days: 7, attribution_months: 12, monthly_cap_minor: '20000000', max_signups_per_ip: 3 }] } as never);
+    vi.mocked(query).mockResolvedValueOnce({ rows: [{ enabled: false, tiers, welcome_bps: 500, welcome_cap_minor: '500000', hold_days: 7, attribution_months: 12, monthly_cap_minor: '20000000', max_signups_per_ip: 3, programme_monthly_budget_minor: '0' }] } as never);
     expect(await handleReferralTopup({ workspaceId: 'w', paymentId: 'p', amountMinor: '100', currency: 'IRR' })).toEqual({ skipped: 'disabled' });
     expect(vi.mocked(withTenantTransaction)).not.toHaveBeenCalled();
   });

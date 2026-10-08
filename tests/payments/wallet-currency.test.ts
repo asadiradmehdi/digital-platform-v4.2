@@ -41,9 +41,8 @@ describe('payOrderFromWallet currency', () => {
   it('debits the rial equivalent of a toman order', async () => {
     const q = runWith('5000000');
     await payOrderFromWallet({ workspaceId: 'ws-1', orderId: 'ord-1', idempotencyKey: 'pay:idem-key-0000001' });
-    const debit = q.mock.calls.find(c => String(c[0]).includes("'DEBIT'"));
-    expect(debit?.[1][1]).toBe(1_200_000n);
-    expect(debit?.[1][2]).toBe('IRR');
+    const debit = q.mock.calls.find(c => String(c[0]).includes('INSERT INTO ledger_entries'));
+    expect(debit?.[1].slice(1, 4)).toEqual(['DEBIT', '1200000', 'IRR']);
   });
   it('rejects when the rial balance covers only the raw toman figure', async () => {
     runWith('500000'); // 50,000 toman, order costs 120,000 toman

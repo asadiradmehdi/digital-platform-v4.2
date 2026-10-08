@@ -2,8 +2,23 @@ import { AppError } from '../core/errors';
 
 export type MarginMode = 'MARKUP' | 'MARGIN';
 
+/**
+ * ISO 4217 minor-unit exponents for the base currencies a pricing rule may use. The FX rate is quoted
+ * per ONE MAJOR unit of the base currency (e.g. IRT per 1 USD), while base_amount_minor is in minor
+ * units (USD cents), so the product must be divided by 10^exponent. IRT/IRR have no minor unit here.
+ */
+const MINOR_UNIT_EXPONENT: Record<string, number> = { USD: 2, EUR: 2, GBP: 2, AED: 2, TRY: 2, IRR: 0, IRT: 0 };
+
+export function minorUnitExponent(currency: string): number {
+  const exp = MINOR_UNIT_EXPONENT[currency.trim().toUpperCase()];
+  if (exp === undefined) throw new AppError('VALIDATION_ERROR', `Unsupported pricing base currency '${currency}'.`);
+  return exp;
+}
+
 export function calculateSellPriceMinor(input: {
   baseAmountMinor: bigint;
+  /** Currency of baseAmountMinor; its minor-unit exponent scales the per-major-unit FX rate. */
+  baseCurrency: string;
   rateNumerator: bigint;
   rateDenominator: bigint;
   marginBps: number;
@@ -26,7 +41,7 @@ export function calculateSellPriceMinor(input: {
   }
 
   const baseNumerator = input.baseAmountMinor * input.rateNumerator;
-  const baseDenominator = input.rateDenominator;
+  const baseDenominator = input.rateDenominator * 10n ** BigInt(minorUnitExponent(input.baseCurrency));
   let raw: bigint;
 
   // MARKUP: sell = cost × (1 + markup)

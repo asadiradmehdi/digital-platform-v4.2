@@ -2,9 +2,12 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { AppShell } from '../../components/AppShell';
 import { SystemStrip } from '../../components/ProductSurface';
-import { formatTomanFromIRR } from '../../lib/format';
+import { formatMoney } from '../../lib/format';
 import { requireCurrentUser } from '../../server/identity/request-user';
 import { query, withWorkspaceTransaction } from '../../server/core/db';
+
+/** Every amount on this page is IRT (orders and plan prices are kept in toman). */
+const formatIRT = (minor: number) => formatMoney(minor, 'IRT');
 
 export const metadata: Metadata = { title: 'تحلیل و گزارش', robots: { index: false, follow: false } };
 
@@ -13,13 +16,16 @@ async function getAnalytics(workspaceId: string) {
     const orders = await client.query<{
       revenueMinor: string; providerCostMinor: string; refundMinor: string;
     }>(
+      // Orders are priced in IRT (toman); only IRT orders and same-currency provider costs are summed,
+      // and revenue is summed per order (not per item row) so multi-item orders count once.
       `SELECT
          COALESCE(SUM(o.total_minor),0)::text AS "revenueMinor",
-         COALESCE(SUM(oi.provider_cost_minor * oi.quantity),0)::text AS "providerCostMinor",
+         COALESCE(SUM((SELECT SUM(oi.provider_cost_minor * oi.quantity) FROM order_items oi
+                       WHERE oi.order_id=o.id AND oi.provider_cost_currency=o.currency)),0)::text AS "providerCostMinor",
          0::text AS "refundMinor"
        FROM orders o
-       LEFT JOIN order_items oi ON oi.order_id=o.id
        WHERE o.workspace_id=$1
+         AND o.currency='IRT'
          AND o.status IN ('PAID','COMPLETED','PROCESSING','PROVIDER_SUBMITTED')
          AND o.created_at >= date_trunc('month', now())`,
       [workspaceId],
@@ -28,7 +34,7 @@ async function getAnalytics(workspaceId: string) {
     const mrr = await client.query<{ mrrMinor: string }>(
       `SELECT COALESCE(SUM(s.price_minor),0)::text AS "mrrMinor"
        FROM subscriptions s
-       WHERE s.workspace_id=$1 AND s.status IN ('ACTIVE','TRIALING')`,
+       WHERE s.workspace_id=$1 AND s.status IN ('ACTIVE','TRIALING') AND s.currency='IRT'`,
       [workspaceId],
     );
 
@@ -92,19 +98,19 @@ export default async function Analytics() {
         <section className="metric-grid-4" style={{ marginBottom: 16 }}>
           <article className="metric-tile">
             <span>Revenue</span>
-            <strong>{formatTomanFromIRR(a.revenueMinor)}</strong>
+            <strong>{formatIRT(a.revenueMinor)}</strong>
             <small>این ماه</small>
           </article>
           <article className="metric-tile">
             <span>Contribution</span>
-            <strong>{formatTomanFromIRR(a.contributionMinor)}</strong>
+            <strong>{formatIRT(a.contributionMinor)}</strong>
             <small style={{ color: a.revenueMinor > 0 ? 'var(--success)' : 'var(--muted)' }}>
               {(margin * 100).toFixed(1)}٪ margin
             </small>
           </article>
           <article className="metric-tile">
             <span>MRR</span>
-            <strong>{formatTomanFromIRR(a.mrrMinor)}</strong>
+            <strong>{formatIRT(a.mrrMinor)}</strong>
             <small>درآمد تکرارپذیر</small>
           </article>
           <article className="metric-tile">
@@ -134,7 +140,7 @@ export default async function Analytics() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 11, color: 'var(--muted)' }}>{label}</span>
                     <span style={{ fontSize: 13, fontWeight: 700, color, fontVariantNumeric: 'tabular-nums' }}>
-                      {value >= 0 ? '' : '−'}{formatTomanFromIRR(Math.abs(value))}
+                      {value >= 0 ? '' : '−'}{formatIRT(Math.abs(value))}
                     </span>
                   </div>
                   <div className="progress-track">
@@ -156,7 +162,7 @@ export default async function Analytics() {
               <div className="order-meta-list">
                 <div className="order-meta-row">
                   <span>MRR</span>
-                  <strong>{formatTomanFromIRR(a.mrrMinor)}</strong>
+                  <strong>{formatIRT(a.mrrMinor)}</strong>
                 </div>
                 <div className="order-meta-row">
                   <span>اعضای فضای کاری</span>
@@ -164,7 +170,7 @@ export default async function Analytics() {
                 </div>
                 <div className="order-meta-row">
                   <span>ARPU</span>
-                  <strong>{a.activeUsers > 0 ? formatTomanFromIRR(Math.round(a.revenueMinor / a.activeUsers)) : '—'}</strong>
+                  <strong>{a.activeUsers > 0 ? formatIRT(Math.round(a.revenueMinor / a.activeUsers)) : '—'}</strong>
                 </div>
               </div>
             </article>
