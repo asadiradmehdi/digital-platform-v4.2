@@ -1,6 +1,6 @@
 // Invoice documents («فاکتورها»). Every successful customer payment issues exactly one document, on
-// the SAME tenant transaction that records the payment (callers pass their client), so a payment and
-// its document commit or roll back together. Issuing is idempotent by source key:
+// the SAME tenant transaction that records the payment (callers pass their client). A failure while
+// writing the document is contained in a savepoint, so it never rolls back the payment itself. Issuing is idempotent by source key:
 //   order:<orderId>           sale invoice for a service order (wallet or gateway paid)
 //   subscription:<id>         sale invoice for a new subscription
 //   renewal:<id>:<periodEnd>  sale invoice for a subscription renewal
@@ -13,6 +13,7 @@ import { categoryMeta, serviceKind, serviceMeta, targetField } from '../../lib/c
 import { formatQuantityWords, orderCode } from '../../lib/format';
 import { documentToman, maskTarget, vatPortion } from '../../lib/invoice-format';
 import { notifyInvoiceIssued } from './invoice-notify';
+import { logger } from '../observability/logger';
 
 type Queryable = Pick<PoolClient, 'query'>;
 
@@ -135,8 +136,32 @@ export async function issueInvoice(client: Queryable, input: {
   return { id: invoiceId, invoiceNumber, created: true };
 }
 
+type Issued = { id: string; invoiceNumber: string; created: boolean } | null;
+
+/**
+ * The document must never cost the customer their payment: a failure while writing it is rolled back
+ * to a savepoint and logged, and the payment (wallet debit, gateway settlement) still commits. The
+ * missing document can be re-issued later from its source key.
+ */
+async function issueSafely(client: Queryable, ctx: { workspaceId: string; source: string }, fn: () => Promise<Issued>): Promise<Issued> {
+  await client.query('SAVEPOINT invoice_issue');
+  try {
+    const r = await fn();
+    await client.query('RELEASE SAVEPOINT invoice_issue');
+    return r;
+  } catch (error) {
+    await client.query('ROLLBACK TO SAVEPOINT invoice_issue');
+    logger.error('invoice_issue_failed', { workspaceId: ctx.workspaceId }, { source: ctx.source, error: error instanceof Error ? error.message : String(error) });
+    return null;
+  }
+}
+
 /** Sale invoice for a paid service order: one line per order item, with masked target and tracking code. */
-export async function issueOrderInvoice(client: Queryable, input: {
+export async function issueOrderInvoice(client: Queryable, input: Parameters<typeof issueOrderInvoiceStrict>[1]): Promise<Issued> {
+  return issueSafely(client, { workspaceId: input.workspaceId, source: `order:${input.orderId}` }, () => issueOrderInvoiceStrict(client, input));
+}
+
+export async function issueOrderInvoiceStrict(client: Queryable, input: {
   workspaceId: string; orderId: string; paymentId?: string | null; method: InvoicePaymentMethod; reference?: string | null;
 }) {
   const o = await client.query<{ id: string; currency: string; discount_minor: string }>(
@@ -195,7 +220,11 @@ export async function issueOrderInvoice(client: Queryable, input: {
 }
 
 /** «رسید شارژ کیف پول» for a verified gateway payment that was credited to the wallet. */
-export async function issueTopupReceipt(client: Queryable, input: {
+export async function issueTopupReceipt(client: Queryable, input: Parameters<typeof issueTopupReceiptStrict>[1]): Promise<Issued> {
+  return issueSafely(client, { workspaceId: input.workspaceId, source: `payment:${input.paymentId}` }, () => issueTopupReceiptStrict(client, input));
+}
+
+export async function issueTopupReceiptStrict(client: Queryable, input: {
   workspaceId: string; paymentId: string; amountMinor: bigint; currency: string; reference: string; reason: string;
 }) {
   const amount = documentToman(input.amountMinor, input.currency);
@@ -220,7 +249,11 @@ export async function issueTopupReceipt(client: Queryable, input: {
  * Sale invoice for a subscription period. `paidMinor` is what was actually charged in `currency`;
  * the line carries the subscription's list price and any difference is shown as the discount.
  */
-export async function issueSubscriptionInvoice(client: Queryable, input: {
+export async function issueSubscriptionInvoice(client: Queryable, input: Parameters<typeof issueSubscriptionInvoiceStrict>[1]): Promise<Issued> {
+  return issueSafely(client, { workspaceId: input.workspaceId, source: `subscription:${input.subscriptionId}` }, () => issueSubscriptionInvoiceStrict(client, input));
+}
+
+export async function issueSubscriptionInvoiceStrict(client: Queryable, input: {
   workspaceId: string; subscriptionId: string; paidMinor: bigint; currency: string; method: InvoicePaymentMethod;
   paymentId?: string | null; reference?: string | null; sourceKey?: string; renewal?: boolean;
 }) {
