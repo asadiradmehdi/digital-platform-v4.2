@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Linking, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { appApi, errorText, newIdempotencyKey, type AppOverview, type AppWalletEntry } from '../../api/app';
+import { appApi, errorText, newIdempotencyKey, siteUrl, type AppOverview, type AppWalletEntry } from '../../api/app';
 import { formatQuantityWords, formatTomanNumber, magnitudeParts } from '../../format';
 import { useRemote } from '../../hooks/useRemote';
 import { C, card, faNum, fwd, right, row, shadow } from '../../zp/base';
@@ -38,10 +38,12 @@ function Panel({ o, reload }: { o: AppOverview; reload: () => void }) {
     setBusy(true); setError(null);
     idem.current ??= newIdempotencyKey();
     try {
-      // Wallet ledgers are kept in rial; the chips are chosen in toman.
-      await appApi.topUp({ workspaceId: o.workspaceId, walletId: w.walletId, amountMinor: w.currency === 'IRR' ? toman * 10 : toman, currency: w.currency }, idem.current);
+      // The server creates a gateway payment for the chosen toman amount; the balance changes only
+      // after the gateway confirms the payment, so the screen reloads when the customer returns.
+      const { checkoutUrl } = await appApi.topUp({ workspaceId: o.workspaceId, amountToman: toman }, idem.current);
       idem.current = null;
-      toast.show(`${words} به کیف پول اضافه شد`);
+      await Linking.openURL(/^https?:\/\//.test(checkoutUrl) ? checkoutUrl : siteUrl(checkoutUrl));
+      toast.show('پس از پرداخت، موجودی به‌روز می‌شود');
       reload();
     } catch (e) {
       setError(errorText(e, 'افزایش موجودی انجام نشد.'));

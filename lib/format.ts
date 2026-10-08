@@ -2,8 +2,12 @@ export function formatIRR(minor: number, currency = 'IRR') {
   const value = new Intl.NumberFormat('fa-IR').format(Math.round(minor));
   return `${value} ${currency === 'IRR' ? 'ریال' : currency}`;
 }
-export function formatTomanFromIRR(minor: number) {
-  return `${new Intl.NumberFormat('fa-IR').format(Math.round(minor / 10))} تومان`;
+/**
+ * «۱٬۲۰۰٬۰۰۰ تومان» for an amount in its own currency. Orders, plans, invoices and payments are IRT
+ * (toman); the wallet ledger is IRR (rial). Never format an amount without naming its currency.
+ */
+export function formatMoney(minor: number | string | bigint, currency: string) {
+  return `${new Intl.NumberFormat('fa-IR').format(toToman(minor, currency))} تومان`;
 }
 export function statusLabel(status: string) {
   const map: Record<string,string> = { PROCESSING:'در حال پردازش', COMPLETED:'تکمیل‌شده', QUEUED:'در صف', PAID:'پرداخت‌شده', ACTIVE:'فعال', FAILED:'ناموفق', REFUNDED:'مرجوع‌شده' };

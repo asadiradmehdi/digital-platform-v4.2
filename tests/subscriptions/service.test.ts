@@ -43,33 +43,41 @@ describe('createSubscription', () => {
     expect(mockClientQuery).toHaveBeenCalledTimes(1);
   });
 
-  it('inserts a new subscription when plan is active and key is fresh', async () => {
-    const isoKey = 'freshkey1234567890';
-    mockClientQuery
-      .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // no existing
-      .mockResolvedValueOnce({
-        rows: [{
-          id: 'plan-1',
-          active: true,
-          price_minor: '5000',
-          currency: 'IRT',
-          price_generated_at: new Date(),
-          price_version: 1,
-          pricing_rule_id: null,
-        }],
-        rowCount: 1,
-      }) // plan lookup
-      .mockResolvedValueOnce({ rows: [{ id: 'sub-new', status: 'TRIALING' }], rowCount: 1 }) // insert
-      .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // event insert
-      .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // entitlement snapshot insert
-    ;
-    const result = await createSubscription({
-      workspaceId: 'ws-1',
-      planId: 'plan-1',
-      idempotencyKey: isoKey,
+  function routeQueries(opts: { priceMinor: string; balance: string; subId?: string; status?: string }) {
+    const sqlCalls: Array<[string, unknown[]]> = [];
+    mockClientQuery.mockImplementation(async (sql: string, params: unknown[] = []) => {
+      sqlCalls.push([sql, params]);
+      if (sql.includes('FROM subscriptions WHERE workspace_id=$1 AND idempotency_key')) return { rows: [], rowCount: 0 };
+      if (sql.includes('FROM plans')) return { rows: [{ id: 'plan-1', active: true, price_minor: opts.priceMinor, currency: 'IRT', price_version: 1, pricing_rule_id: null }], rowCount: 1 };
+      if (sql.includes('INSERT INTO subscriptions')) return { rows: [{ id: opts.subId ?? 'sub-new', status: opts.status ?? 'ACTIVE' }], rowCount: 1 };
+      if (sql.includes('FROM wallets w')) return { rows: [{ account_id: 'acct-1', wallet_currency: 'IRR' }], rowCount: 1 };
+      if (sql.includes('FROM ledger_entries')) return { rows: [{ balance: opts.balance }], rowCount: 1 };
+      return { rows: [], rowCount: 1 };
     });
-    expect(result).toEqual({ id: 'sub-new', status: 'TRIALING' });
-    expect(mockClientQuery).toHaveBeenCalledTimes(5);
+    return sqlCalls;
+  }
+
+  it('inserts a new subscription and charges the wallet (IRT plan price converted to IRR)', async () => {
+    // Regression (H-6): a paid plan used to be activated without charging anything.
+    const sqlCalls = routeQueries({ priceMinor: '5000', balance: '50000' });
+    const result = await createSubscription({ workspaceId: 'ws-1', planId: 'plan-1', idempotencyKey: 'freshkey1234567890' });
+    expect(result).toEqual({ id: 'sub-new', status: 'ACTIVE' });
+    const debit = sqlCalls.find(([sql]) => sql.includes('INSERT INTO ledger_entries'));
+    expect(debit?.[1].slice(1, 7)).toEqual(['DEBIT', '50000', 'IRR', 'SUBSCRIPTION', 'sub-new', 'subscription:sub-new']);
+    expect(sqlCalls.some(([sql]) => sql.includes("'CHARGED'"))).toBe(true);
+  });
+
+  it('refuses a paid plan with 402 when the wallet balance is short (transaction rolls back)', async () => {
+    const sqlCalls = routeQueries({ priceMinor: '5000', balance: '49999' });
+    await expect(createSubscription({ workspaceId: 'ws-1', planId: 'plan-1', idempotencyKey: 'shortbalance123456' })).rejects.toMatchObject({ code: 'PAYMENT_REQUIRED' });
+    expect(sqlCalls.some(([sql]) => sql.includes('INSERT INTO ledger_entries'))).toBe(false);
+  });
+
+  it('does not charge during a trial', async () => {
+    const sqlCalls = routeQueries({ priceMinor: '5000', balance: '0', status: 'TRIALING' });
+    const result = await createSubscription({ workspaceId: 'ws-1', planId: 'plan-1', idempotencyKey: 'trialnocharge12345', trialEndsAt: new Date(Date.now() + 86400000) });
+    expect(result.status).toBe('TRIALING');
+    expect(sqlCalls.some(([sql]) => sql.includes('ledger_entries'))).toBe(false);
   });
 
   it('throws NOT_FOUND when plan is inactive', async () => {
@@ -127,24 +135,13 @@ describe('createSubscription', () => {
     }
   });
 
-  it('5th query inserts entitlement snapshot for the new subscription id', async () => {
-    const isoKey = 'snapshotkey12345678';
-    const sqlCalls: Array<[string, unknown[]]> = [];
-    mockClientQuery.mockImplementation(async (sql: string, params: unknown[]) => {
-      sqlCalls.push([sql, params]);
-      if (sqlCalls.length === 1) return { rows: [], rowCount: 0 };
-      if (sqlCalls.length === 2) return { rows: [{ id: 'plan-snap', active: true, price_minor: '1000', currency: 'IRT', price_generated_at: new Date(), price_version: 1, pricing_rule_id: null }], rowCount: 1 };
-      if (sqlCalls.length === 3) return { rows: [{ id: 'sub-snap', status: 'ACTIVE' }], rowCount: 1 };
-      return { rows: [], rowCount: 1 };
-    });
-    await createSubscription({ workspaceId: 'ws-1', planId: 'plan-snap', idempotencyKey: isoKey });
+  it('inserts the entitlement snapshot for the new subscription id', async () => {
+    const sqlCalls = routeQueries({ priceMinor: '1000', balance: '10000', subId: 'sub-snap' });
+    await createSubscription({ workspaceId: 'ws-1', planId: 'plan-1', idempotencyKey: 'snapshotkey12345678' });
     const snapshotCall = sqlCalls.find(([sql]) => sql.includes('subscription_entitlement_snapshots'));
     expect(snapshotCall).toBeDefined();
-    if (snapshotCall) {
-      const [sql, params] = snapshotCall;
-      expect(sql.toLowerCase()).toContain('insert');
-      expect(params).toContain('sub-snap');
-    }
+    expect(snapshotCall![0].toLowerCase()).toContain('insert');
+    expect(snapshotCall![1]).toContain('sub-snap');
   });
 });
 

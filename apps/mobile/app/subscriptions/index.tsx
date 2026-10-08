@@ -37,7 +37,7 @@ function SubscriptionCard({ sub }: { sub: SubscriptionSummary }) {
           <Text style={styles.planIcon}>{plan.icon}</Text>
           <View>
             <Text style={styles.planName}>{plan.label}</Text>
-            <Text style={styles.planPrice}>{formatToman(sub.priceMinor)} / ماه</Text>
+            <Text style={styles.planPrice}>{formatToman(sub.priceMinor, sub.currency)} / ماه</Text>
           </View>
         </View>
         <Status tone={statusTone(sub.status)}>{statusLabel[sub.status] ?? sub.status}</Status>
@@ -104,7 +104,7 @@ export default function Subscriptions() {
           <View style={styles.nextPaymentRow}>
             <View>
               <Text style={styles.nextPaymentLabel}>پرداخت بعدی</Text>
-              <Text style={styles.nextPaymentAmount}>{formatToman(activeSub.priceMinor)}</Text>
+              <Text style={styles.nextPaymentAmount}>{formatToman(activeSub.priceMinor, activeSub.currency)}</Text>
               <Text style={styles.nextPaymentCurrency}>تومان از کیف پول کسر می‌شود</Text>
             </View>
             <Text style={styles.nextPaymentIcon}>💳</Text>

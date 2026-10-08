@@ -4,6 +4,7 @@ import { assertOrderTransition, type OrderStatus } from '../core/order-state';
 import { requireIdempotencyKey } from '../core/idempotency';
 import { assertActionAllowed, type RiskState } from '../core/risk';
 import { writeAudit } from '../core/audit';
+import { assertQuantityWithinBounds } from './quantity';
 
 export type CreateOrderInput = { workspaceId: string; serviceId: string; quantity: bigint; parameters: Record<string, unknown>; idempotencyKey: string; riskState?: RiskState };
 export async function createOrder(input: CreateOrderInput) {
@@ -11,8 +12,8 @@ export async function createOrder(input: CreateOrderInput) {
   return withWorkspaceTransaction(input.workspaceId, undefined, async (client) => {
     const existing = await client.query<{ id: string; status: OrderStatus }>(`SELECT id,status FROM orders WHERE workspace_id=$1 AND idempotency_key=$2`, [input.workspaceId,input.idempotencyKey]);
     if (existing.rows[0]) return existing.rows[0];
-    const catalog = await client.query<{ id: string; unit_price_minor: string; currency: string; price_version: number; pricing_rule_id: string | null; fx_rate_id: string | null; provider_cost_minor: string | null; provider_cost_currency: string | null }>(`
-      SELECT sp.id,sp.unit_price_minor,sp.currency,sp.price_version,sp.pricing_rule_id,sp.fx_rate_id,sp.provider_cost_minor,sp.provider_cost_currency
+    const catalog = await client.query<{ id: string; unit_price_minor: string; currency: string; price_version: number; pricing_rule_id: string | null; fx_rate_id: string | null; provider_cost_minor: string | null; provider_cost_currency: string | null; min_quantity: string | null; max_quantity: string | null }>(`
+      SELECT sp.id,sp.unit_price_minor,sp.min_quantity,sp.max_quantity,sp.currency,sp.price_version,sp.pricing_rule_id,sp.fx_rate_id,sp.provider_cost_minor,sp.provider_cost_currency
       FROM service_prices sp
       WHERE sp.service_id=$1 AND sp.active=true AND sp.currency='IRT'
         AND (sp.effective_to IS NULL OR sp.effective_to > now())
@@ -20,6 +21,7 @@ export async function createOrder(input: CreateOrderInput) {
     `,[input.serviceId]);
     if (!catalog.rows[0]) throw new AppError('CONFLICT','No active catalog price is available.');
     const price = catalog.rows[0];
+    assertQuantityWithinBounds(input.quantity, price.min_quantity, price.max_quantity);
     const total = input.quantity * BigInt(price.unit_price_minor);
     const order = await client.query<{ id: string; status: OrderStatus }>(`INSERT INTO orders(workspace_id,status,currency,subtotal_minor,total_minor,idempotency_key) VALUES($1,'PAYMENT_PENDING',$2,$3,$3,$4) RETURNING id,status`, [input.workspaceId,price.currency,total.toString(),input.idempotencyKey]);
     const id = order.rows[0].id;

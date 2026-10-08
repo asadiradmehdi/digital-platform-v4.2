@@ -29,6 +29,7 @@ const mockBeginCheckout = vi.mocked(beginCheckout);
 
 const mockTx = vi.mocked(withTenantTransaction);
 const WS = '11111111-1111-4111-8111-111111111111';
+const SESS = '22222222-2222-4222-8222-222222222222';
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -61,7 +62,7 @@ function makeGetRequest(workspaceId: string | null = WS): import('next/server').
 function makePayRequest(body: Record<string, unknown>): import('next/server').NextRequest {
   return {
     json: async () => ({ workspaceId: WS, ...body }),
-    headers: { get: (k: string) => k === 'idempotency-key' ? 'idem-pay-1' : null },
+    headers: { get: (k: string) => k === 'idempotency-key' ? 'idem-pay-0123456789' : null },
     url: 'http://localhost:3000/api/v1/checkout/sess-1/pay',
     method: 'POST',
   } as unknown as import('next/server').NextRequest;
@@ -116,7 +117,7 @@ describe('POST /api/v1/checkout/:id/pay', () => {
     mockRequirePermission.mockResolvedValueOnce(undefined as never);
     mockBeginCheckout.mockResolvedValueOnce({ paymentId: 'pay-1', redirectUrl: 'https://pay.example.com/pay-1' } as never);
 
-    const response = await POST_PAY(makePayRequest(validPayBody), makeParams('sess-1'));
+    const response = await POST_PAY(makePayRequest(validPayBody), makeParams(SESS));
     expect(response.status).toBe(200);
     const data = await response.json();
     expect(data.paymentId).toBe('pay-1');
@@ -126,23 +127,23 @@ describe('POST /api/v1/checkout/:id/pay', () => {
     mockRequireUser.mockResolvedValueOnce('user-1' as never);
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as never);
 
-    const response = await POST_PAY(makePayRequest(validPayBody), makeParams('sess-missing'));
+    const response = await POST_PAY(makePayRequest(validPayBody), makeParams(SESS));
     expect(response.status).toBe(404);
   });
 
   it('returns 401 when not authenticated', async () => {
     mockRequireUser.mockRejectedValueOnce(new AppError('UNAUTHORIZED', 'Unauthorized'));
 
-    const response = await POST_PAY(makePayRequest(validPayBody), makeParams('sess-1'));
+    const response = await POST_PAY(makePayRequest(validPayBody), makeParams(SESS));
     expect(response.status).toBe(401);
   });
 
-  it('returns 409 when session is not OPEN', async () => {
+  it('returns 409 when session is already PAID', async () => {
     mockRequireUser.mockResolvedValueOnce('user-1' as never);
     mockRequirePermission.mockResolvedValueOnce(undefined as never);
-    mockQuery.mockResolvedValueOnce({ rows: [{ ...sessionRow, status: 'PAYMENT_PENDING' }], rowCount: 1 } as never);
+    mockQuery.mockResolvedValueOnce({ rows: [{ ...sessionRow, status: 'PAID' }], rowCount: 1 } as never);
 
-    const response = await POST_PAY(makePayRequest(validPayBody), makeParams('sess-1'));
+    const response = await POST_PAY(makePayRequest(validPayBody), makeParams(SESS));
     expect(response.status).toBe(409);
   });
 
@@ -151,8 +152,36 @@ describe('POST /api/v1/checkout/:id/pay', () => {
     mockRequirePermission.mockResolvedValueOnce(undefined as never);
     mockQuery.mockResolvedValueOnce({ rows: [sessionRow], rowCount: 1 } as never);
 
-    const response = await POST_PAY(makePayRequest({ ...validPayBody, quoteHash: 'stale-hash' }), makeParams('sess-1'));
+    const response = await POST_PAY(makePayRequest({ ...validPayBody, quoteHash: 'stale-hash' }), makeParams(SESS));
     expect(response.status).toBe(409);
+  });
+});
+
+describe('POST /api/v1/checkout/:id/pay — idempotency and gateway policy', () => {
+  it('requires an Idempotency-Key (no random fallback)', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    mockRequirePermission.mockResolvedValueOnce(undefined as never);
+    mockQuery.mockResolvedValueOnce({ rows: [sessionRow], rowCount: 1 } as never);
+    const req = { ...makePayRequest({ quoteHash: 'hash-abc' }), headers: { get: () => null } } as unknown as import('next/server').NextRequest;
+    const response = await POST_PAY(req, makeParams(SESS));
+    expect(response.status).toBe(400);
+    expect(mockBeginCheckout).not.toHaveBeenCalled();
+  });
+
+  it('fails closed (503, Persian message) in production without a real gateway', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('PAYMENTS_MOCK_ALLOWED', '');
+    try {
+      mockRequireUser.mockResolvedValueOnce('user-1' as never);
+      mockRequirePermission.mockResolvedValueOnce(undefined as never);
+      mockQuery.mockResolvedValueOnce({ rows: [sessionRow], rowCount: 1 } as never);
+      const response = await POST_PAY(makePayRequest({ quoteHash: 'hash-abc' }), makeParams(SESS));
+      expect(response.status).toBe(503);
+      expect((await response.json()).error.message).toMatch(/درگاه/);
+      expect(mockBeginCheckout).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });
 
@@ -187,10 +216,12 @@ describe('checkout session RLS context', () => {
       .mockResolvedValueOnce({ rows: [sessionRow], rowCount: 1 } as never)
       .mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
     mockBeginCheckout.mockResolvedValueOnce({ paymentId: 'pay-1', checkoutUrl: 'https://pay.example.com/pay-1' } as never);
-    const response = await POST_PAY(makePayRequest({ quoteHash: 'hash-abc', gateway: 'mock' }), makeParams('sess-1'));
+    const response = await POST_PAY(makePayRequest({ quoteHash: 'hash-abc', gateway: 'mock' }), makeParams(SESS));
     expect(response.status).toBe(200);
     expect(mockTx.mock.calls.map(c => c[0])).toEqual([WS, WS]);
     expect(String(mockQuery.mock.calls[1][0])).toContain("SET status='PAYMENT_PENDING'");
-    expect(mockQuery.mock.calls[1][1]).toEqual(['sess-1', WS]);
+    expect(mockQuery.mock.calls[1][1]).toEqual([SESS, WS]);
+    // Regression (C-4): the gateway intent is tied to this checkout session, never a bare top-up.
+    expect(mockBeginCheckout).toHaveBeenCalledWith(expect.objectContaining({ purpose: 'CHECKOUT', checkoutSessionId: SESS, idempotencyKey: 'idem-pay-0123456789' }));
   });
 });

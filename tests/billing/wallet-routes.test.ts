@@ -14,7 +14,8 @@ vi.mock('../../server/core/security-boundary', () => ({
   assertSameOrigin: vi.fn(),
   clientFingerprint: vi.fn().mockReturnValue('1.2.3.4'),
 }));
-vi.mock('../../server/core/validation', () => ({ requireUuid: vi.fn() }));
+vi.mock('../../server/core/validation', async (orig) => ({ ...(await orig<typeof import('../../server/core/validation')>()), requireUuid: vi.fn() }));
+vi.mock('../../server/payments/service', () => ({ beginCheckout: vi.fn() }));
 vi.mock('../../server/billing/ledger', () => ({ postLedgerEntry: vi.fn() }));
 vi.mock('../../server/core/distributed-rate-limit', () => ({ consumeDistributedRateLimit: vi.fn() }));
 
@@ -24,6 +25,7 @@ import { requireWorkspacePermission } from '../../server/identity/rbac';
 import { requireUuid } from '../../server/core/validation';
 import { postLedgerEntry } from '../../server/billing/ledger';
 import { consumeDistributedRateLimit } from '../../server/core/distributed-rate-limit';
+import { beginCheckout } from '../../server/payments/service';
 import { AppError } from '../../server/core/errors';
 
 const mockQuery = vi.mocked(query);
@@ -33,6 +35,7 @@ const mockRequirePermission = vi.mocked(requireWorkspacePermission);
 const mockRequireUuid = vi.mocked(requireUuid);
 const mockPostLedger = vi.mocked(postLedgerEntry);
 const mockRateLimit = vi.mocked(consumeDistributedRateLimit);
+const mockBeginCheckout = vi.mocked(beginCheckout);
 
 beforeEach(() => vi.resetAllMocks());
 
@@ -97,94 +100,80 @@ describe('GET /api/v1/wallet', () => {
   });
 });
 
-describe('POST /api/v1/wallet', () => {
-  it('returns 201 with entryId and balanceMinor on successful deposit', async () => {
+// Regression (C-1): the top-up used to post a CREDIT straight from the client body (any amount, any
+// currency, no payment). It now only creates a gateway payment intent; nothing is credited here.
+describe('POST /api/v1/wallet (top-up intent)', () => {
+  const KEY = 'topup-key-0123456789';
+  function okAuth() {
     mockRequireUser.mockResolvedValueOnce('user-1' as never);
-    mockRequireUuid
-      .mockReturnValueOnce('ws-1' as never)
-      .mockReturnValueOnce('w-1' as never);
+    mockRequireUuid.mockReturnValueOnce('ws-1' as never);
     mockRequirePermission.mockResolvedValueOnce(undefined as never);
     mockRateLimit.mockResolvedValueOnce(undefined as never);
-    mockPostLedger.mockResolvedValueOnce({ id: 'entry-1' } as never);
-    mockTx.mockResolvedValueOnce({ rows: [{ balanceMinor: '600000', currency: 'IRR' }] } as never);
+  }
 
-    const response = await POST_WALLET(makePostRequest({
-      workspaceId: 'ws-1', walletId: 'w-1', amountMinor: 100000, currency: 'IRR',
-    }));
+  it('creates a TOPUP gateway intent in IRT and returns the checkout URL — never a ledger credit', async () => {
+    okAuth();
+    mockBeginCheckout.mockResolvedValueOnce({ paymentId: 'pay-1', checkoutUrl: '/checkout/mock?payment=pay-1', gatewayReference: 'mock_pay-1' } as never);
+    const response = await POST_WALLET(makePostRequest({ workspaceId: 'ws-1', amountToman: 500000, amountMinor: 999999999, currency: 'USD', referenceType: 'REFUND' }, KEY));
     expect(response.status).toBe(201);
-    const data = await response.json();
-    expect(data.entryId).toBe('entry-1');
-    expect(data.balanceMinor).toBe('600000');
+    expect(await response.json()).toEqual({ paymentId: 'pay-1', checkoutUrl: '/checkout/mock?payment=pay-1' });
+    expect(mockBeginCheckout).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: 'ws-1', purpose: 'TOPUP', amountMinor: 500000n, currency: 'IRT', idempotencyKey: KEY }));
+    expect(mockPostLedger).not.toHaveBeenCalled();
   });
 
   it('returns 401 when not authenticated', async () => {
     mockRequireUser.mockRejectedValueOnce(new AppError('UNAUTHORIZED', 'Unauthorized'));
-
-    const response = await POST_WALLET(makePostRequest({ workspaceId: 'ws-1', walletId: 'w-1', amountMinor: 100000, currency: 'IRR' }));
+    const response = await POST_WALLET(makePostRequest({ workspaceId: 'ws-1', amountToman: 100000 }, KEY));
     expect(response.status).toBe(401);
   });
 
   it('returns 403 when user lacks wallet.deposit permission', async () => {
     mockRequireUser.mockResolvedValueOnce('user-1' as never);
-    mockRequireUuid
-      .mockReturnValueOnce('ws-1' as never)
-      .mockReturnValueOnce('w-1' as never);
+    mockRequireUuid.mockReturnValueOnce('ws-1' as never);
     mockRequirePermission.mockRejectedValueOnce(new AppError('FORBIDDEN', 'Forbidden'));
-
-    const response = await POST_WALLET(makePostRequest({ workspaceId: 'ws-1', walletId: 'w-1', amountMinor: 100000, currency: 'IRR' }));
+    const response = await POST_WALLET(makePostRequest({ workspaceId: 'ws-1', amountToman: 100000 }, KEY));
     expect(response.status).toBe(403);
+    expect(mockBeginCheckout).not.toHaveBeenCalled();
   });
 
   it('returns 429 when rate limit is exceeded', async () => {
     mockRequireUser.mockResolvedValueOnce('user-1' as never);
-    mockRequireUuid
-      .mockReturnValueOnce('ws-1' as never)
-      .mockReturnValueOnce('w-1' as never);
+    mockRequireUuid.mockReturnValueOnce('ws-1' as never);
     mockRequirePermission.mockResolvedValueOnce(undefined as never);
     mockRateLimit.mockRejectedValueOnce(new AppError('RATE_LIMITED', 'Rate limit exceeded'));
-
-    const response = await POST_WALLET(makePostRequest({ workspaceId: 'ws-1', walletId: 'w-1', amountMinor: 100000, currency: 'IRR' }));
+    const response = await POST_WALLET(makePostRequest({ workspaceId: 'ws-1', amountToman: 100000 }, KEY));
     expect(response.status).toBe(429);
+    expect(mockRateLimit).toHaveBeenCalledWith(expect.objectContaining({ scope: 'wallet:deposit', windowSeconds: 3600, maxRequests: 20 }));
   });
 
-  it('calls rate limit with correct scope before deposit', async () => {
-    mockRequireUser.mockResolvedValueOnce('user-1' as never);
-    mockRequireUuid
-      .mockReturnValueOnce('ws-1' as never)
-      .mockReturnValueOnce('w-1' as never);
-    mockRequirePermission.mockResolvedValueOnce(undefined as never);
-    mockRateLimit.mockResolvedValueOnce(undefined as never);
-    mockPostLedger.mockResolvedValueOnce({ id: 'entry-1' } as never);
-    mockTx.mockResolvedValueOnce({ rows: [{ balanceMinor: '600000', currency: 'IRR' }] } as never);
-
-    await POST_WALLET(makePostRequest({ workspaceId: 'ws-1', walletId: 'w-1', amountMinor: 100000, currency: 'IRR' }));
-    expect(mockRateLimit).toHaveBeenCalledWith(
-      expect.objectContaining({ scope: 'wallet:deposit', windowSeconds: 3600, maxRequests: 20 }),
-    );
+  it('returns 400 for a zero, negative, fractional or missing amountToman', async () => {
+    for (const amountToman of [0, -5, 1.5, undefined, '100000']) {
+      okAuth();
+      const response = await POST_WALLET(makePostRequest({ workspaceId: 'ws-1', amountToman }, KEY));
+      expect(response.status).toBe(400);
+    }
+    expect(mockBeginCheckout).not.toHaveBeenCalled();
   });
 
-  it('returns 400 when amountMinor is zero or negative', async () => {
-    mockRequireUser.mockResolvedValueOnce('user-1' as never);
-    mockRequireUuid
-      .mockReturnValueOnce('ws-1' as never)
-      .mockReturnValueOnce('w-1' as never);
-    mockRequirePermission.mockResolvedValueOnce(undefined as never);
-    mockRateLimit.mockResolvedValueOnce(undefined as never);
-
-    const response = await POST_WALLET(makePostRequest({ workspaceId: 'ws-1', walletId: 'w-1', amountMinor: 0, currency: 'IRR' }));
+  it('returns 400 without an Idempotency-Key (no random fallback)', async () => {
+    okAuth();
+    const response = await POST_WALLET(makePostRequest({ workspaceId: 'ws-1', amountToman: 100000 }));
     expect(response.status).toBe(400);
+    expect(mockBeginCheckout).not.toHaveBeenCalled();
   });
 
-  it('returns 400 when currency is not a 3-letter code', async () => {
-    mockRequireUser.mockResolvedValueOnce('user-1' as never);
-    mockRequireUuid
-      .mockReturnValueOnce('ws-1' as never)
-      .mockReturnValueOnce('w-1' as never);
-    mockRequirePermission.mockResolvedValueOnce(undefined as never);
-    mockRateLimit.mockResolvedValueOnce(undefined as never);
-
-    const response = await POST_WALLET(makePostRequest({ workspaceId: 'ws-1', walletId: 'w-1', amountMinor: 100000, currency: 'INVALID' }));
-    expect(response.status).toBe(400);
+  it('fails closed with 503 and a Persian message in production without a gateway', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('PAYMENTS_MOCK_ALLOWED', '');
+    try {
+      okAuth();
+      const response = await POST_WALLET(makePostRequest({ workspaceId: 'ws-1', amountToman: 100000 }, KEY));
+      expect(response.status).toBe(503);
+      expect((await response.json()).error.message).toMatch(/درگاه/);
+      expect(mockBeginCheckout).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });
 

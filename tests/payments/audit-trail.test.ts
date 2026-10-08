@@ -18,7 +18,6 @@ import { withWorkspaceTransaction } from '../../server/core/db';
 import { writeAudit } from '../../server/core/audit';
 import { createOrder } from '../../server/commerce/orders';
 import { markPaymentPaid } from '../../server/payments/service';
-import { createRefund } from '../../server/payments/refund';
 
 const mockTx = vi.mocked(withWorkspaceTransaction);
 const mockWriteAudit = vi.mocked(writeAudit);
@@ -85,13 +84,12 @@ describe('createOrder — audit trail', () => {
 
 describe('markPaymentPaid — audit trail', () => {
   it('calls writeAudit with action=payment.paid on successful payment', async () => {
-    const paymentRow = { id: 'pay-1', workspace_id: 'ws-1', order_id: null, status: 'PENDING', amount_minor: '10000', currency: 'IRR' };
-    const clientQuery = vi.fn()
-      .mockResolvedValueOnce({ rows: [paymentRow] })  // SELECT ... FOR UPDATE
-      .mockResolvedValueOnce({ rows: [] })             // UPDATE payments
-      .mockResolvedValueOnce({ rows: [] })             // INSERT payment_attempts
-      .mockResolvedValueOnce({ rows: [] })             // SELECT ledger account (no wallet → skip ledger write)
-      .mockResolvedValueOnce({ rows: [] });            // INSERT ledger_entries (TOPUP)
+    const paymentRow = { id: 'pay-1', workspace_id: 'ws-1', order_id: null, checkout_session_id: null, purpose: 'TOPUP', status: 'PENDING', amount_minor: '10000', currency: 'IRT', gateway: 'mock' };
+    const clientQuery = vi.fn(async (sql: string) => {
+      if (sql.includes('FROM payments WHERE id=$1')) return { rows: [paymentRow] };
+      if (sql.includes('FROM wallets w')) return { rows: [{ account_id: 'acct-1', wallet_currency: 'IRR' }] };
+      return { rows: [], rowCount: 1 };
+    });
 
     mockTx.mockImplementationOnce(async (_wid, _uid, fn) => fn({ query: clientQuery } as never));
     mockWriteAudit.mockResolvedValueOnce(undefined);
@@ -125,45 +123,4 @@ describe('markPaymentPaid — audit trail', () => {
   });
 });
 
-// ─── createRefund audit ───────────────────────────────────────────────────────
-
-describe('createRefund — audit trail', () => {
-  it('calls writeAudit with action=refund.completed on successful refund', async () => {
-    const paymentRow = { id: 'pay-1', status: 'PAID', gateway_reference: 'gw-ref', amount_minor: '10000' };
-    const clientQuery = vi.fn()
-      .mockResolvedValueOnce({ rows: [] })               // idempotency check
-      .mockResolvedValueOnce({ rows: [paymentRow] })     // SELECT payment FOR UPDATE
-      .mockResolvedValueOnce({ rows: [{ total: '0' }] }) // existing refunds total
-      .mockResolvedValueOnce({ rows: [{ id: 'ref-1', status: 'PENDING' }] }) // INSERT refund
-      .mockResolvedValueOnce({ rows: [] })               // UPDATE refund to PAID
-      .mockResolvedValueOnce({ rows: [] });              // SELECT ledger account (no wallet → skip credit)
-
-    mockTx.mockImplementationOnce(async (_wid, _uid, fn) => fn({ query: clientQuery } as never));
-    mockWriteAudit.mockResolvedValueOnce(undefined);
-
-    await createRefund({
-      workspaceId: 'ws-1',
-      paymentId: 'pay-1',
-      amountMinor: 5000n,
-      currency: 'IRT',
-      idempotencyKey: 'refund-idem-test-001abc',
-      gateway: {
-        name: 'mock',
-        createCheckout: vi.fn(),
-        verify: vi.fn(),
-        refund: vi.fn().mockResolvedValue({ gatewayReference: 'gw-refund-ref' }),
-      },
-    });
-
-    expect(mockWriteAudit).toHaveBeenCalledOnce();
-    expect(mockWriteAudit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        workspaceId: 'ws-1',
-        action: 'refund.completed',
-        entityType: 'refund',
-        entityId: 'ref-1',
-      }),
-      expect.objectContaining({ query: expect.any(Function) }), // written on the tenant tx client
-    );
-  });
-});
+// Refund audit: tests/payments/refund.test.ts.
