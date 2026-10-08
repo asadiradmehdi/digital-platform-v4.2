@@ -92,6 +92,20 @@ describe('POST /api/v1/auth/login', () => {
     expect(data.ok).toBe(true);
   });
 
+  it('accepts the `email` field the web sign-in form posts (regression: web login was rejected)', async () => {
+    mockRateLimit.mockResolvedValueOnce(undefined as never);
+    mockQuery.mockResolvedValueOnce({ rows: [validUser], rowCount: 1 } as never);
+    mockLocked.mockResolvedValueOnce(false);
+    mockVerify.mockResolvedValueOnce(true);
+    mockSuccess.mockResolvedValueOnce(undefined);
+    mockHasMfa.mockResolvedValueOnce(false);
+    mockCreateSession.mockResolvedValueOnce('session-token' as never);
+
+    const response = await POST(makeRequest({ email: 'user@example.com', password: 'ValidPassword1' }));
+    expect(response.status).toBe(200);
+    expect(mockQuery.mock.calls.at(-1)?.[1]).toEqual(['user@example.com']);
+  });
+
   it('returns 200 with mfaRequired when user has MFA enabled', async () => {
     mockRateLimit.mockResolvedValueOnce(undefined as never);
     mockQuery.mockResolvedValueOnce({ rows: [validUser], rowCount: 1 } as never);

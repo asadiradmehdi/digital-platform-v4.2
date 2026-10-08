@@ -157,7 +157,7 @@ describe('findSubscriptionsDueForRenewal', () => {
 
 // ─── processSubscriptionRenewal ───────────────────────────────────────────────
 
-const renewalSubscription = { ...activeSubscription, price_minor: '5000' };
+const renewalSubscription = { ...activeSubscription, price_minor: '5000', currency: 'IRT' };
 
 describe('processSubscriptionRenewal', () => {
   it('returns FAILED when subscription not found', async () => {
@@ -181,8 +181,8 @@ describe('processSubscriptionRenewal', () => {
   it('returns FAILED and marks PAST_DUE when wallet balance is insufficient', async () => {
     client.query
       .mockResolvedValueOnce({ rows: [renewalSubscription] }) // lock subscription
-      .mockResolvedValueOnce({ rows: [{ account_id: 'acct-1' }] }) // lock MAIN
-      .mockResolvedValueOnce({ rows: [{ balance: '1000' }] }) // balance < 5000
+      .mockResolvedValueOnce({ rows: [{ account_id: 'acct-1', wallet_currency: 'IRR' }] }) // lock MAIN
+      .mockResolvedValueOnce({ rows: [{ balance: '49999' }] }) // covers the raw 5000 but not 50,000 IRR
       .mockResolvedValue({ rows: [], rowCount: 1 });
 
     const result = await processSubscriptionRenewal('sub-1', 'ws-1');
@@ -194,12 +194,15 @@ describe('processSubscriptionRenewal', () => {
   it('returns RENEWED after a successful wallet charge, all in one workspace transaction', async () => {
     client.query
       .mockResolvedValueOnce({ rows: [renewalSubscription] })
-      .mockResolvedValueOnce({ rows: [{ account_id: 'acct-1' }] })
-      .mockResolvedValueOnce({ rows: [{ balance: '10000' }] })
+      .mockResolvedValueOnce({ rows: [{ account_id: 'acct-1', wallet_currency: 'IRR' }] })
+      .mockResolvedValueOnce({ rows: [{ balance: '50000' }] })
       .mockResolvedValue({ rows: [], rowCount: 1 });
 
     const result = await processSubscriptionRenewal('sub-1', 'ws-1');
     expect(result.status).toBe('RENEWED');
+    // Regression (C-2): a 5,000 IRT plan is debited as 50,000 IRR, in the wallet currency.
+    const debit = client.query.mock.calls.find(c => String(c[0]).includes('INSERT INTO ledger_entries'))!;
+    expect((debit[1] as unknown[]).slice(1, 4)).toEqual(['DEBIT', '50000', 'IRR']);
     expect(mockTx).toHaveBeenCalledTimes(1);
     expect(mockTx).toHaveBeenCalledWith('ws-1', undefined, expect.any(Function));
     const sqls = sqlCalls();
@@ -212,7 +215,7 @@ describe('processSubscriptionRenewal', () => {
     // ("FOR UPDATE is not allowed with GROUP BY clause"), so every paid renewal failed.
     client.query
       .mockResolvedValueOnce({ rows: [renewalSubscription] })
-      .mockResolvedValueOnce({ rows: [{ account_id: 'acct-1' }] })
+      .mockResolvedValueOnce({ rows: [{ account_id: 'acct-1', wallet_currency: 'IRR' }] })
       .mockResolvedValueOnce({ rows: [{ balance: '100' }] })
       .mockResolvedValue({ rows: [], rowCount: 1 });
 

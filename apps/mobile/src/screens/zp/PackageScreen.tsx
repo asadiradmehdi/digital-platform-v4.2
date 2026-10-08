@@ -1,9 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
-import { Modal, PanResponder, Pressable, TextInput, View } from 'react-native';
+import { Linking, Modal, PanResponder, Pressable, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Ellipse, Path } from 'react-native-svg';
-import { appApi, errorText, newIdempotencyKey, type AppService } from '../../api/app';
+import { appApi, errorText, newIdempotencyKey, siteUrl, type AppService } from '../../api/app';
 import { formatQuantityWords, formatTomanNumber, magnitudeParts } from '../../format';
 import { useRemote } from '../../hooks/useRemote';
 import { atLeft, C, F, back, card, faNum, fwd, right, row, shadow, tRight } from '../../zp/base';
@@ -60,6 +60,7 @@ function Picker({ service, workspaceId, walletToman, reload }: { service: AppSer
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ id: string; label: string; amount: number } | null>(null);
+  const [method, setMethod] = useState<'wallet' | 'gateway'>('wallet');
   const idem = useRef<string | null>(null);
 
   // Short ladders (AI plans: 1/3/6/12 months) sit in a 2×2 block instead of a sparse 3×3.
@@ -82,6 +83,8 @@ function Picker({ service, workspaceId, walletToman, reload }: { service: AppSer
     if (!qty) { toast.show('اول یک بسته انتخاب کنید'); return; }
     setError(null);
     idem.current = newIdempotencyKey();
+    // Never force a top-up first: with too little wallet balance, online payment is preselected.
+    setMethod(walletToman != null && walletToman >= price ? 'wallet' : 'gateway');
     setSheet(true);
   };
 
@@ -93,12 +96,22 @@ function Picker({ service, workspaceId, walletToman, reload }: { service: AppSer
     if (service.brief && b.length < service.brief.min) { setError(`${service.brief.label} را کامل‌تر بنویسید.`); return; }
     setBusy(true); setError(null);
     try {
-      const res = await appApi.placeOrder({ workspaceId, serviceId: service.id, quantity: qty, target: t, brief: service.brief ? b : undefined }, idem.current ?? newIdempotencyKey());
+      const res = await appApi.placeOrder({ workspaceId, serviceId: service.id, quantity: qty, target: t, brief: service.brief ? b : undefined, paymentMethod: method }, idem.current ?? newIdempotencyKey());
+      if (method === 'gateway') {
+        // The order stays unpaid until the bank confirms the payment on the server.
+        const url = res.payment?.checkoutUrl;
+        if (!url) throw new Error('gateway');
+        setSheet(false);
+        await Linking.openURL(/^https?:\/\//.test(url) ? url : siteUrl(url));
+        toast.show('پس از تأیید پرداخت، سفارش در صف انجام قرار می‌گیرد');
+        reload();
+        return;
+      }
       setSheet(false);
       setDone({ id: res.id, label: `${formatQuantityWords(qty)} ${service.name}`, amount: price });
       reload();
     } catch (e) {
-      setError(errorText(e, 'ثبت سفارش انجام نشد. دوباره تلاش کنید.'));
+      setError(errorText(e, method === 'gateway' ? 'اتصال به درگاه پرداخت انجام نشد. دوباره تلاش کنید.' : 'ثبت سفارش انجام نشد. دوباره تلاش کنید.'));
     } finally {
       setBusy(false);
     }
@@ -210,14 +223,26 @@ function Picker({ service, workspaceId, walletToman, reload }: { service: AppSer
         <View style={{ backgroundColor: C.surface2, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 14, gap: 9 }}>
           <View style={{ flexDirection: row, justifyContent: 'space-between' }}><T size={13.5} color={C.ink2}>مبلغ بسته</T><T w="b" size={13.5}>{formatTomanNumber(price)} تومان</T></View>
           <View style={{ flexDirection: row, justifyContent: 'space-between' }}><T size={13.5} color={C.ink2}>موجودی کیف پول</T><T w="b" size={13.5} color={short ? C.danger : C.success}>{walletToman == null ? '—' : `${formatTomanNumber(walletToman)} تومان`}</T></View>
-          <View style={{ flexDirection: row, justifyContent: 'space-between', borderTopWidth: 1, borderStyle: 'dashed', borderColor: C.muted, paddingTop: 9 }}><T size={15}>پرداخت از کیف پول</T><T w="b" size={15}>{formatTomanNumber(price)} تومان</T></View>
+          <View style={{ flexDirection: row, justifyContent: 'space-between', borderTopWidth: 1, borderStyle: 'dashed', borderColor: C.muted, paddingTop: 9 }}><T size={15}>{method === 'wallet' ? 'پرداخت از کیف پول' : 'پرداخت آنلاین'}</T><T w="b" size={15}>{formatTomanNumber(price)} تومان</T></View>
         </View>
-        {short && !error ? <ErrorBox text="موجودی کافی نیست." action={{ label: 'افزایش موجودی', onPress: () => { setSheet(false); router.navigate('/wallet'); } }} /> : null}
+        <View accessibilityRole="radiogroup" accessibilityLabel="روش پرداخت" style={{ flexDirection: row, gap: 4, backgroundColor: C.surface2, borderRadius: 15, padding: 4 }}>
+          {([['gateway', 'پرداخت آنلاین'], ['wallet', 'از کیف پول']] as const).map(([key, text]) => {
+            const on = method === key;
+            return (
+              <Press key={key} accessibilityRole="radio" accessibilityState={{ checked: on, disabled: busy }} disabled={busy}
+                onPress={() => { setMethod(key); setError(null); }}
+                style={[{ flex: 1, borderRadius: 11, paddingVertical: 9, alignItems: 'center' }, on && [{ backgroundColor: C.surface }, shadow(2, 8, 0.12, '#000')]]}>
+                <T w={on ? 'b' : 'sb'} size={13} color={on ? C.ink : C.muted}>{text}</T>
+              </Press>
+            );
+          })}
+        </View>
+        {method === 'wallet' && short && !error ? <ErrorBox text="موجودی کافی نیست. پرداخت آنلاین را انتخاب کنید یا موجودی را افزایش دهید." action={{ label: 'افزایش موجودی', onPress: () => { setSheet(false); router.navigate('/wallet'); } }} /> : null}
         {error ? <ErrorBox text={error} /> : null}
-        <Cta full label={busy ? 'در حال ثبت…' : 'پرداخت و ثبت سفارش'} busy={busy} disabled={!workspaceId} onPress={pay} />
+        <Cta full label={busy ? (method === 'gateway' ? 'در حال اتصال به درگاه…' : 'در حال ثبت…') : method === 'gateway' ? 'پرداخت آنلاین و ثبت سفارش' : 'پرداخت از کیف پول و ثبت سفارش'} busy={busy} disabled={!workspaceId || (method === 'wallet' && short)} onPress={pay} />
         <View style={{ flexDirection: row, alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: -4 }}>
           <Icon name="shieldS" size={14} color={C.turquoiseInk} />
-          <T size={11} color={C.muted} style={{ textAlign: 'center', flexShrink: 1 }}>{`پرداخت امن از کیف پول · ${service.refund ?? 'بازگشت وجه در صورت لغو'}`}</T>
+          <T size={11} color={C.muted} style={{ textAlign: 'center', flexShrink: 1 }}>{`${method === 'gateway' ? 'پرداخت امن با درگاه بانکی · ثبت سفارش پس از تأیید بانک' : 'پرداخت امن از کیف پول'} · ${service.refund ?? 'بازگشت وجه در صورت لغو'}`}</T>
         </View>
       </Sheet>
 

@@ -6,7 +6,7 @@ import { useQuery } from '../../src/hooks/useQuery';
 import { analytics } from '../../src/api/client';
 import { formatToman } from '../../src/format';
 
-type AnalyticsResponse = { workspaceId: string; metrics: { creditMinor: string; debitMinor: string } };
+type AnalyticsResponse = { workspaceId: string; metrics: { creditMinor: string; debitMinor: string; currency?: string } };
 
 function MetricCard({ label, value, currency, hint, accent, icon }: {
   label: string;
@@ -63,6 +63,8 @@ export default function Analytics() {
 
   const creditMinor = parseInt(analyticsQ.data?.metrics?.creditMinor ?? '0', 10);
   const debitMinor = parseInt(analyticsQ.data?.metrics?.debitMinor ?? '0', 10);
+  // Ledger totals come in the wallet ledger currency (IRR) reported by the server.
+  const currency = analyticsQ.data?.metrics?.currency ?? 'IRR';
   const contribution = Math.max(0, creditMinor - debitMinor);
   const margin = creditMinor > 0 ? Math.round((contribution / creditMinor) * 100) : 0;
   const debitRatio = creditMinor > 0 ? Math.round((debitMinor / creditMinor) * 100) : 0;
@@ -100,7 +102,7 @@ export default function Analytics() {
             <View style={styles.heroCard}>
               <View style={styles.heroGlow} />
               <Text style={styles.heroLabel}>موجودی خالص</Text>
-              <Text style={styles.heroValue}>{formatToman(contribution)}</Text>
+              <Text style={styles.heroValue}>{formatToman(contribution, currency)}</Text>
               <Text style={styles.heroCurrency}>تومان</Text>
               <View style={styles.heroMarginBadge}>
                 <Text style={styles.heroMarginText}>حاشیه {margin}٪</Text>
@@ -111,14 +113,14 @@ export default function Analytics() {
             <View style={styles.metricsRow}>
               <MetricCard
                 label="بستانکار"
-                value={formatToman(creditMinor)}
+                value={formatToman(creditMinor, currency)}
                 currency="تومان"
                 hint="کل واریز"
                 icon="⬆️"
               />
               <MetricCard
                 label="بدهکار"
-                value={formatToman(debitMinor)}
+                value={formatToman(debitMinor, currency)}
                 currency="تومان"
                 hint="کل برداشت"
                 icon="⬇️"
@@ -131,14 +133,14 @@ export default function Analytics() {
               <View style={styles.chartCard}>
                 <ProgressRow
                   label="بدهکار (برداشت)"
-                  value={formatToman(debitMinor)}
+                  value={formatToman(debitMinor, currency)}
                   color={theme.colors.danger}
                   percent={debitRatio}
                 />
                 <View style={styles.chartDivider} />
                 <ProgressRow
                   label="موجودی خالص"
-                  value={formatToman(contribution)}
+                  value={formatToman(contribution, currency)}
                   color={theme.colors.success}
                   percent={margin}
                 />

@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { ArrowRight, CheckCircle2, Circle, Clock, Package, ShoppingBag, XCircle, Loader2, ExternalLink } from 'lucide-react';
 import { OrderActions } from './OrderActions';
 import { AppShell } from '../../../components/AppShell';
-import { formatTomanNumber, toToman } from '../../../lib/format';
+import { formatMoney } from '../../../lib/format';
 import { isTeamFulfilled, serviceMeta } from '../../../lib/catalog-ui';
 import { orderStage } from '../../../lib/order-progress';
 import { requireCurrentUser } from '../../../server/identity/request-user';
@@ -167,7 +167,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                 {item?.serviceName ?? '—'} · {qtyLabel}
               </p>
             </div>
-            <OrderActions status={order.status} orderId={order.id} />
+            <OrderActions status={order.status} orderId={order.id} workspaceId={workspaceId} />
           </div>
         </header>
 
@@ -234,7 +234,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                   team
                     ? { label: 'انجام‌دهنده', value: 'تیم زُحل پی' }
                     : { label: 'تأمین‌کننده', value: provider?.providerType ?? '—', ltr: !!provider?.providerType },
-                  { label: 'مبلغ', value: `${formatTomanNumber(toToman(order.totalMinor, order.currency))} تومان`, mono: true },
+                  { label: 'مبلغ', value: formatMoney(order.totalMinor, order.currency), mono: true },
                   { label: 'تاریخ ثبت', value: new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(order.createdAt)) },
                 ].map(row => (
                   <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 13px', background: 'var(--surface-2)', borderRadius: 12 }}>

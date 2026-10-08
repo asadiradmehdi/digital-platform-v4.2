@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ArrowRight, CreditCard, Download, ExternalLink, Sparkles } from 'lucide-react';
 import { AppShell } from '../../../components/AppShell';
-import { formatTomanFromIRR, statusLabel } from '../../../lib/format';
+import { formatMoney, statusLabel } from '../../../lib/format';
 import { requireCurrentUser } from '../../../server/identity/request-user';
 import { query, withWorkspaceTransaction } from '../../../server/core/db';
 import { CancelSubscriptionButton } from './CancelSubscriptionButton';
@@ -12,24 +12,26 @@ export const metadata: Metadata = { title: 'پرداخت و صورتحساب', r
 
 async function getBillingData(workspaceId: string) {
   return withWorkspaceTransaction(workspaceId, undefined, async client => {
-    const sub = await client.query<{ id: string; planName: string; priceMinor: string | null; currentPeriodEnd: string; status: string }>(
-      `SELECT s.id, p.name AS "planName", s.price_minor::text AS "priceMinor",
+    const sub = await client.query<{ id: string; planName: string; priceMinor: string | null; currency: string; currentPeriodEnd: string; status: string }>(
+      `SELECT s.id, p.name AS "planName", s.price_minor::text AS "priceMinor", COALESCE(s.currency, p.currency) AS currency,
               s.current_period_end AS "currentPeriodEnd", s.status
        FROM subscriptions s JOIN plans p ON p.id=s.plan_id
        WHERE s.workspace_id=$1 AND s.status IN ('ACTIVE','TRIALING')
        ORDER BY s.created_at DESC LIMIT 1`,
       [workspaceId],
     );
-    const balance = await client.query<{ balanceMinor: string }>(
-      `SELECT COALESCE(SUM(CASE WHEN le.direction='CREDIT' THEN le.amount_minor ELSE -le.amount_minor END),0)::text AS "balanceMinor"
+    const balance = await client.query<{ balanceMinor: string; currency: string }>(
+      `SELECT COALESCE(SUM(CASE WHEN le.direction='CREDIT' THEN le.amount_minor ELSE -le.amount_minor END),0)::text AS "balanceMinor",
+              w.currency
        FROM wallets w
        LEFT JOIN ledger_accounts la ON la.wallet_id=w.id
        LEFT JOIN ledger_entries le ON le.account_id=la.id
-       WHERE w.workspace_id=$1`,
+       WHERE w.workspace_id=$1
+       GROUP BY w.id, w.currency`,
       [workspaceId],
     );
-    const invoices = await client.query<{ id: string; invoiceNumber: string; totalMinor: string; status: string; issuedAt: string | null; createdAt: string }>(
-      `SELECT id, invoice_number AS "invoiceNumber", total_minor::text AS "totalMinor",
+    const invoices = await client.query<{ id: string; invoiceNumber: string; totalMinor: string; currency: string; status: string; issuedAt: string | null; createdAt: string }>(
+      `SELECT id, invoice_number AS "invoiceNumber", total_minor::text AS "totalMinor", currency,
               status, issued_at AS "issuedAt", created_at AS "createdAt"
        FROM invoices WHERE workspace_id=$1 ORDER BY created_at DESC LIMIT 20`,
       [workspaceId],
@@ -37,6 +39,7 @@ async function getBillingData(workspaceId: string) {
     return {
       sub: sub.rows[0] ?? null,
       balanceMinor: Number(balance.rows[0]?.balanceMinor ?? '0'),
+      walletCurrency: String(balance.rows[0]?.currency ?? 'IRR').trim(),
       invoices: invoices.rows,
     };
   });
@@ -59,6 +62,7 @@ export default async function BillingSettings() {
 
   const sub = data?.sub ?? null;
   const balanceMinor = data?.balanceMinor ?? 0;
+  const walletCurrency = data?.walletCurrency ?? 'IRR';
   const invoices = data?.invoices ?? [];
 
   return (
@@ -119,7 +123,7 @@ export default async function BillingSettings() {
                   { label: 'پلن', value: sub.planName },
                   {
                     label: 'هزینه ماهانه',
-                    value: sub.priceMinor ? formatTomanFromIRR(Number(sub.priceMinor)) : '—',
+                    value: sub.priceMinor ? formatMoney(sub.priceMinor, sub.currency) : '—',
                   },
                   {
                     label: 'تمدید بعدی',
@@ -209,8 +213,8 @@ export default async function BillingSettings() {
               }}
             >
               {[
-                { label: 'موجودی', value: formatTomanFromIRR(balanceMinor) },
-                { label: 'معلق', value: formatTomanFromIRR(0) },
+                { label: 'موجودی', value: formatMoney(balanceMinor, walletCurrency) },
+                { label: 'معلق', value: formatMoney(0, walletCurrency) },
               ].map(({ label, value }) => (
                 <div
                   key={label}
@@ -298,7 +302,7 @@ export default async function BillingSettings() {
                           <strong className="text-ltr">{inv.invoiceNumber}</strong>
                         </td>
                         <td>{date}</td>
-                        <td>{formatTomanFromIRR(Number(inv.totalMinor))}</td>
+                        <td>{formatMoney(inv.totalMinor, inv.currency)}</td>
                         <td>
                           <span className={`status-pill ${inv.status === 'PAID' ? 'success' : 'warning'}`}>
                             {statusLabel(inv.status)}

@@ -32,6 +32,8 @@ export function PackagePicker({ service, workspaceId, walletToman }: { service: 
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ id: string; label: string; amount: number } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [method, setMethod] = useState<'wallet' | 'gateway'>('wallet');
+  const [redirecting, setRedirecting] = useState(false);
   const idemKey = useRef<string | null>(null);
   const swipe = useRef<number | null>(null);
 
@@ -50,6 +52,8 @@ export function PackagePicker({ service, workspaceId, walletToman }: { service: 
     if (!qty) { setToast('اول یک بسته انتخاب کنید'); return; }
     setError(null);
     idemKey.current = crypto.randomUUID();
+    // Never force a top-up first: with too little wallet balance, online payment is preselected.
+    setMethod(walletToman != null && walletToman >= price ? 'wallet' : 'gateway');
     setSheet(true);
   };
 
@@ -65,11 +69,18 @@ export function PackagePicker({ service, workspaceId, walletToman }: { service: 
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idemKey.current ?? crypto.randomUUID() },
-        body: JSON.stringify({ workspaceId, serviceId: service.id, quantity: qty, parameters: service.brief ? { ...(t ? { target: t } : {}), brief: b } : { target: t } }),
+        body: JSON.stringify({ workspaceId, serviceId: service.id, quantity: qty, parameters: service.brief ? { ...(t ? { target: t } : {}), brief: b } : { target: t }, paymentMethod: method }),
       });
-      if (!res.ok) throw new Error(await apiErrorMessage(res, 'ثبت سفارش انجام نشد. دوباره تلاش کنید.'));
-      const body = await res.json() as { id?: string };
+      if (!res.ok) throw new Error(await apiErrorMessage(res, method === 'gateway' ? 'اتصال به درگاه پرداخت انجام نشد. دوباره تلاش کنید.' : 'ثبت سفارش انجام نشد. دوباره تلاش کنید.'));
+      const body = await res.json() as { id?: string; payment?: { method?: string; checkoutUrl?: string } };
       if (!body.id) throw new Error('ثبت سفارش انجام نشد. دوباره تلاش کنید.');
+      if (method === 'gateway') {
+        // The order stays unpaid until the gateway confirms the payment on the server.
+        if (!body.payment?.checkoutUrl) throw new Error('اتصال به درگاه پرداخت انجام نشد. دوباره تلاش کنید.');
+        setRedirecting(true);
+        window.location.assign(body.payment.checkoutUrl);
+        return;
+      }
       setSheet(false);
       setDone({ id: body.id, label: `${formatQuantityWords(qty)} ${service.name}`, amount: price });
       router.refresh();
@@ -159,16 +170,20 @@ export function PackagePicker({ service, workspaceId, walletToman }: { service: 
         <div className="zp-sum">
           <div><span>مبلغ بسته</span><b>{formatTomanNumber(price)} تومان</b></div>
           <div><span>موجودی کیف پول</span><b className={short ? 'no' : 'ok'}>{walletToman == null ? '—' : `${formatTomanNumber(walletToman)} تومان`}</b></div>
-          <div className="tot"><span>پرداخت از کیف پول</span><b>{formatTomanNumber(price)} تومان</b></div>
+          <div className="tot"><span>{method === 'wallet' ? 'پرداخت از کیف پول' : 'پرداخت آنلاین'}</span><b>{formatTomanNumber(price)} تومان</b></div>
         </div>
-        {short && !error && (
-          <div className="zp-err" role="status">موجودی کافی نیست. <Link href="/wallet" tabIndex={sheet ? 0 : -1}>افزایش موجودی</Link></div>
+        <div className="zp-seg" role="group" aria-label="روش پرداخت">
+          <button type="button" aria-pressed={method === 'gateway'} onClick={() => { setMethod('gateway'); setError(null); }} disabled={busy} tabIndex={sheet ? 0 : -1}>پرداخت آنلاین</button>
+          <button type="button" aria-pressed={method === 'wallet'} onClick={() => { setMethod('wallet'); setError(null); }} disabled={busy} tabIndex={sheet ? 0 : -1}>از کیف پول</button>
+        </div>
+        {method === 'wallet' && short && !error && (
+          <div className="zp-err" role="status">موجودی کافی نیست. پرداخت آنلاین را انتخاب کنید یا <Link href="/wallet" tabIndex={sheet ? 0 : -1}>موجودی را افزایش دهید</Link>.</div>
         )}
         {error && <div className="zp-err" role="alert">{error}</div>}
-        <button type="button" className="zp-cta full zp-press" onClick={pay} disabled={busy || !workspaceId} tabIndex={sheet ? 0 : -1}>
-          {busy ? 'در حال ثبت…' : 'پرداخت و ثبت سفارش'}
+        <button type="button" className="zp-cta full zp-press" onClick={pay} disabled={busy || redirecting || !workspaceId || (method === 'wallet' && short)} tabIndex={sheet ? 0 : -1}>
+          {redirecting ? 'در حال انتقال به درگاه…' : busy ? 'در حال ثبت…' : method === 'gateway' ? 'پرداخت آنلاین و ثبت سفارش' : 'پرداخت از کیف پول و ثبت سفارش'}
         </button>
-        <div className="zp-secure"><ZIcon name="shieldS" />پرداخت امن از کیف پول · {service.refund}</div>
+        <div className="zp-secure"><ZIcon name="shieldS" />{method === 'gateway' ? 'پرداخت امن با درگاه بانکی · ثبت سفارش پس از تأیید بانک' : 'پرداخت امن از کیف پول'} · {service.refund}</div>
       </div>
 
       <div className={`zp-done${done ? ' on' : ''}`} role="status" aria-hidden={!done}>

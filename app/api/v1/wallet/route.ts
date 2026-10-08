@@ -5,10 +5,10 @@ import { requireWorkspacePermission } from '../../../../server/identity/rbac';
 import { assertSameOrigin } from '../../../../server/core/security-boundary';
 import { consumeDistributedRateLimit } from '../../../../server/core/distributed-rate-limit';
 import { correlationId, handleRouteError, json } from '../../../../server/core/http';
-import { requireUuid } from '../../../../server/core/validation';
-import { postLedgerEntry } from '../../../../server/billing/ledger';
-import { AppError } from '../../../../server/core/errors';
-import { randomUUID } from 'node:crypto';
+import { requireUuid, safePositiveInteger } from '../../../../server/core/validation';
+import { requireIdempotencyKey } from '../../../../server/core/idempotency';
+import { beginCheckout } from '../../../../server/payments/service';
+import { paymentCallbackUrl, resolvePaymentGateway } from '../../../../server/payments/gateways';
 
 export async function GET(request: NextRequest) {
   const id = correlationId(request);
@@ -41,11 +41,16 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST /api/v1/wallet
- * Record a wallet top-up / deposit (credit) entry.
- * Body: { workspaceId, walletId, amountMinor, currency, referenceType?, referenceId? }
- * Requires auth + workspace membership + wallet.deposit permission.
- * Idempotent via Idempotency-Key header.
+ * POST /api/v1/wallet — start a wallet top-up.
+ * Body: { workspaceId, amountToman } (a positive whole number of toman).
+ * Header: Idempotency-Key (required).
+ * Response 201: { paymentId, checkoutUrl } — the client sends the customer to checkoutUrl.
+ *
+ * Nothing is credited here. This only creates a PENDING gateway payment intent (purpose TOPUP, in
+ * IRT). The wallet is credited exactly once, converted into the wallet currency, when the gateway
+ * verifies the captured amount (markPaymentPaid). The client cannot choose the currency, the ledger
+ * reference or the credited amount. With no usable gateway (production without an adapter) this
+ * fails closed with a Persian message.
  */
 export async function POST(request: NextRequest) {
   const id = correlationId(request);
@@ -54,51 +59,24 @@ export async function POST(request: NextRequest) {
     const userId = await requireRequestUser(request);
     const body = await request.json() as Record<string, unknown>;
     const workspaceId = requireUuid(body.workspaceId, 'workspaceId');
-    const walletId = requireUuid(body.walletId, 'walletId');
     await requireWorkspacePermission(userId, workspaceId, 'wallet.deposit');
     await consumeDistributedRateLimit({ key: userId, scope: 'wallet:deposit', windowSeconds: 3600, maxRequests: 20 });
 
-    const rawAmount = body.amountMinor;
-    if (rawAmount == null || isNaN(Number(rawAmount)) || Number(rawAmount) <= 0) {
-      throw new AppError('VALIDATION_ERROR', 'amountMinor must be a positive number.');
-    }
-    const amountMinor = BigInt(String(rawAmount));
-    const currency = typeof body.currency === 'string' && body.currency.trim().length === 3
-      ? body.currency.trim().toUpperCase()
-      : (() => { throw new AppError('VALIDATION_ERROR', 'currency must be a 3-letter ISO code.'); })();
+    const amountToman = BigInt(safePositiveInteger(body.amountToman, 'amountToman'));
+    const idempotencyKey = requireIdempotencyKey(request.headers.get('idempotency-key'));
+    const gateway = resolvePaymentGateway(null);
 
-    const idempotencyKey = request.headers.get('idempotency-key') || randomUUID();
-
-    const entry = await postLedgerEntry({
+    const result = await beginCheckout({
       workspaceId,
-      walletId,
-      accountCode: 'MAIN',
-      direction: 'CREDIT',
-      amountMinor,
-      currency,
-      referenceType: body.referenceType ? String(body.referenceType) : 'DEPOSIT',
-      referenceId: body.referenceId ? String(body.referenceId) : undefined,
+      purpose: 'TOPUP',
+      amountMinor: amountToman,
+      currency: 'IRT',
+      gateway,
+      callbackUrl: paymentCallbackUrl(),
       idempotencyKey,
     });
 
-    // Return updated balance alongside the new entry id.
-    const balanceRow = await withWorkspaceTransaction(workspaceId, userId, async client =>
-      client.query<{ balanceMinor: string; currency: string }>(
-        `SELECT COALESCE(SUM(CASE WHEN le.direction='CREDIT' THEN le.amount_minor ELSE -le.amount_minor END),0)::text AS "balanceMinor",
-                w.currency
-         FROM wallets w
-         LEFT JOIN ledger_accounts la ON la.wallet_id=w.id
-         LEFT JOIN ledger_entries le ON le.account_id=la.id
-         WHERE w.id=$1
-         GROUP BY w.id, w.currency`,
-        [walletId],
-      ),
-    );
-
-    return json(
-      { entryId: entry.id, balanceMinor: balanceRow.rows[0]?.balanceMinor ?? '0', currency: balanceRow.rows[0]?.currency ?? currency },
-      { status: 201, correlationId: id },
-    );
+    return json({ paymentId: result.paymentId, checkoutUrl: result.checkoutUrl }, { status: 201, correlationId: id });
   } catch (e) {
     return handleRouteError(e, id);
   }

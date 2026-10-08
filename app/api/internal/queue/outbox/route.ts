@@ -3,6 +3,7 @@ import { claimOutboxBatch, markOutboxPublished, markOutboxFailed } from '../../.
 import { dispatchOrder } from '../../../../../server/providers/dispatch';
 import { transitionOrder } from '../../../../../server/commerce/orders';
 import { withTenantTransaction } from '../../../../../server/core/db';
+import { handleReferralTopup, REFERRAL_TOPUP_EVENT } from '../../../../../server/referrals/service';
 
 function assertCron(request: Request) {
   const expected = env('QUEUE_CRON_SECRET');
@@ -64,6 +65,9 @@ export async function POST(request: Request) {
         switch (row.event_type) {
           case 'order.paid':
             await handleOrderPaid(row);
+            break;
+          case REFERRAL_TOPUP_EVENT:
+            await handleReferralTopup(row.payload);
             break;
           default:
             // Unknown event types are acknowledged without processing (no handler registered).

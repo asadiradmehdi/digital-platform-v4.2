@@ -2,6 +2,8 @@ import type { PoolClient } from 'pg';
 import { query, withWorkspaceTransaction } from '../core/db';
 import { AppError } from '../core/errors';
 import { resetUsagePeriod } from './usage';
+import { lockMainWalletAccount, postWalletEntry, walletBalanceMinor } from '../payments/wallet-ledger';
+import { toWalletMinor } from '../payments/currency';
 
 export type RenewalResult =
   | { subscriptionId: string; status: 'RENEWED'; newPeriodStart: Date; newPeriodEnd: Date }
@@ -123,33 +125,26 @@ export async function processSubscriptionRenewal(subscriptionId: string, workspa
 
     const priceMinor = BigInt(sub.price_minor ?? '0');
     if (priceMinor > 0n) {
-      // Debit wallet for renewal charge (idempotent by subscription+period key).
+      // Debit wallet for renewal charge (idempotent by subscription+period key). Plan prices are kept
+      // in the plan currency (IRT) and the wallet in rial (IRR): the balance check and the debit both
+      // use the amount converted into the wallet currency, and the entry carries the wallet currency.
       const chargeKey = `renewal:${subscriptionId}:${new Date(sub.current_period_end).toISOString()}`;
-      // Lock first, then sum: Postgres forbids FOR UPDATE together with GROUP BY.
-      const acct = await client.query<{ account_id: string }>(
-        `SELECT la.id AS account_id
-         FROM wallets w JOIN ledger_accounts la ON la.wallet_id=w.id
-         WHERE w.workspace_id=$1 AND la.account_code='MAIN'
-         ORDER BY w.created_at LIMIT 1
-         FOR UPDATE OF la`,
-        [sub.workspace_id],
-      );
-      const accountId = acct.rows[0]?.account_id;
+      const priceCurrency = String(sub.currency ?? 'IRT').trim();
+      const wallet = await lockMainWalletAccount(client, sub.workspace_id);
       let charged = false;
-      if (accountId) {
-        const bal = await client.query<{ balance: string }>(
-          `SELECT COALESCE(SUM(CASE WHEN direction='CREDIT' THEN amount_minor ELSE -amount_minor END),0)::text AS balance
-           FROM ledger_entries WHERE account_id=$1`,
-          [accountId],
-        );
-        const balance = BigInt(bal.rows[0]?.balance ?? '0');
-        if (balance >= priceMinor) {
-          await client.query(
-            `INSERT INTO ledger_entries(account_id,direction,amount_minor,currency,reference_type,reference_id,idempotency_key,metadata)
-             VALUES($1,'DEBIT',$2,$3,'SUBSCRIPTION_RENEWAL',$4,$5,$6)
-             ON CONFLICT(account_id,idempotency_key) DO NOTHING`,
-            [accountId, priceMinor, sub.currency, subscriptionId, chargeKey, { label: 'تمدید اشتراک' }],
-          );
+      if (wallet) {
+        const needed = toWalletMinor(priceMinor, priceCurrency, wallet.walletCurrency);
+        const balance = await walletBalanceMinor(client, wallet.accountId);
+        if (balance >= needed) {
+          await postWalletEntry(client, wallet, {
+            direction: 'DEBIT',
+            amountMinor: priceMinor,
+            currency: priceCurrency,
+            referenceType: 'SUBSCRIPTION_RENEWAL',
+            referenceId: subscriptionId,
+            idempotencyKey: chargeKey,
+            label: 'تمدید اشتراک',
+          });
           charged = true;
         }
       }

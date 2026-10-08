@@ -19,6 +19,7 @@ const DRAWER: Array<{ href: string; label: string; icon: IconName }> = [
   { href: '/services', label: 'همه‌ی خدمات', icon: 'grid' },
   { href: '/orders', label: 'سفارش‌های من', icon: 'tOrders' },
   { href: '/wallet', label: 'کیف پول و تراکنش‌ها', icon: 'tWallet' },
+  { href: '/invite', label: 'دعوت از دوستان', icon: 'gift' },
   { href: '/services/ai-subscriptions', label: 'اشتراک هوش مصنوعی', icon: 'aiSub' },
   { href: '/subscriptions', label: 'پلن‌های زُحل پی', icon: 'pr' },
   { href: '/ai', label: 'ابزارهای هوش مصنوعی', icon: 'ai' },

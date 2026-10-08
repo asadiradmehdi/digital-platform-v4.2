@@ -91,9 +91,9 @@ export function Progress({ steps, value, tone = 'live', track = C.surface2, fill
   );
 }
 
-export function StatusPill({ label, tone }: { label: string; tone: 'live' | 'ok' | 'bad' }) {
-  const bg = tone === 'ok' ? C.successSoft : tone === 'bad' ? C.dangerSoft : C.warningSoft;
-  const fg = tone === 'ok' ? C.success : tone === 'bad' ? C.danger : C.warning;
+export function StatusPill({ label, tone }: { label: string; tone: 'live' | 'ok' | 'bad' | 'idle' }) {
+  const bg = tone === 'ok' ? C.successSoft : tone === 'bad' ? C.dangerSoft : tone === 'idle' ? C.surface2 : C.warningSoft;
+  const fg = tone === 'ok' ? C.success : tone === 'bad' ? C.danger : tone === 'idle' ? C.muted : C.warning;
   return (
     <View style={{ flexDirection: row, alignItems: 'center', gap: 5, backgroundColor: bg, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 }}>
       <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: fg }} />

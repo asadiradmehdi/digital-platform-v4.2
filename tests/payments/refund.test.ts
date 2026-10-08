@@ -1,193 +1,153 @@
+/**
+ * Unit tests for refundOrder() (server/payments/refund.ts) — the single refund/cancel path.
+ * Real-PostgreSQL coverage of the wallet paths lives in tests/integration/money-flows.pg.test.ts.
+ *
+ * Regression (C-6): the old createRefund called the gateway inside the DB transaction, credited the
+ * wallet even for card payments, looked idempotency keys up across tenants, and cancel used a
+ * separate path, so refund + cancel paid back twice.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+let inTx = false;
 vi.mock('../../server/core/db', () => ({
-  query: vi.fn(),
   withWorkspaceTransaction: vi.fn(),
 }));
-
-vi.mock('../../server/core/idempotency', () => ({
-  requireIdempotencyKey: vi.fn(),
-}));
-
-vi.mock('../../server/core/audit', () => ({
-  writeAudit: vi.fn(),
-}));
+vi.mock('../../server/core/audit', () => ({ writeAudit: vi.fn() }));
 
 import { withWorkspaceTransaction } from '../../server/core/db';
-import { requireIdempotencyKey } from '../../server/core/idempotency';
-import { writeAudit } from '../../server/core/audit';
-import { createRefund } from '../../server/payments/refund';
+import { refundOrder } from '../../server/payments/refund';
 import type { PaymentGateway } from '../../server/payments/service';
 
 const mockTx = vi.mocked(withWorkspaceTransaction);
-const mockRequireIdem = vi.mocked(requireIdempotencyKey);
-const mockWriteAudit = vi.mocked(writeAudit);
+const WS = 'ws-1';
+const KEY = 'refund-key-0123456789';
 
-beforeEach(() => vi.clearAllMocks());
+type State = { order: { id: string; status: string } | null; payment: { id: string; amount_minor: string; currency: string; gateway: string; gateway_reference: string | null; status: string } | null; refunded: string; prior?: Record<string, string> | null; refundRowStatus: string };
 
-function buildClient(overrides: {
-  existingRefund?: { id: string; status: string } | null;
-  payment?: { id: string; status: string; gateway_reference: string; amount_minor: string } | null;
-  refundedTotal?: string;
-  insertedRefund?: { id: string; status: string };
-}) {
-  const {
-    existingRefund = null,
-    payment = { id: 'pay-1', status: 'PAID', gateway_reference: 'gw-ref', amount_minor: '10000' },
-    refundedTotal = '0',
-    insertedRefund = { id: 'ref-1', status: 'PENDING' },
-  } = overrides;
-
-  return {
-    query: vi.fn(async (sql: string) => {
-      if (sql.includes('FROM refunds WHERE idempotency_key')) {
-        return { rows: existingRefund ? [existingRefund] : [], rowCount: existingRefund ? 1 : 0 };
-      }
-      if (sql.includes('FROM payments WHERE')) {
-        return { rows: payment ? [payment] : [], rowCount: payment ? 1 : 0 };
-      }
-      if (sql.includes('SUM(amount_minor)')) {
-        return { rows: [{ total: refundedTotal }], rowCount: 1 };
-      }
-      if (sql.includes('INSERT INTO refunds')) {
-        return { rows: [insertedRefund], rowCount: 1 };
-      }
+function setup(state: State) {
+  const calls: Array<{ sql: string; values: unknown[] }> = [];
+  const client = {
+    query: vi.fn(async (sql: string, values: unknown[] = []) => {
+      calls.push({ sql, values });
+      if (sql.includes('FROM refunds r JOIN payments p')) return { rows: state.prior ? [state.prior] : [] };
+      if (sql.includes('FROM orders WHERE id=$1 AND workspace_id=$2 FOR UPDATE') && !sql.includes('SELECT status FROM orders')) return { rows: state.order ? [state.order] : [] };
+      if (sql.startsWith('SELECT status FROM orders')) return { rows: state.order ? [{ status: state.order.status }] : [] };
+      if (sql.includes('FROM payments WHERE order_id=$1')) return { rows: state.payment ? [state.payment] : [] };
+      if (sql.includes("status <> 'FAILED'")) return { rows: [{ total: state.refunded }] };
+      if (sql.includes("status='PAID'") && sql.includes('SUM(amount_minor)')) return { rows: [{ total: state.payment?.amount_minor ?? '0' }] };
+      if (sql.includes('INSERT INTO refunds')) return { rows: [{ id: 'ref-1' }] };
+      if (sql.startsWith('SELECT status FROM refunds')) return { rows: [{ status: state.refundRowStatus }] };
+      if (sql.includes('UPDATE orders SET status')) { if (state.order) state.order.status = String(values[1]); return { rows: [], rowCount: 1 }; }
+      if (sql.includes('FROM wallets w')) return { rows: [{ account_id: 'acct-1', wallet_currency: 'IRR' }] };
       return { rows: [], rowCount: 1 };
     }),
   };
+  mockTx.mockImplementation((async (_ws: string, _u: string | undefined, fn: (c: unknown) => unknown) => {
+    inTx = true;
+    try { return await fn(client); } finally { inTx = false; }
+  }) as never);
+  return { client, calls };
 }
 
-const mockRefund = vi.fn().mockResolvedValue({ gatewayReference: 'gw-refund-1', raw: {} });
-const mockGateway: PaymentGateway = {
-  name: 'mock',
-  createCheckout: vi.fn() as PaymentGateway['createCheckout'],
-  verify: vi.fn() as PaymentGateway['verify'],
-  refund: mockRefund as PaymentGateway['refund'],
-};
+function gateway(over: Partial<PaymentGateway> = {}): PaymentGateway {
+  return {
+    name: 'card',
+    createCheckout: vi.fn() as PaymentGateway['createCheckout'],
+    verify: vi.fn() as PaymentGateway['verify'],
+    refund: vi.fn(async () => {
+      // The gateway HTTP call must never run while a DB transaction is open.
+      expect(inTx).toBe(false);
+      return { gatewayReference: 'gw-refund-1' };
+    }) as PaymentGateway['refund'],
+    ...over,
+  };
+}
 
-const baseInput = {
-  workspaceId: 'ws-1',
-  paymentId: 'pay-1',
-  amountMinor: 5000n,
-  currency: 'USD',
-  idempotencyKey: 'refund-key-abc',
-  gateway: mockGateway,
-};
+const cardPayment = { id: 'pay-1', amount_minor: '1200000', currency: 'IRT', gateway: 'card', gateway_reference: 'gw-1', status: 'PAID' };
+const walletPayment = { ...cardPayment, gateway: 'wallet', gateway_reference: 'wallet:o1' };
 
-describe('createRefund', () => {
-  it('returns existing refund on idempotency key match', async () => {
-    const existingRefund = { id: 'ref-existing', status: 'PAID' };
-    const client = buildClient({ existingRefund });
-    mockTx.mockImplementationOnce(async (_ws, _uid, fn) => fn(client as never));
+beforeEach(() => { vi.clearAllMocks(); inTx = false; });
 
-    const result = await createRefund(baseInput);
-    expect(result).toMatchObject({ id: 'ref-existing', status: 'PAID' });
-    expect(mockRefund).not.toHaveBeenCalled();
-  });
-
-  it('throws VALIDATION_ERROR when amountMinor is zero', async () => {
-    await expect(createRefund({ ...baseInput, amountMinor: 0n })).rejects.toMatchObject({
-      code: 'VALIDATION_ERROR',
-    });
-    expect(mockRequireIdem).toHaveBeenCalled();
-  });
-
-  it('throws NOT_FOUND when payment does not belong to workspace', async () => {
-    const client = buildClient({ payment: null });
-    mockTx.mockImplementationOnce(async (_ws, _uid, fn) => fn(client as never));
-
-    await expect(createRefund(baseInput)).rejects.toMatchObject({ code: 'NOT_FOUND' });
-  });
-
-  it('throws CONFLICT when payment is not PAID', async () => {
-    const client = buildClient({
-      payment: { id: 'pay-1', status: 'PENDING', gateway_reference: '', amount_minor: '10000' },
-    });
-    mockTx.mockImplementationOnce(async (_ws, _uid, fn) => fn(client as never));
-
-    await expect(createRefund(baseInput)).rejects.toMatchObject({ code: 'CONFLICT' });
-  });
-
-  it('throws CONFLICT when refund amount exceeds remaining balance', async () => {
-    const client = buildClient({ refundedTotal: '8000' });
-    mockTx.mockImplementationOnce(async (_ws, _uid, fn) => fn(client as never));
-
-    // 8000 already refunded + 5000 > 10000
-    await expect(createRefund(baseInput)).rejects.toMatchObject({ code: 'CONFLICT' });
-  });
-
-  it('allows refund up to exact remaining balance', async () => {
-    const client = buildClient({ refundedTotal: '5000' });
-    mockTx.mockImplementationOnce(async (_ws, _uid, fn) => fn(client as never));
-
-    // 5000 already refunded + 5000 == 10000 (allowed)
-    const result = await createRefund(baseInput);
-    expect(result).toMatchObject({ id: 'ref-1' });
-  });
-
-  it('calls gateway.refund with payment gateway reference', async () => {
-    const client = buildClient({});
-    mockTx.mockImplementationOnce(async (_ws, _uid, fn) => fn(client as never));
-
-    await createRefund(baseInput);
-    expect(mockRefund).toHaveBeenCalledWith(
-      expect.objectContaining({ gatewayReference: 'gw-ref', amountMinor: 5000n }),
-      'refund-key-abc',
-    );
-  });
-
-  it('throws UNAVAILABLE when gateway does not support refunds', async () => {
-    const client = buildClient({});
-    mockTx.mockImplementationOnce(async (_ws, _uid, fn) => fn(client as never));
-
-    const noRefundGateway: PaymentGateway = { ...mockGateway, refund: undefined };
-    await expect(createRefund({ ...baseInput, gateway: noRefundGateway })).rejects.toMatchObject({
-      code: 'UNAVAILABLE',
-    });
-  });
-
-  it('marks refund FAILED and re-throws when gateway fails', async () => {
-    const client = buildClient({});
-    mockTx.mockImplementationOnce(async (_ws, _uid, fn) => fn(client as never));
-
-    const failingGateway: PaymentGateway = {
-      ...mockGateway,
-      refund: vi.fn().mockRejectedValue(new Error('Gateway timeout')) as PaymentGateway['refund'],
-    };
-
-    await expect(createRefund({ ...baseInput, gateway: failingGateway })).rejects.toThrow(
-      'Gateway timeout',
-    );
-    const calls = client.query.mock.calls;
-    const failUpdate = calls.find((call) => (call[0] as string).includes("status='FAILED'"));
-    expect(failUpdate).toBeDefined();
-  });
-
-  it('calls writeAudit with refund.completed action on success', async () => {
-    const client = buildClient({});
-    mockTx.mockImplementationOnce(async (_ws, _uid, fn) => fn(client as never));
-    mockWriteAudit.mockResolvedValue(undefined);
-
-    await createRefund(baseInput);
-    expect(mockWriteAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'refund.completed', entityType: 'refund' }),
-      expect.objectContaining({ query: expect.any(Function) }), // written on the tenant tx client
-    );
-  });
-
-  it('returns PAID status with gatewayReference on success', async () => {
-    const client = buildClient({});
-    mockTx.mockImplementationOnce(async (_ws, _uid, fn) => fn(client as never));
-
-    const result = await createRefund(baseInput);
-    expect(result).toMatchObject({ id: 'ref-1', status: 'PAID', gatewayReference: 'gw-refund-1' });
-  });
-
-  it('validates the idempotency key before any DB access', async () => {
-    mockRequireIdem.mockImplementationOnce(() => {
-      throw new Error('Key too short');
-    });
-    await expect(createRefund(baseInput)).rejects.toThrow('Key too short');
+describe('refundOrder', () => {
+  it('requires an idempotency key before any database access', async () => {
+    await expect(refundOrder({ workspaceId: WS, orderId: 'o1', mode: 'REFUND', idempotencyKey: null })).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
+    await expect(refundOrder({ workspaceId: WS, orderId: 'o1', mode: 'REFUND', idempotencyKey: 'short' })).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
     expect(mockTx).not.toHaveBeenCalled();
+  });
+
+  it('looks the key up inside this workspace and namespaces it per workspace', async () => {
+    const { calls } = setup({ order: null, payment: null, refunded: '0', refundRowStatus: 'PENDING', prior: { id: 'ref-old', status: 'PAID', amount_minor: '100', currency: 'IRT', gateway: 'wallet', order_status: 'PAID' } });
+    const out = await refundOrder({ workspaceId: WS, orderId: 'o1', mode: 'REFUND', idempotencyKey: KEY });
+    expect(out.refund?.id).toBe('ref-old');
+    expect(calls[0].values).toEqual([`${WS}:${KEY}`, WS, 'o1']);
+  });
+
+  it('refunds a wallet payment to the wallet in IRR inside the transaction and completes the order', async () => {
+    const { calls } = setup({ order: { id: 'o1', status: 'PAID' }, payment: walletPayment, refunded: '0', refundRowStatus: 'PENDING' });
+    const resolveGateway = vi.fn();
+    const out = await refundOrder({ workspaceId: WS, orderId: 'o1', mode: 'REFUND', idempotencyKey: KEY, resolveGateway });
+    expect(out).toMatchObject({ orderStatus: 'REFUNDED', refund: { status: 'PAID', amountMinor: '1200000', destination: 'WALLET' } });
+    const credit = calls.find(c => c.sql.includes('INSERT INTO ledger_entries'))!;
+    expect(credit.values.slice(1, 4)).toEqual(['CREDIT', '12000000', 'IRR']);
+    expect(resolveGateway).not.toHaveBeenCalled();
+    expect(mockTx).toHaveBeenCalledTimes(1);
+  });
+
+  it('refunds a card payment through its gateway outside the transaction, never to the wallet', async () => {
+    const { calls } = setup({ order: { id: 'o1', status: 'COMPLETED' }, payment: cardPayment, refunded: '0', refundRowStatus: 'PENDING' });
+    const gw = gateway();
+    const out = await refundOrder({ workspaceId: WS, orderId: 'o1', mode: 'REFUND', idempotencyKey: KEY, resolveGateway: () => gw });
+    expect(gw.refund).toHaveBeenCalledWith({ paymentId: 'pay-1', amountMinor: 1200000n, gatewayReference: 'gw-1' }, `${WS}:${KEY}`);
+    expect(out).toMatchObject({ orderStatus: 'REFUNDED', refund: { status: 'PAID', destination: 'GATEWAY' } });
+    expect(calls.some(c => c.sql.includes('INSERT INTO ledger_entries'))).toBe(false);
+    expect(mockTx).toHaveBeenCalledTimes(2);
+  });
+
+  it('records a failed gateway refund as FAILED and reports a Persian provider error', async () => {
+    const { calls } = setup({ order: { id: 'o1', status: 'PAID' }, payment: cardPayment, refunded: '0', refundRowStatus: 'PENDING' });
+    const gw = gateway({ refund: vi.fn(async () => { throw new Error('timeout'); }) as PaymentGateway['refund'] });
+    await expect(refundOrder({ workspaceId: WS, orderId: 'o1', mode: 'REFUND', idempotencyKey: KEY, resolveGateway: () => gw })).rejects.toMatchObject({ code: 'PROVIDER_ERROR' });
+    expect(calls.some(c => c.sql.includes("UPDATE refunds SET status='FAILED'"))).toBe(true);
+  });
+
+  it('refuses up front (no refund row) when the card gateway cannot refund', async () => {
+    const { calls } = setup({ order: { id: 'o1', status: 'PAID' }, payment: cardPayment, refunded: '0', refundRowStatus: 'PENDING' });
+    const gw = gateway({ refund: undefined });
+    await expect(refundOrder({ workspaceId: WS, orderId: 'o1', mode: 'REFUND', idempotencyKey: KEY, resolveGateway: () => gw })).rejects.toMatchObject({ code: 'CONFLICT' });
+    expect(calls.some(c => c.sql.includes('INSERT INTO refunds'))).toBe(false);
+  });
+
+  it('never refunds more than is left after earlier refunds (refund + cancel share one ledger)', async () => {
+    setup({ order: { id: 'o1', status: 'QUEUED' }, payment: walletPayment, refunded: '1200000', refundRowStatus: 'PENDING' });
+    await expect(refundOrder({ workspaceId: WS, orderId: 'o1', mode: 'CANCEL', idempotencyKey: KEY })).rejects.toMatchObject({ code: 'CONFLICT' });
+    setup({ order: { id: 'o1', status: 'PAID' }, payment: walletPayment, refunded: '1000000', refundRowStatus: 'PENDING' });
+    await expect(refundOrder({ workspaceId: WS, orderId: 'o1', mode: 'REFUND', amountMinor: 300000n, idempotencyKey: KEY })).rejects.toMatchObject({ code: 'CONFLICT' });
+  });
+
+  it('cancels only before provider submission', async () => {
+    for (const status of ['PROCESSING', 'PROVIDER_SUBMITTED', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'REFUND_PENDING']) {
+      setup({ order: { id: 'o1', status }, payment: walletPayment, refunded: '0', refundRowStatus: 'PENDING' });
+      await expect(refundOrder({ workspaceId: WS, orderId: 'o1', mode: 'CANCEL', idempotencyKey: KEY })).rejects.toMatchObject({ code: 'CONFLICT' });
+    }
+  });
+
+  it('refuses to cancel team work in progress with a Persian message and moves no money', async () => {
+    const { calls } = setup({ order: { id: 'o1', status: 'IN_PROGRESS' }, payment: walletPayment, refunded: '0', refundRowStatus: 'PENDING' });
+    await expect(refundOrder({ workspaceId: WS, orderId: 'o1', mode: 'CANCEL', idempotencyKey: KEY }))
+      .rejects.toMatchObject({ code: 'CONFLICT', message: expect.stringContaining('کار روی این سفارش شروع شده است') });
+    expect(calls.some(c => c.sql.includes('INSERT INTO refunds') || c.sql.includes('UPDATE orders SET status'))).toBe(false);
+  });
+
+  it('cancels a queued, wallet-paid order to CANCELLED with a full refund', async () => {
+    setup({ order: { id: 'o1', status: 'QUEUED' }, payment: walletPayment, refunded: '0', refundRowStatus: 'PENDING' });
+    const out = await refundOrder({ workspaceId: WS, orderId: 'o1', mode: 'CANCEL', idempotencyKey: KEY });
+    expect(out).toMatchObject({ orderStatus: 'CANCELLED', refund: { amountMinor: '1200000', destination: 'WALLET' } });
+  });
+
+  it('does not allow a full refund while the order is with the provider (state machine)', async () => {
+    for (const status of ['QUEUED', 'PROCESSING', 'PROVIDER_SUBMITTED']) {
+      setup({ order: { id: 'o1', status }, payment: walletPayment, refunded: '0', refundRowStatus: 'PENDING' });
+      await expect(refundOrder({ workspaceId: WS, orderId: 'o1', mode: 'REFUND', idempotencyKey: KEY })).rejects.toMatchObject({ code: 'CONFLICT' });
+    }
   });
 });

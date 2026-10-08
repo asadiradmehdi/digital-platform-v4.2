@@ -6,7 +6,7 @@ import {
   ShieldCheck, Sparkles, TrendingUp, Zap,
 } from 'lucide-react';
 import { AppShell } from '../../components/AppShell';
-import { formatTomanFromIRR, statusLabel } from '../../lib/format';
+import { formatMoney, statusLabel } from '../../lib/format';
 import { requireCurrentUser } from '../../server/identity/request-user';
 import { query, withWorkspaceTransaction } from '../../server/core/db';
 
@@ -249,7 +249,7 @@ export default async function Subscriptions() {
               <div className="metric-tile">
                 <span>هزینه تمدید</span>
                 <strong>
-                  {sub.priceMinor ? formatTomanFromIRR(Number(sub.priceMinor)) : '—'}
+                  {sub.priceMinor ? formatMoney(sub.priceMinor, sub.currency ?? 'IRT') : '—'}
                 </strong>
                 <small>ثابت از زمان خرید</small>
               </div>

@@ -1,5 +1,5 @@
 import { withTenantTransaction } from '../core/db';
-import { markPaymentPaid } from './service';
+import { verifyPayment } from './service';
 import type { PaymentGateway } from './service';
 import { logger } from '../observability/logger';
 
@@ -39,15 +39,15 @@ export async function reconcileUnconfirmedPayments(
     }
 
     try {
-      const verification = await gateway.verify({
-        paymentId: row.id,
-        gatewayReference: row.gateway_reference,
-      });
-
-      if (verification.paid) {
-        await markPaymentPaid({ paymentId: row.id, workspaceId, gatewayReference: row.gateway_reference, raw: verification.raw });
+      // verifyPayment checks the captured amount and currency against the intent before marking paid.
+      const verification = await verifyPayment({ paymentId: row.id, workspaceId, gateway });
+      if (verification.verified && !verification.alreadyPaid) {
         result.reconciled++;
         logger.info('payment.reconciled', { workspaceId }, { paymentId: row.id });
+      } else if (verification.reason === 'AMOUNT_MISMATCH') {
+        result.failed++;
+        result.errors.push(`Payment ${row.id}: gateway amount does not match the payment`);
+        logger.warn('payment.reconciliation_amount_mismatch', { workspaceId }, { paymentId: row.id });
       }
     } catch (err) {
       result.failed++;

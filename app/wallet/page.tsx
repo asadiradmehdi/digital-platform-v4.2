@@ -49,7 +49,7 @@ export default async function Wallet() {
         {wallet && ws ? (
           <>
             <WalletCard balanceToman={toToman(wallet.balanceMinor, wallet.currency)} tierName={tier} tail={wallet.walletId.slice(-4).toUpperCase()} />
-            <WalletPanel workspaceId={ws} walletId={wallet.walletId} currency={wallet.currency} tx={wallet.entries.map(txView)} />
+            <WalletPanel workspaceId={ws} tx={wallet.entries.map(txView)} />
           </>
         ) : (
           <EmptyState icon="wallet" title="کیف پولی پیدا نشد" text="برای این حساب هنوز کیف پول ساخته نشده است. با پشتیبانی در تماس باشید." action={{ href: '/support', label: 'پشتیبانی' }} />

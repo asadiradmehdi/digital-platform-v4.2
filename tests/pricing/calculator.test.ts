@@ -25,6 +25,7 @@ describe('ceilDiv', () => {
 
 describe('calculateSellPriceMinor', () => {
   const base = {
+    baseCurrency: 'IRT',
     baseAmountMinor: 10000n,
     rateNumerator: 1n,
     rateDenominator: 1n,

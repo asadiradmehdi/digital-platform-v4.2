@@ -1,10 +1,11 @@
 'use client';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
 import { AppShell } from '../../../components/AppShell';
 import { SystemStrip } from '../../../components/ProductSurface';
+import { formatMoney } from '../../../lib/format';
 
 type Plan = {
   id: string; name: string; slug: string; price_minor: string; currency: string;
@@ -13,11 +14,10 @@ type Plan = {
 };
 
 function formatPrice(minor: string, currency: string): string {
-  const n = Number(minor);
-  if (currency === 'IRT' || currency === 'IRR') {
-    return new Intl.NumberFormat('fa-IR').format(n) + ' تومان';
-  }
-  return new Intl.NumberFormat('fa-IR').format(n / 100) + ' ' + currency;
+  const c = currency.trim();
+  // Plan prices are IRT (toman); an IRR amount is rial and is divided by 10 — never shown as toman.
+  if (c === 'IRT' || c === 'IRR') return formatMoney(minor, c);
+  return new Intl.NumberFormat('fa-IR').format(Number(minor) / 100) + ' ' + c;
 }
 
 function intervalLabel(interval: string): string {
@@ -37,6 +37,7 @@ function SubscriptionNewInner() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const idemKey = useRef<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -57,10 +58,12 @@ function SubscriptionNewInner() {
     }
     setSubmitting(true);
     setError(null);
+    // One key per attempt: a retried request returns the same subscription and never charges twice.
+    idemKey.current ??= crypto.randomUUID();
     try {
       const res = await fetch('/api/v1/subscriptions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idemKey.current },
         body: JSON.stringify({ workspaceId, planId: selectedPlan }),
       });
       if (!res.ok) {

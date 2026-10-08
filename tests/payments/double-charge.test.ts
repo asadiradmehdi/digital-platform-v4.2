@@ -33,6 +33,7 @@ describe('beginCheckout — double-charge prevention', () => {
     await expect(
       beginCheckout({
         workspaceId: 'ws-1',
+        purpose: 'TOPUP',
         amountMinor: 5000n,
         currency: 'IRR',
         gateway: gateway as never,
@@ -58,6 +59,7 @@ describe('beginCheckout — double-charge prevention', () => {
 
     const result = await beginCheckout({
       workspaceId: 'ws-1',
+      purpose: 'TOPUP',
       amountMinor: 5000n,
       currency: 'IRR',
       gateway: gateway as never,
@@ -76,9 +78,11 @@ describe('markPaymentPaid — idempotent on repeated calls', () => {
     // First call — row is PENDING, payment transitions to PAID
     mockWithWorkspaceTransaction.mockImplementationOnce(async (_wsId, _userId, fn) => {
       const client = {
-        query: vi.fn()
-          .mockResolvedValueOnce({ rows: [{ id: 'pay-3', workspace_id: 'ws-1', order_id: null, status: 'PENDING', amount_minor: '5000', currency: 'IRR' }], rowCount: 1 }) // FOR UPDATE fetch
-          .mockResolvedValue({ rows: [], rowCount: 1 }),
+        query: vi.fn(async (sql: string) => {
+          if (sql.includes('FROM payments WHERE id=$1')) return { rows: [{ id: 'pay-3', workspace_id: 'ws-1', order_id: null, checkout_session_id: null, purpose: 'TOPUP', status: 'PENDING', amount_minor: '5000', currency: 'IRT', gateway: 'mock' }], rowCount: 1 };
+          if (sql.includes('FROM wallets w')) return { rows: [{ account_id: 'acct-1', wallet_currency: 'IRR' }], rowCount: 1 };
+          return { rows: [], rowCount: 1 };
+        }),
       };
       return fn(client as never);
     });
