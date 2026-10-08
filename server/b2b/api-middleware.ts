@@ -39,7 +39,7 @@ export async function apiKeyMiddleware(
 ): Promise<ApiKeyContext> {
   const ctx = await authenticateApiKey(request);
   requireScope(ctx, requiredScope);
-  await enforceRateLimit(ctx.apiKeyId);
+  await enforceRateLimit(ctx.apiKeyId, ctx.workspaceId);
   return ctx;
 }
 

@@ -124,7 +124,7 @@ describe('apiKeyMiddleware', () => {
     mockEnforceRateLimit.mockResolvedValueOnce(undefined);
     const ctx = await apiKeyMiddleware(makeRequest('Bearer dp_live_abc'), 'read:data');
     expect(ctx.apiKeyId).toBe('key-1');
-    expect(mockEnforceRateLimit).toHaveBeenCalledWith('key-1');
+    expect(mockEnforceRateLimit).toHaveBeenCalledWith('key-1', 'ws-1');
   });
 
   it('throws UNAUTHORIZED on bad key before scope check', async () => {
