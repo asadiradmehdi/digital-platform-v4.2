@@ -12,6 +12,7 @@ vi.mock('../../server/identity/password', () => ({
 }));
 vi.mock('../../server/identity/step-up', () => ({ enforceStepUpPolicy: vi.fn() }));
 vi.mock('../../server/core/audit', () => ({ writeAudit: vi.fn() }));
+vi.mock('../../server/identity/reauth', () => ({ getContactState: vi.fn(), requireFreshOtp: vi.fn(), requireVerifiedPhone: vi.fn() }));
 
 import { requireRequestUser } from '../../server/identity/request-user';
 import { query } from '../../server/core/db';
@@ -19,6 +20,7 @@ import { hashPassword, verifyPassword } from '../../server/identity/password';
 import { enforceStepUpPolicy } from '../../server/identity/step-up';
 import { writeAudit } from '../../server/core/audit';
 import { AppError } from '../../server/core/errors';
+import { getContactState, requireFreshOtp, requireVerifiedPhone } from '../../server/identity/reauth';
 
 const mockRequireUser = vi.mocked(requireRequestUser);
 const mockQuery = vi.mocked(query);
@@ -27,7 +29,12 @@ const mockVerify = vi.mocked(verifyPassword);
 const mockEnforceStepUp = vi.mocked(enforceStepUpPolicy);
 const mockWriteAudit = vi.mocked(writeAudit);
 
-beforeEach(() => vi.resetAllMocks());
+const mockContact = vi.mocked(getContactState);
+const mockFreshOtp = vi.mocked(requireFreshOtp);
+const mockVerifiedPhone = vi.mocked(requireVerifiedPhone);
+const contact = (o: Partial<Awaited<ReturnType<typeof getContactState>>> = {}) => ({ phone: null, phone_verified: false, email: 'a@b.c', email_verified: false, has_password: true, ...o });
+
+beforeEach(() => { vi.resetAllMocks(); mockContact.mockResolvedValue(contact() as never); });
 
 type RouteModule = typeof import('../../app/api/v1/me/password/route');
 let PATCH: RouteModule['PATCH'];
@@ -128,5 +135,38 @@ describe('PATCH /api/v1/me/password', () => {
     expect(mockWriteAudit).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'PASSWORD_CHANGE' }),
     );
+  });
+
+  // Regression (v4 sign-in): a password change must require a fresh SMS code when the account has a verified phone.
+  it('requires a fresh OTP proof when the account has a verified phone', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    mockContact.mockResolvedValueOnce(contact({ phone: '+989121234567', phone_verified: true }) as never);
+    mockFreshOtp.mockRejectedValueOnce(new AppError('FORBIDDEN', 'برای این کار، تأیید تازه با کد پیامکی لازم است.', { requiresOtp: true }));
+    const res = await PATCH(makeRequest(validBody));
+    expect(res.status).toBe(403);
+    expect((await res.json()).error.details.requiresOtp).toBe(true);
+    expect(mockFreshOtp).toHaveBeenCalledWith('user-1', undefined);
+    expect(mockHash).not.toHaveBeenCalled();
+  });
+
+  it('lets a phone-only account set its first password with a fresh OTP proof and no current password', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    mockContact.mockResolvedValueOnce(contact({ phone: '+989121234567', phone_verified: true, has_password: false }) as never);
+    mockFreshOtp.mockResolvedValueOnce('+989121234567' as never);
+    mockHash.mockResolvedValueOnce('$argon2id$new' as never);
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
+    const res = await PATCH(makeRequest({ newPassword: 'NewP@ssw0rd!5678', otpProof: 'p'.repeat(43) }));
+    expect(res.status).toBe(200);
+    expect(mockVerify).not.toHaveBeenCalled();
+    expect(mockWriteAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'PASSWORD_SET' }));
+  });
+
+  it('refuses to add a password to an account with neither a password nor a verified phone', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    mockContact.mockResolvedValueOnce(contact({ has_password: false }) as never);
+    mockVerifiedPhone.mockRejectedValueOnce(new AppError('CONFLICT', 'phone needed'));
+    const res = await PATCH(makeRequest({ newPassword: 'NewP@ssw0rd!5678' }));
+    expect(res.status).toBe(409);
+    expect(mockHash).not.toHaveBeenCalled();
   });
 });
