@@ -132,3 +132,4 @@ export const tokens = {
 export type DesignTokens = typeof tokens;
 
 export { ICONS, type IconName } from './icons';
+export { BRAND_LOGOS, BRAND_INK, type BrandLogo } from './brand-logos';

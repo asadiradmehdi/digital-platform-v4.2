@@ -1,13 +1,13 @@
 // View models for the native app: the server owns pricing, stages, loyalty level and wording,
 // so the mobile client only renders (no domain logic is duplicated in React Native).
-import { CATEGORIES, categoryMeta, KINDS, serviceKind, targetField } from '../../lib/catalog-ui';
+import { CATEGORIES, categoryMeta, KINDS, perLabel, serviceBrand, serviceIcon, serviceKind, shortServiceName, sortServices, targetField } from '../../lib/catalog-ui';
 import { formatQuantityWords, formatWhen, orderCode, toToman } from '../../lib/format';
 import { orderStage } from '../../lib/order-progress';
 import { tierFor } from '../../lib/tiers';
 import type { CatalogItem, OrderCard, WalletEntry } from './overview';
 
 export function catalogView(items: CatalogItem[]) {
-  const priced = items.filter(i => i.unitPriceMinor);
+  const priced = sortServices(items.filter(i => i.unitPriceMinor));
   const services = priced.map(i => {
     const kindKey = serviceKind(i.slug);
     const kind = KINDS[kindKey];
@@ -16,10 +16,11 @@ export function catalogView(items: CatalogItem[]) {
     const quantities = kind.quantities.filter(q => q >= min && q <= max);
     return {
       id: i.id, slug: i.slug, name: i.name, description: i.description, category: i.productSlug,
-      group: kind.group, unit: kind.unit, icon: kind.icon, per: kind.per,
+      short: shortServiceName(i.name, categoryMeta(i.productSlug)?.name ?? ''), brand: serviceBrand(i.slug) ?? null, perLabel: perLabel(kind),
+      group: kind.group, unit: kind.unit, icon: serviceIcon(i.slug), per: kind.per,
       unitPriceToman: Number(i.unitPriceMinor),
       quantities: quantities.length ? quantities : [min],
-      target: targetField(i.productSlug, kindKey),
+      target: targetField(i.productSlug, kindKey, i.slug),
     };
   });
   const categories = CATEGORIES.map(c => ({ ...c, live: services.some(s => s.category === c.key), count: services.filter(s => s.category === c.key).length }));

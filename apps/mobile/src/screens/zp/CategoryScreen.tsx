@@ -1,69 +1,37 @@
-import { useMemo, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { appApi, type AppService } from '../../api/app';
-import { formatQuantityWords, formatTomanNumber } from '../../format';
+import { formatTomanNumber } from '../../format';
 import { useRemote } from '../../hooks/useRemote';
-import { C, card, faNum, fwd, right, row, shadow } from '../../zp/base';
-import { Tile } from '../../zp/brand';
-import { Icon } from '../../zp/Icon';
+import { C, card, faNum, right, row } from '../../zp/base';
+import { BrandTile, Tile } from '../../zp/brand';
 import { SubScreen } from '../../zp/Shell';
 import { Async, EmptyState, Press, T } from '../../zp/ui';
 
-const ORDER = ['فالوور', 'ممبر', 'لایک', 'بازدید', 'کامنت'];
-const rank = (l: string) => (ORDER.indexOf(l) + 1) || 99;
-
-function Rows({ services }: { services: AppService[] }) {
+/** Every service of the category as a three-column grid, so the whole offer fits on one screen. */
+function ServiceGrid({ services }: { services: AppService[] }) {
   const router = useRouter();
-  const groups = useMemo(() => {
-    const out: Array<{ label: string; rows: AppService[] }> = [];
-    for (const s of services) {
-      let g = out.find(x => x.label === s.group);
-      if (!g) out.push(g = { label: s.group, rows: [] });
-      g.rows.push(s);
-    }
-    return out.sort((a, b) => rank(a.label) - rank(b.label));
-  }, [services]);
-  const [g, setG] = useState(0);
-  const group = groups[g] ?? groups[0];
-
+  const { width } = useWindowDimensions();
+  const compact = services.length > 9;
+  const gap = 10;
+  const w = Math.floor((Math.min(width, 560) - 36 - gap * 2) / 3);
+  const tile = Math.round(Math.min(compact ? 42 : 48, w * 0.4));
   return (
-    <>
-      {groups.length > 1 && (
-        <View accessibilityRole="tablist" style={{ flexDirection: row, backgroundColor: C.surface2, borderRadius: 15, padding: 4, gap: 2, borderWidth: 1, borderColor: C.line }}>
-          {groups.map((x, k) => {
-            const on = k === g;
-            return (
-              <Pressable key={x.label} accessibilityRole="tab" accessibilityState={{ selected: on }} onPress={() => setG(k)}
-                style={[{ flex: 1, paddingVertical: 9, borderRadius: 11, alignItems: 'center' }, on && [{ backgroundColor: C.surface }, shadow(2, 8, 0.15)]]}>
-                <T w={on ? 'b' : 'sb'} size={13} color={on ? C.ink : C.muted} style={{ textAlign: 'center' }}>{x.label}</T>
-                {on ? <View style={{ position: 'absolute', bottom: 3, width: 14, height: 2, borderRadius: 2, backgroundColor: C.gold2 }} /> : null}
-              </Pressable>
-            );
-          })}
-        </View>
-      )}
-      <View style={{ gap: 10 }}>
-        {group.rows.map(s => (
-          <Press key={s.slug} accessibilityRole="link" onPress={() => router.navigate({ pathname: '/order/[service]', params: { service: s.slug } })}
-            style={[{ flexDirection: row, alignItems: 'center', gap: 12, borderRadius: 20, paddingVertical: 10, paddingHorizontal: 12 }, card]}>
-            <Tile icon={s.icon} size={46} />
-            <View style={{ flex: 1, alignItems: right, gap: 2 }}>
-              <T w="b" size={14.5}>{s.name}</T>
-              <T size={11.5} color={C.muted} numberOfLines={1}>{s.description ?? 'ثبت آنی · پیگیری لحظه‌ای'}</T>
-            </View>
-            <View style={{ alignItems: 'center' }}>
-              <T size={10} color={C.muted}>{s.per > 1 ? `هر ${formatQuantityWords(s.per)} ${s.unit}` : `هر ${s.unit}`}</T>
-              <View style={{ flexDirection: row, alignItems: 'baseline', gap: 3 }}>
-                <T w="b" size={14.5}>{formatTomanNumber(s.unitPriceToman * s.per)}</T>
-                <T w="sb" size={10} color={C.goldText}>تومان</T>
-              </View>
-            </View>
-            <Icon name={fwd} size={16} color={C.muted} stroke={2.4} />
-          </Press>
-        ))}
-      </View>
-    </>
+    <View style={{ flexDirection: row, flexWrap: 'wrap', gap }}>
+      {services.map(s => (
+        <Press key={s.slug} accessibilityRole="link" accessibilityLabel={`${s.name}، ${s.perLabel} ${formatTomanNumber(s.unitPriceToman * s.per)} تومان`}
+          onPress={() => router.navigate({ pathname: '/order/[service]', params: { service: s.slug } })}
+          style={[{ width: w, alignItems: 'center', gap: 2, borderRadius: 20, paddingTop: compact ? 9 : 12, paddingBottom: compact ? 8 : 10, paddingHorizontal: 6 }, card]}>
+          <View style={{ marginBottom: compact ? 3 : 5 }}>{s.brand ? <BrandTile brand={s.brand} size={tile} /> : <Tile icon={s.icon} size={tile} />}</View>
+          <T w="b" size={compact ? 12 : 12.8} numberOfLines={compact ? 1 : 2} style={{ textAlign: 'center', lineHeight: 19, minHeight: compact ? undefined : 38 }}>{s.short}</T>
+          <T size={10} color={C.muted} numberOfLines={1} style={{ textAlign: 'center' }}>{s.perLabel}</T>
+          <View style={{ flexDirection: row, alignItems: 'baseline', gap: 3 }}>
+            <T w="b" size={13.5}>{formatTomanNumber(s.unitPriceToman * s.per)}</T>
+            <T w="sb" size={9.5} color={C.goldText}>تومان</T>
+          </View>
+        </Press>
+      ))}
+    </View>
   );
 }
 
@@ -83,13 +51,13 @@ export function CategoryScreen() {
               <View style={{ flexDirection: row, alignItems: 'center', gap: 14 }}>
                 <Tile icon={cat.icon} size={64} />
                 <View style={{ flex: 1, alignItems: right }}>
-                  <T w="dx" size={20.5} style={{ lineHeight: 30 }}>خدمات {cat.name}</T>
+                  <T w="dx" size={20.5} numberOfLines={1} adjustsFontSizeToFit style={{ lineHeight: 30 }}>{cat.title ?? `خدمات ${cat.name}`}</T>
                   {items.length
-                    ? <T size={12} color={C.muted} numberOfLines={2}><T w="b" size={12} color={C.goldText}>{faNum(items.length)} سرویس فعال</T> · قیمت شفاف، پرداخت از کیف پول</T>
+                    ? <T size={12} color={C.muted} numberOfLines={2}><T w="b" size={12} color={C.goldText}>{faNum(items.length)} سرویس فعال</T> · {cat.note ?? 'قیمت شفاف، پرداخت از کیف پول'}</T>
                     : <T size={12} color={C.muted}>به‌زودی در زُحل پی</T>}
                 </View>
               </View>
-              {items.length ? <Rows services={items} /> : (
+              {items.length ? <ServiceGrid services={items} /> : (
                 <EmptyState icon={cat.icon} title="به‌زودی" text={`خدمات ${cat.name} در حال آماده‌سازی است. تا آن موقع از دسته‌های فعال استفاده کنید.`} action={{ label: 'بازگشت به خدمات', onPress: () => router.navigate('/') }} />
               )}
             </>

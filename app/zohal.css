@@ -356,6 +356,28 @@
 @media (max-width:380px){.zp-wallet{gap:10px;padding-inline-start:10px}.zp-wallet .t span em{display:none}.zp-wallet .zp-cta{padding:10px 12px;font-size:12.8px}}
 @media (prefers-reduced-motion:reduce){.zp-root *{transition:none!important;animation:none!important}.zp-svc{opacity:1}.zp-chk path{stroke-dashoffset:0}}
 
+/* short ladders (AI plans: 1/3/6/12 months) sit in a 2×2 block instead of a sparse 3×3 */
+.zp-pk.few{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));flex:none;height:min(300px,42vh)}
+
+/* porcelain tile for third-party product marks (AI subscriptions) */
+.zp-tile.zp-btile{background:linear-gradient(180deg,#fff,#f7f2e6);box-shadow:0 8px 16px -10px rgba(60,45,15,.35),inset 0 0 0 1px var(--line),inset 0 -3px 6px rgba(60,45,15,.06)}
+.zp-tile.zp-btile::before{display:none}
+.zp-btile svg{width:54%;height:54%;position:relative}
+
+/* category: every service of the category on one screen */
+.zp-sgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-content:start}
+.zp-scard{display:grid;justify-items:center;align-content:start;gap:3px;text-align:center;background:var(--surface);border-radius:20px;padding:12px 6px 10px;box-shadow:0 3px 14px var(--zp-shadow),inset 0 0 0 1px var(--line);opacity:0;animation:zpRise .45s var(--ease) forwards;animation-delay:calc(var(--i)*24ms + 60ms)}
+.zp-scard .zp-tile{--s:clamp(40px,11vw,48px);margin-bottom:5px}
+.zp-scard b{font-size:12.8px;font-weight:700;line-height:1.45;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.9em;align-content:center}
+.zp-scard small{font-size:10.24px;color:var(--muted);white-space:nowrap}
+.zp-scard .p{font-size:13.6px;font-weight:700;color:var(--ink);white-space:nowrap}
+.zp-scard .p i{font-style:normal;font-size:9.6px;font-weight:600;color:var(--gold-text);margin-inline-start:3px}
+.zp-sgrid.compact .zp-scard{padding:9px 6px 8px}
+.zp-sgrid.compact .zp-scard .zp-tile{--s:clamp(36px,10vw,42px);margin-bottom:3px}
+.zp-sgrid.compact .zp-scard b{min-height:auto;-webkit-line-clamp:1;font-size:12.16px}
+@media (min-width:1000px){.zp-sgrid{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.zp-scard{padding:18px 10px 14px}.zp-scard .zp-tile{--s:56px}.zp-scard b{font-size:14.08px}}
+@media (prefers-reduced-motion:reduce){.zp-scard{opacity:1}}
+
 /* auth: same brand language as the app shell */
 .auth-brand.zp-root{margin-bottom:22px}
 .auth-card h1{font-family:var(--font-display);font-weight:800;letter-spacing:0}

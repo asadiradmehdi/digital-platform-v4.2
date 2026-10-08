@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { ZIcon, type IconName } from './ZIcon';
+import { BRAND_LOGOS, type BrandLogo } from '../../packages/design-tokens/src/brand-logos';
 
 /** Lapis-enamel app-icon tile with a solid gilded glyph. `gold` inverts it (gold tile, lapis glyph). */
 export function Tile({ icon, size, gold, danger, soft, className, children }: {
@@ -10,6 +11,15 @@ export function Tile({ icon, size, gold, danger, soft, className, children }: {
     <span className={cls} style={size ? ({ '--s': `${size}px` } as React.CSSProperties) : undefined}>
       {icon && <ZIcon name={icon} />}
       {children}
+    </span>
+  );
+}
+
+/** Porcelain tile carrying a product's own mark in its own colours (AI subscriptions). */
+export function BrandTile({ brand, size }: { brand: BrandLogo; size?: number }) {
+  return (
+    <span className="zp-tile zp-btile" style={size ? ({ '--s': `${size}px` } as React.CSSProperties) : undefined} role="img" aria-label={BRAND_LOGOS[brand].label}>
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" dangerouslySetInnerHTML={{ __html: BRAND_LOGOS[brand].svg }} />
     </span>
   );
 }

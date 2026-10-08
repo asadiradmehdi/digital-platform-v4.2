@@ -1,7 +1,8 @@
 // Lapis enamel + illumination gold surfaces, drawn once with react-native-svg (no animation, no filters).
 import { useId, type PropsWithChildren } from 'react';
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
-import Svg, { Defs, Ellipse, G as SvgG, LinearGradient, Path, Pattern, Rect, Stop, Circle } from 'react-native-svg';
+import Svg, { Defs, Ellipse, G as SvgG, LinearGradient, Path, Pattern, Rect, Stop, Circle, SvgXml } from 'react-native-svg';
+import { BRAND_LOGOS, type BrandLogo } from '@digital-platform/design-tokens';
 import { atLeft, C, F, G, row, shadow, tRight } from './base';
 import { Icon, type IconName } from './Icon';
 
@@ -86,6 +87,17 @@ export function Tile({ icon, size = 56, variant = 'enamel', badge }: { icon: Ico
       {badge ? (
         <View style={styles.badge}><Text style={styles.badgeText}>{badge}</Text></View>
       ) : null}
+    </View>
+  );
+}
+
+/** Porcelain tile carrying a product's own mark in its own colours (AI subscriptions). */
+export function BrandTile({ brand, size = 56 }: { brand: BrandLogo; size?: number }) {
+  const logo = BRAND_LOGOS[brand];
+  return (
+    <View accessibilityRole="image" accessibilityLabel={logo.label}
+      style={[{ width: size, height: size, borderRadius: size * 0.3, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C.line }, shadow(6, 14, 0.12, '#3c2d0f')]}>
+      <SvgXml xml={`<svg viewBox="0 0 24 24">${logo.svg}</svg>`} width={size * 0.54} height={size * 0.54} />
     </View>
   );
 }

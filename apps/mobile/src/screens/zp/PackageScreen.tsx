@@ -7,7 +7,7 @@ import { appApi, errorText, newIdempotencyKey, type AppService } from '../../api
 import { formatQuantityWords, formatTomanNumber, magnitudeParts } from '../../format';
 import { useRemote } from '../../hooks/useRemote';
 import { atLeft, C, F, back, card, fwd, right, row, shadow, tRight } from '../../zp/base';
-import { Enamel, Fill, Ornament, Tile } from '../../zp/brand';
+import { BrandTile, Enamel, Fill, Ornament, Tile } from '../../zp/brand';
 import { Icon } from '../../zp/Icon';
 import { SubScreen } from '../../zp/Shell';
 import { Async, Cta, EmptyState, ErrorBox, IconBtn, Press, Sheet, T, useToast } from '../../zp/ui';
@@ -60,6 +60,8 @@ function Picker({ service, workspaceId, walletToman, reload }: { service: AppSer
   const [done, setDone] = useState<{ id: string; label: string; amount: number } | null>(null);
   const idem = useRef<string | null>(null);
 
+  // Short ladders (AI plans: 1/3/6/12 months) sit in a 2×2 block instead of a sparse 3×3.
+  const few = service.quantities.length <= 4;
   const list = useMemo(() => service.quantities.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE), [service.quantities, page]);
   const price = qty ? qty * service.unitPriceToman : 0;
   const label = qty ? `${formatQuantityWords(qty)} ${service.unit} · ${service.name}` : '';
@@ -101,18 +103,18 @@ function Picker({ service, workspaceId, walletToman, reload }: { service: AppSer
   return (
     <>
       <View style={{ flexDirection: row, alignItems: 'center', gap: 14 }}>
-        <Tile icon={service.icon} size={52} />
+        {service.brand ? <BrandTile brand={service.brand} size={52} /> : <Tile icon={service.icon} size={52} />}
         <View style={{ flex: 1, alignItems: right }}>
           <T w="dx" size={18} style={{ lineHeight: 28 }}>{service.name}</T>
           <T size={12} color={C.muted} numberOfLines={2}>{service.description ?? 'ثبت آنی · پیگیری لحظه‌ای'}</T>
         </View>
       </View>
 
-      <View {...pan.panHandlers} accessibilityLabel="بسته‌ها" style={{ flex: 1, minHeight: 300, maxHeight: 560, gap: 12 }}>
-        {[0, 1, 2].map(r => (
+      <View {...pan.panHandlers} accessibilityLabel="بسته‌ها" style={few ? { height: 280, gap: 12 } : { flex: 1, minHeight: 300, maxHeight: 560, gap: 12 }}>
+        {Array.from({ length: few ? 2 : 3 }, (_, r) => (
           <View key={r} style={{ flex: 1, flexDirection: row, gap: 10 }}>
-            {[0, 1, 2].map(c => {
-              const q = list[r * 3 + c];
+            {Array.from({ length: few ? 2 : 3 }, (_, c) => {
+              const q = list[r * (few ? 2 : 3) + c];
               if (q == null) return <View key={c} style={{ flex: 1 }} />;
               const m = magnitudeParts(q);
               const on = qty === q;

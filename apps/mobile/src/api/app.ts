@@ -1,14 +1,16 @@
 // Native-app view endpoints (app/api/v1/app/*). The server owns prices, order stages, loyalty
 // level and wording; these types mirror server/account/app-views.ts and the client only renders.
 import * as Crypto from 'expo-crypto';
-import type { IconName } from '@digital-platform/design-tokens';
+import type { BrandLogo, IconName } from '@digital-platform/design-tokens';
 import { apiFetch, ApiClientError } from './client';
 
 export type Tone = 'live' | 'ok' | 'bad';
 
-export type AppCategory = { key: string; name: string; icon: IconName; live: boolean; count: number };
+export type AppCategory = { key: string; name: string; icon: IconName; title?: string; note?: string; live: boolean; count: number };
 export type AppService = {
   id: string; slug: string; name: string; description: string | null; category: string;
+  /** Name inside its category («سیو» on the Instagram page); `brand` is set for AI plans. */
+  short: string; brand: BrandLogo | null; perLabel: string;
   group: string; unit: string; icon: IconName; per: number; unitPriceToman: number; quantities: number[];
   target: { label: string; placeholder: string; ltr: boolean };
 };

@@ -3,12 +3,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ZIcon, type IconName } from '../../../components/zp/ZIcon';
-import { Ornament, Tile } from '../../../components/zp/brand';
+import { BrandTile, Ornament, Tile } from '../../../components/zp/brand';
+import type { BrandLogo } from '../../../packages/design-tokens/src/brand-logos';
 import { apiErrorMessage } from '../../../lib/api-error';
 import { formatQuantityWords, formatTomanNumber, magnitudeParts, orderCode } from '../../../lib/format';
 
 export type PickerService = {
-  id: string; slug: string; name: string; note: string; icon: IconName; unit: string;
+  id: string; slug: string; name: string; note: string; icon: IconName; brand?: BrandLogo; unit: string;
   unitPriceToman: number; quantities: number[];
   target: { label: string; placeholder: string; ltr: boolean };
 };
@@ -76,12 +77,12 @@ export function PackagePicker({ service, workspaceId, walletToman }: { service: 
   return (
     <>
       <div className="zp-hero">
-        <Tile icon={service.icon} size={52} />
+        {service.brand ? <BrandTile brand={service.brand} size={52} /> : <Tile icon={service.icon} size={52} />}
         <div><h1 style={{ fontSize: 18 }}>{service.name}</h1><p>{service.note}</p></div>
       </div>
 
       <div
-        className="zp-pk"
+        className={`zp-pk${service.quantities.length <= 4 ? " few" : ""}`}
         role="group"
         aria-label="بسته‌ها"
         onTouchStart={e => { swipe.current = e.touches[0].clientX; }}
@@ -127,7 +128,7 @@ export function PackagePicker({ service, workspaceId, walletToman }: { service: 
       <div className={`zp-sheet${sheet ? ' on' : ''}`} role="dialog" aria-modal="true" aria-labelledby="ck-title" aria-hidden={!sheet}>
         <span className="zp-grab" />
         <div className="zp-shh">
-          <Tile icon={service.icon} />
+          {service.brand ? <BrandTile brand={service.brand} /> : <Tile icon={service.icon} />}
           <div><h3 id="ck-title">تکمیل سفارش</h3><p>{label}</p></div>
         </div>
         <label className="zp-fld">

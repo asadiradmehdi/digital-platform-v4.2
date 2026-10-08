@@ -43,6 +43,17 @@ export const ICONS = {
   "tOrders": "<rect class=\"d\" x=\"5\" y=\"3\" width=\"14\" height=\"18\" rx=\"3\"/><rect x=\"5\" y=\"3\" width=\"14\" height=\"18\" rx=\"3\"/><path d=\"M9 8.5h6M9 12.5h6M9 16.5h3\"/>",
   "tWallet": "<path class=\"d\" d=\"M3 7.5A2.5 2.5 0 0 1 5.5 5h13A2.5 2.5 0 0 1 21 7.5v10a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z\"/><path d=\"M3 7.5A2.5 2.5 0 0 1 5.5 5h13A2.5 2.5 0 0 1 21 7.5v10a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5zM3 9.5h18M15.5 14.5h2\"/>",
   "tMe": "<circle class=\"d\" cx=\"12\" cy=\"8.5\" r=\"4\"/><circle cx=\"12\" cy=\"8.5\" r=\"4\"/><path d=\"M4.5 20.5c1.4-3.8 4.4-5.5 7.5-5.5s6.1 1.7 7.5 5.5\"/>",
+  "aiSub": "<rect class=\"d\" x=\"2.5\" y=\"5\" width=\"19\" height=\"14\" rx=\"3\"/><rect x=\"2.5\" y=\"5\" width=\"19\" height=\"14\" rx=\"3\"/><path class=\"f\" d=\"M9 7.4l1.35 3.25L13.6 12l-3.25 1.35L9 16.6l-1.35-3.25L4.4 12l3.25-1.35z\"/><path d=\"M15.5 10h3M15.5 14h2\"/>",
+  "cert": "<path class=\"d\" d=\"M5.5 2.5h9l4 4v8.5H5.5z\"/><path d=\"M14.5 2.5h-9v17h5M14.5 2.5l4 4v4M14.5 2.5v4h4M8.5 8h4M8.5 11.5h6\"/><circle class=\"f\" cx=\"16.5\" cy=\"16\" r=\"3.2\"/><path d=\"M14.8 18.6l-.8 3.2 2.5-1.2 2.5 1.2-.8-3.2\"/>",
+  "share": "<path class=\"d\" d=\"M21 3L3.5 9.6l7 3.1 3.1 7z\"/><path d=\"M21 3L3.5 9.6l7 3.1 3.1 7zM21 3l-10.5 9.7\"/>",
+  "save": "<path class=\"f\" d=\"M6.5 3h11A1.5 1.5 0 0 1 19 4.5V21l-7-4.6L5 21V4.5A1.5 1.5 0 0 1 6.5 3z\"/>",
+  "cmt": "<path class=\"f\" d=\"M4 6.5A3 3 0 0 1 7 3.5h10a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3h-5.5L7 20.5v-4H7a3 3 0 0 1-3-3z\"/><circle class=\"kf\" cx=\"8.5\" cy=\"10\" r=\"1.2\"/><circle class=\"kf\" cx=\"12\" cy=\"10\" r=\"1.2\"/><circle class=\"kf\" cx=\"15.5\" cy=\"10\" r=\"1.2\"/>",
+  "react": "<circle class=\"f\" cx=\"12\" cy=\"12\" r=\"9.5\"/><circle class=\"kf\" cx=\"9\" cy=\"10\" r=\"1.3\"/><circle class=\"kf\" cx=\"15\" cy=\"10\" r=\"1.3\"/><path class=\"k\" stroke-width=\"2\" d=\"M8 14c1 1.6 2.4 2.4 4 2.4s3-.8 4-2.4\"/>",
+  "poll": "<rect class=\"d\" x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"3\"/><rect class=\"f\" x=\"6.5\" y=\"11\" width=\"3\" height=\"6.5\" rx=\"1\"/><rect class=\"f\" x=\"10.5\" y=\"6.5\" width=\"3\" height=\"11\" rx=\"1\"/><rect class=\"f\" x=\"14.5\" y=\"13.5\" width=\"3\" height=\"4\" rx=\"1\"/>",
+  "bot": "<rect class=\"f\" x=\"4\" y=\"7.5\" width=\"16\" height=\"12\" rx=\"3.5\"/><path d=\"M12 7.5V4M2.5 12.5v3M21.5 12.5v3\"/><circle class=\"f\" cx=\"12\" cy=\"3.5\" r=\"1.5\"/><circle class=\"kf\" cx=\"9\" cy=\"13\" r=\"1.5\"/><circle class=\"kf\" cx=\"15\" cy=\"13\" r=\"1.5\"/><path class=\"k\" stroke-width=\"1.8\" d=\"M10 16.5h4\"/>",
+  "clock": "<circle class=\"d\" cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"9\"/><path stroke-width=\"2.2\" d=\"M12 7v5l3.2 2\"/>",
+  "rise": "<path class=\"d\" d=\"M3 20.5h18V9l-6 5-4-4-8 7z\"/><path stroke-width=\"2.2\" d=\"M3 16.5l8-7 4 4 6.5-6.5M16 7h5.5v5.5\"/>",
+  "story": "<circle cx=\"12\" cy=\"12\" r=\"9.5\" stroke-dasharray=\"4.2 2.4\"/><circle class=\"f\" cx=\"12\" cy=\"12\" r=\"5.5\"/>",
 } as const;
 
 export type IconName = keyof typeof ICONS;
