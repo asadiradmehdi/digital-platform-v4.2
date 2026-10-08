@@ -15,20 +15,6 @@ export type PublicEntity = {
 
 export const publicEntities: PublicEntity[] = [
   {
-    slug: 'instagram-services',
-    name: 'Instagram Services',
-    title: 'خدمات اینستاگرام',
-    description: 'کاتالوگ خدمات و ابزارهای اینستاگرام با نمایش شفاف قابلیت، شرایط، وضعیت و قیمت هر سرویس.',
-    category: 'social',
-    audience: ['تولیدکنندگان محتوا', 'برندها', 'فروشگاه‌ها', 'آژانس‌ها'],
-    capabilities: ['خدمات رشد', 'مدیریت سفارش', 'تحلیل', 'ابزارهای محتوایی'],
-    requirements: ['وابسته به سرویس انتخابی و منبع ارائه‌دهنده'],
-    pricingModel: 'قیمت هر سرویس از کاتالوگ و منبع قیمت‌گذاری آن تعیین می‌شود.',
-    limitations: ['قابلیت‌ها باید با سیاست و API یا ارائه‌دهنده مجاز همان سرویس سازگار باشند.'],
-    href: '/services/social/instagram-services',
-    updatedAt: '2026-10-02',
-  },
-  {
     slug: 'ai-writing',
     name: 'AI Writing',
     title: 'دستیار نوشتاری هوش مصنوعی',
