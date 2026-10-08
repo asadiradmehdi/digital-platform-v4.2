@@ -33,12 +33,13 @@ async function getSubscriptions(workspaceId: string) {
     const subs = await client.query<{
       id: string; status: string; planName: string; planId: string;
       priceMinor: string | null; currency: string | null;
-      currentPeriodEnd: string; trialEndsAt: string | null;
+      currentPeriodEnd: string; trialEndsAt: string | null; daysLeft: number;
     }>(
       `SELECT s.id, s.status, p.name AS "planName", p.id AS "planId",
               s.price_minor::text AS "priceMinor", s.currency,
               s.current_period_end AS "currentPeriodEnd",
-              s.trial_ends_at AS "trialEndsAt"
+              s.trial_ends_at AS "trialEndsAt",
+              GREATEST(0, CEIL(EXTRACT(EPOCH FROM (s.current_period_end - now())) / 86400))::int AS "daysLeft"
        FROM subscriptions s
        JOIN plans p ON p.id=s.plan_id
        WHERE s.workspace_id=$1 AND s.status IN ('ACTIVE','TRIALING')
@@ -141,10 +142,7 @@ export default async function Subscriptions() {
     new Date(sub.currentPeriodEnd),
   );
   const isTrialing = sub.status === 'TRIALING';
-  const daysLeft = Math.max(
-    0,
-    Math.ceil((new Date(sub.currentPeriodEnd).getTime() - Date.now()) / 86_400_000),
-  );
+  const daysLeft = sub.daysLeft;
 
   return (
     <AppShell>
@@ -204,7 +202,7 @@ export default async function Subscriptions() {
                     height: 52,
                     borderRadius: 16,
                     background: 'var(--accent-soft)',
-                    border: '1px solid rgba(26,86,219,.15)',
+                    border: '1px solid rgba(22,52,138,.15)',
                     display: 'grid',
                     placeItems: 'center',
                     color: 'var(--accent)',
