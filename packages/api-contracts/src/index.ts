@@ -163,7 +163,7 @@ export type AiModelSummary = { id: string; slug: string; provider: string; conte
 // ---------------------------------------------------------------------------
 // Notifications
 // ---------------------------------------------------------------------------
-export type NotificationSummary = { id: string; type: string; title: string; read: boolean; createdAt: string };
+export type NotificationSummary = { id: string; type: string; title: string; body?: string | null; link?: string | null; href?: string | null; read: boolean; createdAt: string };
 
 // ---------------------------------------------------------------------------
 // Invoices
@@ -187,3 +187,11 @@ export type AnalyticsSummary = { totalOrders: number; completedOrders: number; t
 // Health
 // ---------------------------------------------------------------------------
 export type HealthResponse = { status: 'ok' | 'degraded'; version: string; checks?: Record<string, 'ok' | 'fail'> };
+
+// ---------------------------------------------------------------------------
+// Phone sign-in
+// ---------------------------------------------------------------------------
+export * from './phone';
+export type OtpRequestResponse = { ok: true; challengeId: string; expiresIn: number; resendIn: number; maskedPhone: string };
+export type OtpVerifyResponse = { ok: true; created: boolean; next: string; mfaRequired?: false } | { ok: true; mfaRequired: true; challengeToken: string };
+export type AuthProvidersResponse = { otp: boolean; google: boolean; password: boolean };

@@ -4,12 +4,12 @@ import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 
 interface Props {
   initialDisplayName: string;
-  initialPhone: string;
+  /** @deprecated the phone is edited through the verified flow (PhoneSection). */
+  initialPhone?: string;
 }
 
-export default function ProfileForm({ initialDisplayName, initialPhone }: Props) {
+export default function ProfileForm({ initialDisplayName }: Props) {
   const [displayName, setDisplayName] = useState(initialDisplayName);
-  const [phone, setPhone] = useState(initialPhone);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +24,7 @@ export default function ProfileForm({ initialDisplayName, initialPhone }: Props)
         method: 'PATCH',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', 'Origin': window.location.origin },
-        body: JSON.stringify({ displayName, phone }),
+        body: JSON.stringify({ displayName }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({})) as { error?: { message?: string } };
@@ -48,18 +48,6 @@ export default function ProfileForm({ initialDisplayName, initialPhone }: Props)
             value={displayName}
             onChange={e => { setDisplayName(e.target.value); setSaved(false); }}
             autoComplete="nickname"
-          />
-        </label>
-        <label>
-          شماره موبایل
-          <span style={{ fontSize: 10, color: 'var(--subtle)', fontWeight: 400, marginTop: -2 }}>اختیاری</span>
-          <input
-            name="phone"
-            type="tel"
-            value={phone}
-            onChange={e => { setPhone(e.target.value); setSaved(false); }}
-            autoComplete="tel"
-            dir="ltr"
           />
         </label>
       </div>

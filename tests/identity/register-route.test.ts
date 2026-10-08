@@ -82,6 +82,20 @@ describe('POST /api/v1/auth/register', () => {
     expect(response.headers.get('location')).toContain('/dashboard');
   });
 
+  it.each([
+    ['/orders/new?service=instagram-followers', '/orders/new?service=instagram-followers'],
+    ['//evil.example/x', '/dashboard'], ['https://evil.example', '/dashboard'], ['/\\evil.example', '/dashboard'],
+  ])('honours only a same-origin next path after sign-up (%s → %s)', async (next, expected) => {
+    // Regression: sign-up from a service page always landed on /dashboard instead of the order form.
+    mockRateLimit.mockResolvedValueOnce(undefined as never);
+    mockHashPassword.mockResolvedValueOnce('hash-abc' as never);
+    mockWithTx.mockResolvedValueOnce(registrationResult as never);
+    mockCreateSession.mockResolvedValueOnce('session-tok' as never);
+    const response = await POST(makeRequest({ email: 'new@example.com', password: 'SuperStrong!1234', name: 'Ali', next }));
+    expect(new URL(response.headers.get('location')!).pathname + new URL(response.headers.get('location')!).search).toBe(expected);
+    expect(new URL(response.headers.get('location')!).origin).toBe('http://localhost:3000');
+  });
+
   it('returns 429 when registration rate limit is exceeded', async () => {
     mockRateLimit.mockRejectedValueOnce(new AppError('RATE_LIMITED', 'Too many registrations.'));
 
@@ -140,7 +154,7 @@ describe('POST /api/v1/auth/register', () => {
     } as unknown as import('next/server').NextRequest;
     const response = await POST(request);
     expect(response.status).toBe(201);
-    expect(await response.json()).toEqual({ ok: true });
+    expect(await response.json()).toEqual({ ok: true, next: '/dashboard' });
     expect(vi.mocked(setSessionCookie)).toHaveBeenCalledWith(response, 'session-tok');
   });
 

@@ -6,7 +6,12 @@ vi.mock('../../server/core/security-boundary', () => ({
   clientFingerprint: vi.fn().mockReturnValue('127.0.0.1'),
 }));
 vi.mock('../../server/core/db', () => ({ query: vi.fn() }));
-vi.mock('../../server/identity/sessions', () => ({ revokeAllOtherSessions: vi.fn() }));
+vi.mock('../../server/identity/sessions', async () => {
+  const { createHash } = await import('node:crypto');
+  return { revokeAllOtherSessions: vi.fn(), listSignedInDevices: vi.fn(), hashSessionToken: (t: string) => createHash('sha256').update(t).digest('hex') };
+});
+vi.mock('../../server/core/audit', () => ({ writeAudit: vi.fn() }));
+vi.mock('../../server/core/security-events', () => ({ recordSecurityEvent: vi.fn() }));
 vi.mock('../../server/identity/session-cookie', () => ({
   SESSION_COOKIE_NAME: '__Host-session',
 }));
@@ -17,12 +22,14 @@ vi.mock('next/headers', () => ({ cookies: vi.fn() }));
 import { requireRequestUser } from '../../server/identity/request-user';
 import { cookies } from 'next/headers';
 import { query } from '../../server/core/db';
-import { revokeAllOtherSessions } from '../../server/identity/sessions';
+import { listSignedInDevices, revokeAllOtherSessions } from '../../server/identity/sessions';
 import { AppError } from '../../server/core/errors';
 
 const mockRequireUser = vi.mocked(requireRequestUser);
 const mockCookies = vi.mocked(cookies);
 const mockQuery = vi.mocked(query);
+const mockList = vi.mocked(listSignedInDevices);
+void mockQuery;
 const mockRevokeAll = vi.mocked(revokeAllOtherSessions);
 
 beforeEach(() => {
@@ -51,10 +58,7 @@ describe('GET /api/v1/auth/sessions', () => {
   it('returns 200 with session list', async () => {
     mockRequireUser.mockResolvedValueOnce('user-1' as never);
     mockCookieStore.get.mockReturnValueOnce({ value: 'session-token' });
-    mockQuery.mockResolvedValueOnce({
-      rows: [{ id: 's-1', clientType: 'WEB', deviceName: 'Chrome', lastSeenAt: null, createdAt: '2026-10-01', current: true }],
-      rowCount: 1,
-    } as never);
+    mockList.mockResolvedValueOnce([{ id: 's-1', clientType: 'WEB', deviceName: 'Chrome', lastSeenAt: null, createdAt: '2026-10-01', current: true }] as never);
 
     const res = await GET(makeRequest('GET'));
     expect(res.status).toBe(200);
@@ -65,7 +69,7 @@ describe('GET /api/v1/auth/sessions', () => {
 
   it('returns 200 with empty list when no active sessions', async () => {
     mockRequireUser.mockResolvedValueOnce('user-1' as never);
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as never);
+    mockList.mockResolvedValueOnce([] as never);
 
     const res = await GET(makeRequest('GET'));
     expect(res.status).toBe(200);
@@ -83,12 +87,19 @@ describe('GET /api/v1/auth/sessions', () => {
   it('marks current session by hashing session cookie', async () => {
     mockRequireUser.mockResolvedValueOnce('user-1' as never);
     mockCookieStore.get.mockReturnValueOnce({ value: 'my-token' });
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as never);
+    mockList.mockResolvedValueOnce([] as never);
 
     await GET(makeRequest('GET'));
-    const [sql, params] = mockQuery.mock.calls[0] as [string, unknown[]];
-    expect(sql).toContain('token_hash = $2');
-    expect((params[1] as string).length).toBe(64); // sha256 hex = 64 chars
+    expect(mockList).toHaveBeenCalledWith('user-1', expect.stringMatching(/^[0-9a-f]{64}$/)); // sha256 of the cookie
+  });
+
+  it('identifies the app\'s own session from its bearer token', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    mockList.mockResolvedValueOnce([] as never);
+    const req = { headers: { get: (k: string) => (k === 'authorization' ? 'Bearer app-token' : null) }, url: 'http://localhost:3000/api/v1/auth/sessions', method: 'GET' } as unknown as import('next/server').NextRequest;
+    await GET(req);
+    const { createHash } = await import('node:crypto');
+    expect(mockList).toHaveBeenCalledWith('user-1', createHash('sha256').update('app-token').digest('hex'));
   });
 });
 

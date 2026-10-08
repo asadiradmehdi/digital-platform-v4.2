@@ -2,17 +2,15 @@
 import { useState } from 'react';
 import { AlertTriangle, CheckCircle2, Laptop2, Loader2, LogOut, Smartphone, X } from 'lucide-react';
 
+/** One signed-in device (web or app session). Token hashes never reach the browser. */
 interface Session {
   id: string;
-  tokenHash: string;
   clientType: string | null;
-  deviceName: string | null;
-  lastUserAgent: string | null;
-  lastSeenAt: string | null;
-  createdAt: string;
   isCurrent: boolean;
   label: string;
+  method: string | null;
   lastSeen: string;
+  expires: string;
 }
 
 export default function SessionManager({ sessions }: { sessions: Session[] }) {
@@ -21,32 +19,38 @@ export default function SessionManager({ sessions }: { sessions: Session[] }) {
   const [revokingAll, setRevokingAll] = useState(false);
   const [allRevoked, setAllRevoked] = useState(false);
   const [confirmRevokeAll, setConfirmRevokeAll] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const revokeOne = async (sessionId: string) => {
     setRevoking(sessionId);
+    setError(null);
     try {
-      await fetch(`/api/v1/auth/sessions/${sessionId}`, {
+      const res = await fetch(`/api/v1/auth/sessions/${sessionId}`, {
         method: 'DELETE',
         credentials: 'same-origin',
         headers: { 'Origin': window.location.origin },
       });
+      // 404: already signed out elsewhere — the row goes away either way.
+      if (!res.ok && res.status !== 404) throw new Error(String(res.status));
       setList(prev => prev.filter(s => s.id !== sessionId));
-    } catch { /* silently ignore */ } finally {
+    } catch { setError('خروج از این دستگاه انجام نشد. دوباره تلاش کنید.'); } finally {
       setRevoking(null);
     }
   };
 
   const revokeAll = async () => {
     setRevokingAll(true);
+    setError(null);
     try {
-      await fetch('/api/v1/auth/sessions', {
+      const res = await fetch('/api/v1/auth/sessions', {
         method: 'DELETE',
         credentials: 'same-origin',
         headers: { 'Origin': window.location.origin },
       });
+      if (!res.ok) throw new Error(String(res.status));
       setList(prev => prev.filter(s => s.isCurrent));
       setAllRevoked(true);
-    } catch { /* silently ignore */ } finally {
+    } catch { setError('خروج از دستگاه‌های دیگر انجام نشد. دوباره تلاش کنید.'); } finally {
       setRevokingAll(false);
     }
   };
@@ -63,10 +67,7 @@ export default function SessionManager({ sessions }: { sessions: Session[] }) {
     <>
       <div style={{ display: 'grid', gap: 8, marginTop: 4 }}>
         {list.map(s => {
-          const isMobile =
-            /iPhone|iPad|Android/.test(s.lastUserAgent ?? '') ||
-            s.clientType === 'IOS' ||
-            s.clientType === 'ANDROID';
+          const isMobile = s.clientType === 'IOS' || s.clientType === 'ANDROID' || /iOS|Android/.test(s.label);
           const Icon = isMobile ? Smartphone : Laptop2;
           return (
             <div key={s.id} className="session-row">
@@ -101,7 +102,10 @@ export default function SessionManager({ sessions }: { sessions: Session[] }) {
                     marginTop: 3,
                   }}
                 >
-                  آخرین فعالیت: {s.lastSeen}
+                  {s.method ? `${s.method} · ` : ''}آخرین فعالیت: {s.lastSeen}
+                </small>
+                <small style={{ display: 'block', color: 'var(--subtle)', fontSize: 10.5, marginTop: 2 }}>
+                  اعتبار تا {s.expires}
                 </small>
               </div>
               {s.isCurrent ? (
@@ -126,6 +130,13 @@ export default function SessionManager({ sessions }: { sessions: Session[] }) {
           );
         })}
       </div>
+
+      {error && (
+        <div className="auth-error" role="alert" style={{ marginTop: 12 }}>
+          <AlertTriangle size={14} />
+          <span>{error}</span>
+        </div>
+      )}
 
       {list.length > 1 && !allRevoked && !confirmRevokeAll && (
         <button

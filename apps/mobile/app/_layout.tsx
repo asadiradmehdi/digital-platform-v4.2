@@ -11,12 +11,12 @@ import { Kufam_800ExtraBold } from '@expo-google-fonts/kufam/800ExtraBold';
 import { AuthProvider, useAuth } from '../src/auth/AuthProvider';
 import { C } from '../src/zp/base';
 
-/** Every screen except login needs a session; the server still authorizes each request. */
+/** Every screen except login (and the Google return link) needs a session; the server still authorizes each request. */
 function SessionGate() {
   const { ready, authenticated } = useAuth();
   const segments = useSegments();
   const router = useRouter();
-  const onLogin = segments[0] === 'login';
+  const onLogin = segments[0] === 'login' || segments[0] === 'auth';
   useEffect(() => {
     if (!ready) return;
     if (!authenticated && !onLogin) router.replace('/login');
@@ -37,6 +37,7 @@ export default function Layout() {
       <SessionGate />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg } }}>
         <Stack.Screen name="login" />
+        <Stack.Screen name="auth/google" />
         <Stack.Screen name="(tabs)" />
       </Stack>
     </AuthProvider>

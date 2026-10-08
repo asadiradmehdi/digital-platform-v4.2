@@ -1,8 +1,11 @@
 'use client';
 import { useState } from 'react';
 import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { OtpStep } from '../../../components/zp/OtpStep';
 
-export default function PasswordForm() {
+/** Changing (or, for phone/Google accounts, creating) a password needs a fresh SMS code when a phone is verified. */
+export default function PasswordForm({ hasPassword = true, phoneVerified = false }: { hasPassword?: boolean; phoneVerified?: boolean }) {
+  const [needOtp, setNeedOtp] = useState(false);
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -12,9 +15,7 @@ export default function PasswordForm() {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNext, setShowNext] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (next !== confirm) { setError('رمز عبور جدید و تکرار آن باید یکسان باشند.'); return; }
+  const submit = async (otpProof?: string) => {
     setSaving(true);
     setSaved(false);
     setError(null);
@@ -23,10 +24,11 @@ export default function PasswordForm() {
         method: 'PATCH',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', 'Origin': window.location.origin },
-        body: JSON.stringify({ currentPassword: current, newPassword: next }),
+        body: JSON.stringify({ currentPassword: hasPassword ? current : undefined, newPassword: next, otpProof }),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({})) as { error?: { message?: string } };
+        const err = await res.json().catch(() => ({})) as { error?: { message?: string; details?: { requiresOtp?: boolean } } };
+        if (err.error?.details?.requiresOtp && !otpProof) { setNeedOtp(true); return; }
         throw new Error(err.error?.message ?? 'خطا در تغییر رمز عبور');
       }
       setSaved(true);
@@ -38,8 +40,24 @@ export default function PasswordForm() {
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (next !== confirm) { setError('رمز عبور جدید و تکرار آن باید یکسان باشند.'); return; }
+    if (next.length < 14) { setError('رمز عبور جدید حداقل ۱۴ کاراکتر باشد.'); return; }
+    if (phoneVerified) { setError(null); setNeedOtp(true); return; }
+    await submit();
+  };
+
+  if (needOtp) {
+    return (
+      <OtpStep purpose="REAUTH" title="برای تغییر رمز عبور، کد پیامک‌شده را وارد کنید"
+        onCancel={() => setNeedOtp(false)} onProof={p => { setNeedOtp(false); void submit(p); }} />
+    );
+  }
+
   return (
     <form className="settings-form" onSubmit={e => void handleSubmit(e)}>
+      {hasPassword && (
       <label>
         رمز عبور فعلی
         <div style={{ position: 'relative' }}>
@@ -49,7 +67,7 @@ export default function PasswordForm() {
             autoComplete="current-password"
             value={current}
             onChange={e => { setCurrent(e.target.value); setSaved(false); }}
-            required
+            required={hasPassword}
             style={{ paddingInlineEnd: 44 }}
           />
           <button
@@ -71,6 +89,7 @@ export default function PasswordForm() {
           </button>
         </div>
       </label>
+      )}
 
       <label>
         رمز عبور جدید
@@ -165,7 +184,7 @@ export default function PasswordForm() {
               در حال ذخیره...
             </>
           ) : (
-            'تغییر رمز عبور'
+            hasPassword ? 'تغییر رمز عبور' : 'ساخت رمز عبور'
           )}
         </button>
       </div>

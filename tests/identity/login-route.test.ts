@@ -106,6 +106,22 @@ describe('POST /api/v1/auth/login', () => {
     expect(mockQuery.mock.calls.at(-1)?.[1]).toEqual(['user@example.com']);
   });
 
+  it.each([
+    ['/orders/new?service=instagram-followers', '/orders/new?service=instagram-followers'],
+    ['//evil.example', '/dashboard'], ['javascript:alert(1)', '/dashboard'], [undefined, '/dashboard'],
+  ])('returns only a same-origin next path after sign-in (%s → %s)', async (next, expected) => {
+    // Regression: signing in from a service page always landed on /dashboard.
+    mockRateLimit.mockResolvedValueOnce(undefined as never);
+    mockQuery.mockResolvedValueOnce({ rows: [validUser], rowCount: 1 } as never);
+    mockLocked.mockResolvedValueOnce(false);
+    mockVerify.mockResolvedValueOnce(true);
+    mockSuccess.mockResolvedValueOnce(undefined);
+    mockHasMfa.mockResolvedValueOnce(false);
+    mockCreateSession.mockResolvedValueOnce('session-token' as never);
+    const response = await POST(makeRequest({ identifier: 'user@example.com', password: 'ValidPassword1', next }));
+    expect((await response.json()).next).toBe(expected);
+  });
+
   it('returns 200 with mfaRequired when user has MFA enabled', async () => {
     mockRateLimit.mockResolvedValueOnce(undefined as never);
     mockQuery.mockResolvedValueOnce({ rows: [validUser], rowCount: 1 } as never);
