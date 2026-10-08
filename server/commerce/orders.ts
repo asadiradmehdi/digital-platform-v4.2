@@ -11,8 +11,8 @@ export async function createOrder(input: CreateOrderInput) {
   return withWorkspaceTransaction(input.workspaceId, undefined, async (client) => {
     const existing = await client.query<{ id: string; status: OrderStatus }>(`SELECT id,status FROM orders WHERE workspace_id=$1 AND idempotency_key=$2`, [input.workspaceId,input.idempotencyKey]);
     if (existing.rows[0]) return existing.rows[0];
-    const catalog = await client.query<{ id: string; unit_price_minor: string; currency: string; price_version: number; pricing_rule_id: string | null; fx_rate_id: string | null; provider_cost_minor: string | null; provider_cost_currency: string | null }>(`
-      SELECT sp.id,sp.unit_price_minor,sp.currency,sp.price_version,sp.pricing_rule_id,sp.fx_rate_id,sp.provider_cost_minor,sp.provider_cost_currency
+    const catalog = await client.query<{ id: string; unit_price_minor: string; currency: string; price_version: number; pricing_rule_id: string | null; fx_rate_id: string | null; provider_cost_minor: string | null; provider_cost_currency: string | null; min_quantity?: string | null; max_quantity?: string | null }>(`
+      SELECT sp.id,sp.unit_price_minor,sp.currency,sp.price_version,sp.pricing_rule_id,sp.fx_rate_id,sp.provider_cost_minor,sp.provider_cost_currency,sp.min_quantity,sp.max_quantity
       FROM service_prices sp
       WHERE sp.service_id=$1 AND sp.active=true AND sp.currency='IRT'
         AND (sp.effective_to IS NULL OR sp.effective_to > now())
@@ -20,6 +20,10 @@ export async function createOrder(input: CreateOrderInput) {
     `,[input.serviceId]);
     if (!catalog.rows[0]) throw new AppError('CONFLICT','No active catalog price is available.');
     const price = catalog.rows[0];
+    // The price row's quantity bounds are part of the offer: the API must not sell outside them.
+    if ((price.min_quantity != null && input.quantity < BigInt(price.min_quantity)) || (price.max_quantity != null && input.quantity > BigInt(price.max_quantity))) {
+      throw new AppError('VALIDATION_ERROR', 'تعداد سفارش خارج از محدوده‌ی مجاز این سرویس است.', { min: price.min_quantity ?? null, max: price.max_quantity ?? null });
+    }
     const total = input.quantity * BigInt(price.unit_price_minor);
     const order = await client.query<{ id: string; status: OrderStatus }>(`INSERT INTO orders(workspace_id,status,currency,subtotal_minor,total_minor,idempotency_key) VALUES($1,'PAYMENT_PENDING',$2,$3,$3,$4) RETURNING id,status`, [input.workspaceId,price.currency,total.toString(),input.idempotencyKey]);
     const id = order.rows[0].id;
