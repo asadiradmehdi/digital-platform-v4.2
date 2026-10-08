@@ -6,7 +6,7 @@ import { CreateWorkspaceButton } from './CreateWorkspaceButton';
 import { AppShell } from '../../components/AppShell';
 import { SystemStrip } from '../../components/ProductSurface';
 import { requireCurrentUser } from '../../server/identity/request-user';
-import { query } from '../../server/core/db';
+import { query, withTenantTransaction } from '../../server/core/db';
 
 export const metadata: Metadata = { title: 'Workspace', robots: { index: false, follow: false } };
 
@@ -23,24 +23,28 @@ export default async function WorkspacePage() {
     workspace_name: string;
     workspace_slug: string;
     member_count: string;
-    plan_name: string | null;
-    sub_status: string | null;
   }>(
     `SELECT wm.workspace_id,
             w.name AS workspace_name,
             w.slug AS workspace_slug,
-            (SELECT COUNT(*) FROM workspace_members wm2 WHERE wm2.workspace_id=wm.workspace_id AND wm2.status='ACTIVE') AS member_count,
-            p.name AS plan_name,
-            s.status AS sub_status
+            (SELECT COUNT(*) FROM workspace_members wm2 WHERE wm2.workspace_id=wm.workspace_id AND wm2.status='ACTIVE') AS member_count
      FROM workspace_members wm
      JOIN workspaces w ON w.id=wm.workspace_id
-     LEFT JOIN subscriptions s ON s.workspace_id=wm.workspace_id AND s.status IN ('ACTIVE','TRIALING')
-     LEFT JOIN plans p ON p.id=s.plan_id
      WHERE wm.user_id=$1 AND wm.status='ACTIVE'
      ORDER BY wm.created_at`,
     [userId],
   );
-  const workspaces = result.rows;
+  // subscriptions is RLS-protected, so each workspace's plan is read inside that workspace's tenant context.
+  const workspaces = await Promise.all(result.rows.map(async row => {
+    const sub = await withTenantTransaction(row.workspace_id, userId, client => client.query<{ plan_name: string | null; sub_status: string | null }>(
+      `SELECT p.name AS plan_name, s.status AS sub_status
+       FROM subscriptions s LEFT JOIN plans p ON p.id=s.plan_id
+       WHERE s.workspace_id=$1 AND s.status IN ('ACTIVE','TRIALING')
+       ORDER BY s.created_at DESC LIMIT 1`,
+      [row.workspace_id],
+    ));
+    return { ...row, plan_name: sub.rows[0]?.plan_name ?? null, sub_status: sub.rows[0]?.sub_status ?? null };
+  }));
 
   return (
     <AppShell>

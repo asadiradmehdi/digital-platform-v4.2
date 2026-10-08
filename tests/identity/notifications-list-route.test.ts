@@ -4,17 +4,20 @@
  */
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 
-vi.mock('../../server/core/db', () => ({ query: vi.fn() }));
+vi.mock('../../server/core/db', () => ({ query: vi.fn(), withUserTransaction: vi.fn() }));
 vi.mock('../../server/identity/request-user', () => ({ requireRequestUser: vi.fn() }));
 
-import { query } from '../../server/core/db';
+import { query, withUserTransaction } from '../../server/core/db';
 import { requireRequestUser } from '../../server/identity/request-user';
 import { AppError } from '../../server/core/errors';
 
 const mockQuery = vi.mocked(query);
 const mockRequireUser = vi.mocked(requireRequestUser);
 
-beforeEach(() => vi.resetAllMocks());
+beforeEach(() => {
+  vi.resetAllMocks();
+  vi.mocked(withUserTransaction).mockImplementation((async (_u: string, fn: (c: unknown) => unknown) => fn({ query: mockQuery })) as never);
+});
 
 type RouteModule = typeof import('../../app/api/v1/notifications/route');
 let GET: RouteModule['GET'];
@@ -73,5 +76,16 @@ describe('GET /api/v1/notifications', () => {
     await GET(makeRequest());
     const [_sql, params] = mockQuery.mock.calls[0] as [string, unknown[]];
     expect(params[0]).toBe('user-42');
+  });
+});
+
+describe('notifications RLS scope', () => {
+  // Regression: notifications has FORCE RLS; the pool SELECT returned an empty inbox under the production role.
+  it('reads the inbox inside the caller\'s user-scoped transaction', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-7' as never);
+    mockQuery.mockResolvedValueOnce({ rows: [sampleNotification], rowCount: 1 } as never);
+    await GET(makeRequest());
+    expect(vi.mocked(withUserTransaction)).toHaveBeenCalledWith('user-7', expect.any(Function));
+    expect(mockQuery.mock.calls[0][1]).toEqual(['user-7']);
   });
 });
