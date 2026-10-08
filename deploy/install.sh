@@ -45,6 +45,8 @@ APP_DB_PASSWORD=$(openssl rand -hex 24)
 SECRETS_MASTER_KEY=$(openssl rand -hex 32)
 INTERNAL_API_SECRET=$(openssl rand -hex 32)
 STORAGE_SECRET=$(openssl rand -hex 32)
+QUEUE_CRON_SECRET=$(openssl rand -hex 32)
+PRICING_CRON_SECRET=$(openssl rand -hex 32)
 SUPPORT_HOURS="شنبه تا پنج‌شنبه، ۹ صبح تا ۹ شب"
 SUPPORT_PHONES=
 CONF
@@ -67,6 +69,7 @@ server {
   listen 80;
   server_name $SITE_HOST;
   client_max_body_size 2m;
+  location /api/internal/ { return 404; }
   location / {
     proxy_pass http://127.0.0.1:${APP_PORT};
     proxy_http_version 1.1;

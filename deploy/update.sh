@@ -11,6 +11,10 @@ if [[ "$LOCAL" == "$REMOTE" && "${1:-}" != "--force" ]]; then exit 0; fi
 echo "$(date -Is) deploying ${REMOTE:0:7} (was ${LOCAL:0:7})"
 git reset -q --hard origin/master
 cd deploy
+# Secrets added in later releases are generated once on the server.
+for k in QUEUE_CRON_SECRET PRICING_CRON_SECRET; do
+  grep -q "^$k=" .env || echo "$k=$(openssl rand -hex 32)" >> .env
+done
 PROFILE=$(grep -q '^PROXY=caddy' .env && echo "--profile caddy" || true)
 # Back up the database before every schema change (keeps the last 14).
 docker compose exec -T db pg_dump -U postgres -Fc zohalpay > "backups/zohalpay-$(date +%Y%m%d-%H%M%S).dump" 2>/dev/null || true

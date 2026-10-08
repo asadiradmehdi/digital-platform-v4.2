@@ -50,6 +50,29 @@ services:
     ports:
       - "127.0.0.1:${APP_PORT:-3100}:3000"
 
+  # Drives the background work the app exposes as internal endpoints: paid orders are dispatched to
+  # providers through the outbox, and subscription renewals run hourly. Talks to the app over the
+  # compose network only.
+  cron:
+    image: curlimages/curl:8.10.1
+    restart: unless-stopped
+    depends_on: { app: { condition: service_healthy } }
+    environment:
+      QUEUE_CRON_SECRET: ${QUEUE_CRON_SECRET:?set in deploy/.env}
+    entrypoint:
+      - sh
+      - -c
+      - |
+        n=0
+        while true; do
+          curl -fsS -m 50 -X POST -H "Authorization: Bearer $$QUEUE_CRON_SECRET" http://app:3000/api/internal/queue/outbox >/dev/null || echo "outbox run failed"
+          if [ $$((n % 180)) -eq 0 ]; then
+            curl -fsS -m 120 -X POST -H "Authorization: Bearer $$QUEUE_CRON_SECRET" http://app:3000/api/internal/queue/renewal >/dev/null || echo "renewal run failed"
+          fi
+          n=$$((n + 1))
+          sleep 20
+        done
+
   caddy:
     image: caddy:2
     profiles: ["caddy"]

@@ -1,5 +1,7 @@
 {$SITE_HOST} {
 	encode zstd gzip
+	# Cron-only endpoints are reached from the compose network, never from the internet.
+	respond /api/internal/* 404
 	reverse_proxy app:3000 {
 		# Overwrite (never append) client-IP headers: the app trusts them because TRUST_PROXY=true.
 		header_up X-Real-IP {remote_host}
