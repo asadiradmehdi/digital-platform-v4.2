@@ -35,7 +35,8 @@ async function loadCandidates(serviceId: string): Promise<ProviderCandidate[]> {
        COALESCE(pm.refund_rate::text, '0.05') AS refund_rate,
        COALESCE(pm.latency_ms::text, '500') AS latency_ms,
        COALESCE(pm.quality_score::text, '0.8') AS quality_score,
-       COALESCE(ps.cost_minor::text, '1000') AS cost_minor,
+       -- Provider cost per unit lives in provider_services.metadata.cost_minor (set from the admin app).
+       COALESCE(ps.metadata->>'cost_minor', '1000') AS cost_minor,
        (
          p.balance_minor IS NULL OR p.balance_minor > 1000
        ) AS balance_healthy
