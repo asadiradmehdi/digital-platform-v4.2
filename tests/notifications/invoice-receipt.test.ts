@@ -27,7 +27,7 @@ function fakeClient(method = 'GATEWAY', failOn?: RegExp) {
       return { rows: [], rowCount: 1 };
     }),
   };
-  return { client, sql };
+  return { client: client as unknown as Parameters<typeof queueInvoiceReceiptSms>[0], sql };
 }
 
 beforeEach(() => vi.resetAllMocks());
