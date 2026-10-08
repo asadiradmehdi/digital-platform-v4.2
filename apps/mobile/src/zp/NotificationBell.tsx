@@ -40,7 +40,11 @@ export function NotificationBell() {
     } catch { setState(s => ({ ...s, status: 'error' })); }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  // Unread dot on first paint, without opening the panel.
+  useEffect(() => {
+    const t = setTimeout(() => { void load(); }, 0);
+    return () => clearTimeout(t);
+  }, [load]);
 
   const markRead = (id: string) => {
     setState(s => ({ ...s, items: s.items.map(i => (i.id === id ? { ...i, read: true } : i)) }));
