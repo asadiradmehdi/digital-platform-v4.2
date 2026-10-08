@@ -23,7 +23,7 @@ vi.mock('../../server/ai/entitlement', () => ({
 }));
 vi.mock('../../server/ai/cost-accounting', () => ({ recordAICost: vi.fn() }));
 vi.mock('../../server/ai/streaming', () => ({ createStreamingResponse: vi.fn() }));
-vi.mock('../../server/core/db', () => ({ query: vi.fn() }));
+vi.mock('../../server/core/db', () => ({ withTenantTransaction: vi.fn() }));
 vi.mock('../../server/observability/tracing', () => ({
   withSpan: vi.fn(),
   parseTraceparent: vi.fn().mockReturnValue(null),
@@ -45,6 +45,7 @@ import {
 import { recordAICost } from '../../server/ai/cost-accounting';
 import { withSpan } from '../../server/observability/tracing';
 import { AppError } from '../../server/core/errors';
+import { withTenantTransaction } from '../../server/core/db';
 
 const mockRequireUser = vi.mocked(requireRequestUser);
 const mockRequirePermission = vi.mocked(requireWorkspacePermission);
@@ -57,7 +58,13 @@ const mockEstimateCost = vi.mocked(estimateAICost);
 const mockRecordAICost = vi.mocked(recordAICost);
 const mockWithSpan = vi.mocked(withSpan);
 
-beforeEach(() => vi.resetAllMocks());
+const mockTx = vi.mocked(withTenantTransaction);
+const txClient = { query: vi.fn() };
+
+beforeEach(() => {
+  vi.resetAllMocks();
+  mockTx.mockImplementation((async (_ws: string, _u: string | undefined, fn: (c: typeof txClient) => unknown) => fn(txClient)) as never);
+});
 
 type RouteModule = typeof import('../../app/api/v1/ai/generate/route');
 let POST: RouteModule['POST'];
@@ -169,5 +176,24 @@ describe('POST /api/v1/ai/generate', () => {
     expect(mockRecordAICost).toHaveBeenCalledWith(
       expect.objectContaining({ aiRequestId: 'ai-req-2', costMinor: 20n })
     );
+  });
+
+  it('writes ai_cost_events through the workspace RLS transaction (regression: pool query was rejected)', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    mockRequirePermission.mockResolvedValueOnce(undefined as never);
+    mockResolveModel.mockResolvedValueOnce('claude-haiku-4-5-20251001' as never);
+    mockCheckEntitlement.mockResolvedValueOnce(undefined as never);
+    mockRecordAIRequest.mockResolvedValueOnce('ai-req-3' as never);
+    mockWithSpan.mockImplementationOnce((_name, _meta, _fn) =>
+      Promise.resolve({ value: generateResult, durationMs: 200, trace: { traceId: 'a'.repeat(32), spanId: 'b'.repeat(16), traceFlags: '01' } })
+    );
+    mockGetModelPrice.mockResolvedValueOnce({ inputUnitCostMinor: 1n, outputUnitCostMinor: 2n, currency: 'IRR' } as never);
+    mockEstimateCost.mockReturnValueOnce(5n as never);
+    mockRecordAICost.mockImplementationOnce(async input => { await input.query('INSERT INTO ai_cost_events', []); });
+
+    await POST(makeRequest(validBody));
+    expect(mockCompleteAIRequest).toHaveBeenCalledWith('ai-req-3', 'ws-1', 10n, 5n, 200);
+    expect(mockTx).toHaveBeenCalledWith('ws-1', 'user-1', expect.any(Function));
+    expect(txClient.query).toHaveBeenCalledWith('INSERT INTO ai_cost_events', []);
   });
 });

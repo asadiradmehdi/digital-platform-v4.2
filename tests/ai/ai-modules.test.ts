@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../server/core/db', () => ({ query: vi.fn(), withWorkspaceTransaction: vi.fn() }));
+vi.mock('../../server/core/db', () => {
+  const query = vi.fn();
+  return { query, withWorkspaceTransaction: vi.fn(), withTenantTransaction: vi.fn(async (_ws: string, _u: string | undefined, fn: (c: { query: typeof query }) => unknown) => fn({ query })) };
+});
 
 import { query } from '../../server/core/db';
 import { getModelPrice, resolveModelId, KNOWN_MODELS } from '../../server/ai/model-catalog';
@@ -75,7 +78,7 @@ describe('agent-run persistence', () => {
 
   it('completeAgentRun updates status to COMPLETED', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
-    await completeAgentRun('run-1', { result: 'done' });
+    await completeAgentRun('run-1', 'ws-1', { result: 'done' });
     expect(mockQuery).toHaveBeenCalledWith(
       expect.stringContaining("status='COMPLETED'"),
       ['run-1', { result: 'done' }]
@@ -84,7 +87,7 @@ describe('agent-run persistence', () => {
 
   it('failAgentRun updates status to FAILED with error', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
-    await failAgentRun('run-1', { message: 'timeout', code: 'RATE_LIMITED' });
+    await failAgentRun('run-1', 'ws-1', { message: 'timeout', code: 'RATE_LIMITED' });
     expect(mockQuery).toHaveBeenCalledWith(
       expect.stringContaining("status='FAILED'"),
       ['run-1', { message: 'timeout', code: 'RATE_LIMITED' }]

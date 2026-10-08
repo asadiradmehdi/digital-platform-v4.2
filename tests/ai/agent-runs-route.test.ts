@@ -10,7 +10,7 @@ vi.mock('../../server/core/security-boundary', () => ({
   assertSameOrigin: vi.fn(),
   clientFingerprint: vi.fn().mockReturnValue('1.2.3.4'),
 }));
-vi.mock('../../server/core/db', () => ({ query: vi.fn() }));
+vi.mock('../../server/core/db', () => ({ query: vi.fn(), withTenantTransaction: vi.fn() }));
 vi.mock('../../server/ai/agent-run', () => ({
   startAgentRun: vi.fn(),
   getAgentRun: vi.fn(),
@@ -19,7 +19,7 @@ vi.mock('../../server/ai/agent-run', () => ({
 
 import { requireRequestUser } from '../../server/identity/request-user';
 import { requireWorkspacePermission } from '../../server/identity/rbac';
-import { query } from '../../server/core/db';
+import { query, withTenantTransaction } from '../../server/core/db';
 import { startAgentRun, getAgentRun, getAgentRunToolCalls } from '../../server/ai/agent-run';
 import { AppError } from '../../server/core/errors';
 
@@ -30,7 +30,12 @@ const mockStartAgentRun = vi.mocked(startAgentRun);
 const mockGetAgentRun = vi.mocked(getAgentRun);
 const mockGetAgentRunToolCalls = vi.mocked(getAgentRunToolCalls);
 
-beforeEach(() => vi.resetAllMocks());
+const mockTx = vi.mocked(withTenantTransaction);
+
+beforeEach(() => {
+  vi.resetAllMocks();
+  mockTx.mockImplementation((async (_ws: string, _u: string | undefined, fn: (c: unknown) => unknown) => fn({ query: mockQuery })) as never);
+});
 
 type RouteModule = typeof import('../../app/api/v1/ai/agent-runs/route');
 let GET: RouteModule['GET'];
@@ -73,6 +78,15 @@ describe('GET /api/v1/ai/agent-runs (list)', () => {
     const data = await response.json();
     expect(data.items).toHaveLength(1);
     expect(data.items[0].id).toBe('run-1');
+  });
+
+  it('lists runs inside the requested workspace\'s RLS context (regression: pool query returned no rows)', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    mockRequirePermission.mockResolvedValueOnce(undefined as never);
+    mockQuery.mockResolvedValueOnce({ rows: [runRow], rowCount: 1 } as never);
+    await GET(makeGetRequest('ws-9'));
+    expect(mockTx).toHaveBeenCalledWith('ws-9', 'user-1', expect.any(Function));
+    expect(mockRequirePermission.mock.invocationCallOrder[0]).toBeLessThan(mockTx.mock.invocationCallOrder[0]);
   });
 
   it('returns 401 when not authenticated', async () => {

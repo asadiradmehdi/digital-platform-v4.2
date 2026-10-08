@@ -1,14 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../server/core/db', () => ({
-  query: vi.fn(),
-}));
+vi.mock('../../server/core/db', () => {
+  const query = vi.fn();
+  return { query, withWorkspaceTransaction: vi.fn(), withTenantTransaction: vi.fn(async (_ws: string, _u: string | undefined, fn: (c: { query: typeof query }) => unknown) => fn({ query })) };
+});
 
 vi.mock('../../server/ai/model-catalog', () => ({
   getModelPrice: vi.fn(),
 }));
 
-import { query } from '../../server/core/db';
+import { query, withTenantTransaction } from '../../server/core/db';
 import { getModelPrice } from '../../server/ai/model-catalog';
 import {
   checkAIEntitlement,
@@ -119,7 +120,7 @@ describe('recordAIRequest', () => {
 describe('completeAIRequest', () => {
   it('updates the request with input/output units, cost, and latency', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
-    await completeAIRequest('req-1', 1000n, 500n, 350);
+    await completeAIRequest('req-1', 'ws-1', 1000n, 500n, 350);
     const [sql, params] = mockQuery.mock.calls[0] as [string, unknown[]];
     expect(sql).toContain('ai_requests');
     expect(params).toContain('req-1');
@@ -132,10 +133,28 @@ describe('completeAIRequest', () => {
 describe('failAIRequest', () => {
   it('marks the ai_request as FAILED', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
-    await failAIRequest('req-1');
+    await failAIRequest('req-1', 'ws-1');
     const [sql, params] = mockQuery.mock.calls[0] as [string, unknown[]];
     expect(sql).toContain('ai_requests');
     expect(sql).toContain('FAILED');
     expect(params).toContain('req-1');
+  });
+});
+
+describe('ai_requests / subscriptions RLS context', () => {
+  // Regression: subscriptions and ai_requests have FORCE RLS; without the workspace context the
+  // entitlement check always saw "no subscription" and ai_requests writes were rejected.
+  it('runs entitlement and ai_requests statements inside the workspace transaction', async () => {
+    const mockTx = vi.mocked(withTenantTransaction);
+    mockQuery.mockResolvedValueOnce({ rows: [{ has_access: true }], rowCount: 1 } as never);
+    mockGetModelPrice.mockResolvedValueOnce({ inputPriceMinorPer1K: 1n, outputPriceMinorPer1K: 1n, currency: 'USD' });
+    await checkAIEntitlement('ws-a', 'm');
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'r' }], rowCount: 1 } as never);
+    await recordAIRequest({ workspaceId: 'ws-b', modelId: 'm', requestType: 'g', idempotencyKey: 'k' });
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
+    await completeAIRequest('r', 'ws-c', 1n, 1n, 1);
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
+    await failAIRequest('r', 'ws-d');
+    expect(mockTx.mock.calls.map(c => c[0])).toEqual(['ws-a', 'ws-b', 'ws-c', 'ws-d']);
   });
 });

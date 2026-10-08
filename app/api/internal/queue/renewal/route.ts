@@ -16,8 +16,8 @@ export async function POST(request: Request) {
     // Process subscription renewals.
     const due = await findSubscriptionsDueForRenewal(50);
     const renewals: Array<{ subscriptionId: string; status: string; error?: string }> = [];
-    for (const subscriptionId of due) {
-      const result = await processSubscriptionRenewal(subscriptionId);
+    for (const { subscriptionId, workspaceId } of due) {
+      const result = await processSubscriptionRenewal(subscriptionId, workspaceId);
       const error = 'error' in result ? result.error : undefined;
       renewals.push({ subscriptionId, status: result.status, error });
       if (result.status === 'FAILED') {

@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../server/core/db', () => ({
-  query: vi.fn(),
-  withWorkspaceTransaction: vi.fn(),
-}));
+vi.mock('../../server/core/db', () => {
+  const query = vi.fn();
+  return { query, withWorkspaceTransaction: vi.fn(), withTenantTransaction: vi.fn(async (_ws: string, _u: string | undefined, fn: (c: { query: typeof query }) => unknown) => fn({ query })) };
+});
 
-import { query } from '../../server/core/db';
+import { query, withTenantTransaction } from '../../server/core/db';
 import {
   startAgentRun,
   completeAgentRun,
@@ -41,7 +41,7 @@ describe('startAgentRun', () => {
 describe('completeAgentRun', () => {
   it('updates status to COMPLETED with output and completed_at', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
-    await completeAgentRun('run-1', { answer: '42' });
+    await completeAgentRun('run-1', 'ws-1', { answer: '42' });
     const [sql, params] = mockQuery.mock.calls[0] as [string, unknown[]];
     expect(sql).toContain("status='COMPLETED'");
     expect(sql).toContain('completed_at');
@@ -53,7 +53,7 @@ describe('completeAgentRun', () => {
 describe('failAgentRun', () => {
   it('updates status to FAILED with error and completed_at', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
-    await failAgentRun('run-1', { message: 'timeout', code: 'TIMEOUT' });
+    await failAgentRun('run-1', 'ws-1', { message: 'timeout', code: 'TIMEOUT' });
     const [sql, params] = mockQuery.mock.calls[0] as [string, unknown[]];
     expect(sql).toContain("status='FAILED'");
     expect(sql).toContain('completed_at');
@@ -130,5 +130,20 @@ describe('getAgentRunToolCalls', () => {
     expect(sql).toContain('agent_run_id=$1');
     expect(sql).toContain('ORDER BY created_at');
     expect(params).toEqual(['run-1']);
+  });
+});
+
+describe('agent_runs RLS context', () => {
+  // Regression: agent_runs has FORCE RLS; pool queries without app.workspace_id returned no rows and
+  // rejected inserts under the production (non-superuser) role.
+  it('runs every agent_runs statement inside the run\'s workspace transaction', async () => {
+    const mockTx = vi.mocked(withTenantTransaction);
+    mockQuery.mockResolvedValue({ rows: [{ id: 'run-1' }], rowCount: 1 } as never);
+    await startAgentRun({ agentDefinitionId: 'a', workspaceId: 'ws-start', runInput: {} });
+    await completeAgentRun('run-1', 'ws-complete', {});
+    await failAgentRun('run-1', 'ws-fail', { message: 'x' });
+    await getAgentRun('run-1', 'ws-get');
+    expect(mockTx.mock.calls.map(c => c[0])).toEqual(['ws-start', 'ws-complete', 'ws-fail', 'ws-get']);
+    mockQuery.mockReset();
   });
 });

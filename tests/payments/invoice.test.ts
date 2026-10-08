@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../server/core/db', () => ({
-  query: vi.fn(),
-  withWorkspaceTransaction: vi.fn(async (_wid: string, _opts: unknown, fn: Function) => fn({ query: vi.fn() })),
-}));
+vi.mock('../../server/core/db', () => {
+  const query = vi.fn();
+  return { query, withWorkspaceTransaction: vi.fn(async (_wid: string, _opts: unknown, fn: Function) => fn({ query })) };
+});
 
 import { withWorkspaceTransaction } from '../../server/core/db';
 import { generateInvoice, listInvoices, getInvoice } from '../../server/payments/invoice';
@@ -113,5 +113,20 @@ describe('getInvoice', () => {
     mockQuery.mockResolvedValueOnce({ rows: [] } as never);
 
     await expect(getInvoice('ws-1', 'inv-missing')).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+});
+
+describe('invoice reads RLS context', () => {
+  // Regression: invoices has FORCE RLS; listInvoices/getInvoice used the plain pool and returned
+  // nothing (or NOT_FOUND) under the production role.
+  it('lists and fetches invoices inside the workspace transaction', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] } as never);
+    await listInvoices('ws-list');
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'inv-1' }] } as never)
+      .mockResolvedValueOnce({ rows: [] } as never);
+    await getInvoice('ws-get', 'inv-1');
+    expect(mockTx.mock.calls.map(c => c[0])).toEqual(['ws-list', 'ws-get']);
+    expect(mockQuery.mock.calls[1][1]).toEqual(['inv-1', 'ws-get']);
   });
 });

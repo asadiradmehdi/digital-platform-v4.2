@@ -10,7 +10,7 @@ vi.mock('../../server/core/security-boundary', () => ({
   assertSameOrigin: vi.fn(),
   clientFingerprint: vi.fn().mockReturnValue('1.2.3.4'),
 }));
-vi.mock('../../server/core/db', () => ({ query: vi.fn() }));
+vi.mock('../../server/core/db', () => ({ query: vi.fn(), withTenantTransaction: vi.fn() }));
 vi.mock('../../server/payments/service', () => ({ beginCheckout: vi.fn() }));
 vi.mock('../../server/payments/mock-gateway', () => ({
   mockGateway: { initiatePayment: vi.fn() },
@@ -18,7 +18,7 @@ vi.mock('../../server/payments/mock-gateway', () => ({
 
 import { requireRequestUser } from '../../server/identity/request-user';
 import { requireWorkspacePermission } from '../../server/identity/rbac';
-import { query } from '../../server/core/db';
+import { query, withTenantTransaction } from '../../server/core/db';
 import { beginCheckout } from '../../server/payments/service';
 import { AppError } from '../../server/core/errors';
 
@@ -27,7 +27,13 @@ const mockRequirePermission = vi.mocked(requireWorkspacePermission);
 const mockQuery = vi.mocked(query);
 const mockBeginCheckout = vi.mocked(beginCheckout);
 
-beforeEach(() => vi.resetAllMocks());
+const mockTx = vi.mocked(withTenantTransaction);
+const WS = '11111111-1111-4111-8111-111111111111';
+
+beforeEach(() => {
+  vi.resetAllMocks();
+  mockTx.mockImplementation((async (_ws: string, _u: string | undefined, fn: (c: unknown) => unknown) => fn({ query: mockQuery })) as never);
+});
 
 type DetailModule = typeof import('../../app/api/v1/checkout/[id]/route');
 type PayModule = typeof import('../../app/api/v1/checkout/[id]/pay/route');
@@ -44,17 +50,17 @@ function makeParams(id: string) {
   return { params: Promise.resolve({ id }) };
 }
 
-function makeGetRequest(): import('next/server').NextRequest {
+function makeGetRequest(workspaceId: string | null = WS): import('next/server').NextRequest {
   return {
     headers: { get: () => null },
-    url: 'http://localhost:3000/api/v1/checkout/sess-1',
+    url: `http://localhost:3000/api/v1/checkout/sess-1${workspaceId ? `?workspaceId=${workspaceId}` : ''}`,
     method: 'GET',
   } as unknown as import('next/server').NextRequest;
 }
 
-function makePayRequest(body: unknown): import('next/server').NextRequest {
+function makePayRequest(body: Record<string, unknown>): import('next/server').NextRequest {
   return {
-    json: async () => body,
+    json: async () => ({ workspaceId: WS, ...body }),
     headers: { get: (k: string) => k === 'idempotency-key' ? 'idem-pay-1' : null },
     url: 'http://localhost:3000/api/v1/checkout/sess-1/pay',
     method: 'POST',
@@ -62,7 +68,7 @@ function makePayRequest(body: unknown): import('next/server').NextRequest {
 }
 
 const sessionRow = {
-  workspace_id: 'ws-1', status: 'OPEN',
+  workspace_id: '11111111-1111-4111-8111-111111111111', status: 'OPEN',
   total_minor: '1200000', currency: 'IRR',
   quote_hash: 'hash-abc', expires_at: new Date(Date.now() + 900_000).toISOString(),
 };
@@ -147,5 +153,44 @@ describe('POST /api/v1/checkout/:id/pay', () => {
 
     const response = await POST_PAY(makePayRequest({ ...validPayBody, quoteHash: 'stale-hash' }), makeParams('sess-1'));
     expect(response.status).toBe(409);
+  });
+});
+
+describe('checkout session RLS context', () => {
+  // Regression: checkout_sessions has FORCE RLS; the id-only pool lookup found nothing under the
+  // production role, so GET and pay always answered 404.
+  it('GET checks permission on the named workspace, then reads inside its tenant context', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    mockRequirePermission.mockResolvedValueOnce(undefined as never);
+    mockQuery
+      .mockResolvedValueOnce({ rows: [sessionRow], rowCount: 1 } as never)
+      .mockResolvedValueOnce({ rows: itemRows, rowCount: 1 } as never);
+    const response = await GET_DETAIL(makeGetRequest(), makeParams('sess-1'));
+    expect(response.status).toBe(200);
+    expect(mockRequirePermission).toHaveBeenCalledWith('user-1', WS, 'orders.create');
+    expect(mockTx).toHaveBeenCalledWith(WS, 'user-1', expect.any(Function));
+    expect(mockRequirePermission.mock.invocationCallOrder[0]).toBeLessThan(mockTx.mock.invocationCallOrder[0]);
+    expect(mockQuery.mock.calls[0][1]).toEqual(['sess-1', WS]);
+  });
+
+  it('GET rejects a request without a workspaceId before touching the database', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    const response = await GET_DETAIL(makeGetRequest(null), makeParams('sess-1'));
+    expect(response.status).toBe(400);
+    expect(mockTx).not.toHaveBeenCalled();
+  });
+
+  it('pay reads and updates the session inside the named workspace context', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    mockRequirePermission.mockResolvedValueOnce(undefined as never);
+    mockQuery
+      .mockResolvedValueOnce({ rows: [sessionRow], rowCount: 1 } as never)
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
+    mockBeginCheckout.mockResolvedValueOnce({ paymentId: 'pay-1', checkoutUrl: 'https://pay.example.com/pay-1' } as never);
+    const response = await POST_PAY(makePayRequest({ quoteHash: 'hash-abc', gateway: 'mock' }), makeParams('sess-1'));
+    expect(response.status).toBe(200);
+    expect(mockTx.mock.calls.map(c => c[0])).toEqual([WS, WS]);
+    expect(String(mockQuery.mock.calls[1][0])).toContain("SET status='PAYMENT_PENDING'");
+    expect(mockQuery.mock.calls[1][1]).toEqual(['sess-1', WS]);
   });
 });

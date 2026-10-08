@@ -11,7 +11,7 @@ import { resolveModelId, getModelPrice } from '../../../../../server/ai/model-ca
 import { checkAIEntitlement, recordAIRequest, completeAIRequest, failAIRequest, estimateAICost } from '../../../../../server/ai/entitlement';
 import { recordAICost } from '../../../../../server/ai/cost-accounting';
 import { createStreamingResponse } from '../../../../../server/ai/streaming';
-import { query } from '../../../../../server/core/db';
+import { withTenantTransaction } from '../../../../../server/core/db';
 import { withSpan, parseTraceparent } from '../../../../../server/observability/tracing';
 import { randomUUID } from 'node:crypto';
 
@@ -81,13 +81,13 @@ export async function POST(request: NextRequest) {
       async () => gateway.generate(aiInput, request.signal),
     );
 
-    await completeAIRequest(aiRequestId, result.inputUnits, result.outputUnits, Math.round(latencyMs));
+    await completeAIRequest(aiRequestId, workspaceId, result.inputUnits, result.outputUnits, Math.round(latencyMs));
 
     const price = await getModelPrice(modelId);
     if (price) {
       const costMinor = estimateAICost(result.inputUnits, result.outputUnits, price);
-      await recordAICost({
-        query: (sql, params) => query(sql, params as unknown[]),
+      await withTenantTransaction(workspaceId, userId, client => recordAICost({
+        query: (sql, params) => client.query(sql, params as unknown[]),
         aiRequestId,
         workspaceId,
         providerId: modelId,
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
         inputUnits: result.inputUnits,
         outputUnits: result.outputUnits,
         costMinor,
-      });
+      }));
     }
 
     return json({

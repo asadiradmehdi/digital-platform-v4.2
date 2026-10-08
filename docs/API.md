@@ -71,8 +71,8 @@
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | POST | /api/v1/checkout | Session | Create a checkout session with line items |
-| GET | /api/v1/checkout/{id} | Session | Get checkout session + items |
-| POST | /api/v1/checkout/{id}/pay | Session | Initiate payment via gateway |
+| GET | /api/v1/checkout/{id}?workspaceId= | Session (orders.create) | Get checkout session + items; `workspaceId` (UUID) is required |
+| POST | /api/v1/checkout/{id}/pay | Session (orders.create) | Initiate payment via gateway; body requires `workspaceId` (UUID) |
 
 ## Wallet / Ledger
 

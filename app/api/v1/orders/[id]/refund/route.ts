@@ -3,7 +3,7 @@ import { correlationId, handleRouteError, json } from '../../../../../../server/
 import { requireRequestUser } from '../../../../../../server/identity/request-user';
 import { requireWorkspacePermission } from '../../../../../../server/identity/rbac';
 import { assertSameOrigin } from '../../../../../../server/core/security-boundary';
-import { query } from '../../../../../../server/core/db';
+import { withTenantTransaction } from '../../../../../../server/core/db';
 import { createRefund } from '../../../../../../server/payments/refund';
 import { mockGateway } from '../../../../../../server/payments/mock-gateway';
 import { AppError } from '../../../../../../server/core/errors';
@@ -23,14 +23,14 @@ export async function POST(request: NextRequest, { params }: Params) {
     await requireWorkspacePermission(userId, workspaceId, 'orders.refund');
 
     // Look up the payment linked to this order.
-    const paymentRow = await query<{ id: string; amount_minor: string; currency: string; workspace_id: string }>(
+    const paymentRow = await withTenantTransaction(workspaceId, userId, client => client.query<{ id: string; amount_minor: string; currency: string; workspace_id: string }>(
       `SELECT p.id, p.amount_minor, p.currency, p.workspace_id
        FROM payments p
        JOIN orders o ON o.id = p.order_id
        WHERE o.id=$1 AND p.workspace_id=$2 AND p.status='PAID'
        LIMIT 1`,
       [orderId, workspaceId]
-    );
+    ));
     if (!paymentRow.rows[0]) throw new AppError('NOT_FOUND', 'No paid payment found for this order.');
     const p = paymentRow.rows[0];
 

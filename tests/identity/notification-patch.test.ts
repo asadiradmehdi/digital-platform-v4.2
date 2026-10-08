@@ -4,9 +4,7 @@
  */
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 
-vi.mock('../../server/core/db', () => ({
-  query: vi.fn(),
-}));
+vi.mock('../../server/core/db', () => ({ query: vi.fn(), withUserTransaction: vi.fn() }));
 
 vi.mock('../../server/identity/request-user', () => ({
   requireRequestUser: vi.fn(),
@@ -17,14 +15,17 @@ vi.mock('../../server/core/security-boundary', () => ({
   clientFingerprint: vi.fn().mockReturnValue('1.2.3.4'),
 }));
 
-import { query } from '../../server/core/db';
+import { query, withUserTransaction } from '../../server/core/db';
 import { requireRequestUser } from '../../server/identity/request-user';
 import { AppError } from '../../server/core/errors';
 
 const mockQuery = vi.mocked(query);
 const mockRequireUser = vi.mocked(requireRequestUser);
 
-beforeEach(() => vi.resetAllMocks());
+beforeEach(() => {
+  vi.resetAllMocks();
+  vi.mocked(withUserTransaction).mockImplementation((async (_u: string, fn: (c: unknown) => unknown) => fn({ query: mockQuery })) as never);
+});
 
 type RouteModule = typeof import('../../app/api/v1/notifications/[id]/route');
 let PATCH: RouteModule['PATCH'];
@@ -97,5 +98,18 @@ describe('PATCH /api/v1/notifications/:id', () => {
     expect(sql).toContain('user_id=$2');
     expect(params[0]).toBe('notif-1');
     expect(params[1]).toBe('user-1');
+  });
+});
+
+describe('notifications RLS scope', () => {
+  // Regression: notifications has FORCE RLS; the pool UPDATE matched no row under the production role,
+  // so marking a notification read always answered 404.
+  it('marks read inside the caller\'s user-scoped transaction', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-7' as never);
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'notif-1', readAt: '2026-10-05T12:00:00Z' }], rowCount: 1 } as never);
+    const response = await PATCH(makeRequest({ action: 'read' }), makeParams('notif-1'));
+    expect(response.status).toBe(200);
+    expect(vi.mocked(withUserTransaction)).toHaveBeenCalledWith('user-7', expect.any(Function));
+    expect(mockQuery.mock.calls[0][1]).toEqual(['notif-1', 'user-7']);
   });
 });

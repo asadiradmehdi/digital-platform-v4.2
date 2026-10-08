@@ -5,7 +5,7 @@ import { Headphones, MessageSquareText, Plus, ShieldCheck } from 'lucide-react';
 import { AppShell } from '../../components/AppShell';
 import { SystemStrip } from '../../components/ProductSurface';
 import { requireCurrentUser } from '../../server/identity/request-user';
-import { query } from '../../server/core/db';
+import { query, withTenantTransaction } from '../../server/core/db';
 
 export const metadata: Metadata = { title: 'پشتیبانی', robots: { index: false, follow: false } };
 
@@ -38,11 +38,11 @@ export default async function Support() {
   const workspaceId = memberships.rows[0]?.workspace_id ?? null;
 
   const tickets = workspaceId
-    ? await query<{ id: string; subject: string; status: string; priority: string; createdAt: string }>(
+    ? await withTenantTransaction(workspaceId, userId, client => client.query<{ id: string; subject: string; status: string; priority: string; createdAt: string }>(
         `SELECT id, subject, status, priority, created_at AS "createdAt"
          FROM support_tickets WHERE workspace_id=$1 ORDER BY created_at DESC LIMIT 30`,
         [workspaceId],
-      ).then(r => r.rows)
+      )).then(r => r.rows)
     : [];
 
   return (

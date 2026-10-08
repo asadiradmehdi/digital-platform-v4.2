@@ -6,18 +6,21 @@ vi.mock('../../server/core/security-boundary', () => ({
   clientFingerprint: vi.fn().mockReturnValue('127.0.0.1'),
 }));
 vi.mock('../../server/identity/rbac', () => ({ requireWorkspacePermission: vi.fn() }));
-vi.mock('../../server/core/db', () => ({ query: vi.fn() }));
+vi.mock('../../server/core/db', () => ({ query: vi.fn(), withTenantTransaction: vi.fn() }));
 
 import { requireRequestUser } from '../../server/identity/request-user';
 import { requireWorkspacePermission } from '../../server/identity/rbac';
-import { query } from '../../server/core/db';
+import { query, withTenantTransaction } from '../../server/core/db';
 import { AppError } from '../../server/core/errors';
 
 const mockRequireUser = vi.mocked(requireRequestUser);
 const mockRequirePermission = vi.mocked(requireWorkspacePermission);
 const mockQuery = vi.mocked(query);
 
-beforeEach(() => vi.resetAllMocks());
+beforeEach(() => {
+  vi.resetAllMocks();
+  vi.mocked(withTenantTransaction).mockImplementation((async (_ws: string, _u: string | undefined, fn: (c: unknown) => unknown) => fn({ query: mockQuery })) as never);
+});
 
 type RouteModule = typeof import('../../app/api/v1/support/tickets/route');
 let GET: RouteModule['GET'];
@@ -122,5 +125,27 @@ describe('POST /api/v1/support/tickets', () => {
     await POST(makePostRequest({ workspaceId: 'ws-1', subject: 'Help' }));
     const [, params] = mockQuery.mock.calls[0] as [string, unknown[]];
     expect(params).toContain('NORMAL');
+  });
+});
+
+describe('support_tickets RLS context', () => {
+  // Regression: support_tickets has FORCE RLS; pool queries listed nothing and the insert was rejected.
+  it('lists tickets inside the workspace context after the permission check', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    mockRequirePermission.mockResolvedValueOnce(undefined as never);
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as never);
+    await GET(makeGetRequest('ws-7'));
+    const mockTx = vi.mocked(withTenantTransaction);
+    expect(mockTx).toHaveBeenCalledWith('ws-7', 'user-1', expect.any(Function));
+    expect(mockRequirePermission.mock.invocationCallOrder[0]).toBeLessThan(mockTx.mock.invocationCallOrder[0]);
+  });
+
+  it('creates a ticket inside the workspace context', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    mockRequirePermission.mockResolvedValueOnce(undefined as never);
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 't-9' }], rowCount: 1 } as never);
+    const res = await POST(makePostRequest({ workspaceId: 'ws-7', subject: 'Need help' }));
+    expect(res.status).toBe(201);
+    expect(vi.mocked(withTenantTransaction)).toHaveBeenCalledWith('ws-7', 'user-1', expect.any(Function));
   });
 });

@@ -1,11 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../server/core/db', () => ({ query: vi.fn() }));
+vi.mock('../../server/core/db', () => {
+  const query = vi.fn();
+  return { query, withTenantTransaction: vi.fn(async (_ws: string, _u: string | undefined, fn: (c: { query: typeof query }) => unknown) => fn({ query })) };
+});
 vi.mock('../../server/core/security', () => ({
   redactSecrets: vi.fn((obj: unknown) => obj),
 }));
 
-import { query } from '../../server/core/db';
+import { query, withTenantTransaction } from '../../server/core/db';
 import { recordOperationalEvent } from '../../server/observability/operational-events';
 import { redactSecrets } from '../../server/core/security';
 
@@ -71,5 +74,22 @@ describe('recordOperationalEvent', () => {
     mockQuery.mockRejectedValueOnce(new Error('DB unavailable') as never);
 
     await expect(recordOperationalEvent({ eventType: 'FAIL_EVENT' })).rejects.toThrow('DB unavailable');
+  });
+});
+
+describe('operational_events RLS context', () => {
+  // Regression: operational_events has FORCE RLS; every insert through the plain pool was rejected under
+  // the production role (and the callers swallowed the error), so no operational evidence was stored.
+  it('writes workspace events inside that workspace\'s transaction', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] } as never);
+    await recordOperationalEvent({ workspaceId: 'ws-5', eventType: 'pricing.stale_rate' });
+    expect(vi.mocked(withTenantTransaction)).toHaveBeenCalledWith('ws-5', undefined, expect.any(Function));
+  });
+
+  it('writes platform events (no workspace) without any tenant context', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] } as never);
+    await recordOperationalEvent({ eventType: 'alert.fired' });
+    expect(vi.mocked(withTenantTransaction)).not.toHaveBeenCalled();
+    expect((mockQuery.mock.calls[0][1] as unknown[])[0]).toBeNull();
   });
 });

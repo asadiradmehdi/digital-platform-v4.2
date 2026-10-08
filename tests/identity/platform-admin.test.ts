@@ -46,3 +46,25 @@ describe('isPlatformAdmin', () => {
     expect(await isPlatformAdmin('user-none')).toBe(false);
   });
 });
+
+describe('platform_admin role lookup', () => {
+  // Regression: the check queried a non-existent user_roles table, so every platform-admin route
+  // (pricing rules, catalog sync, content admin, /admin) failed with "relation user_roles does not exist".
+  it('resolves the global system role through workspace membership, never user_roles', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ is_admin: true }], rowCount: 1 } as never);
+    await isPlatformAdmin('user-1');
+    const [sql] = mockQuery.mock.calls[0] as [string, unknown[]];
+    expect(sql).not.toContain('user_roles');
+    expect(sql).toContain('member_roles');
+    expect(sql).toContain('workspace_members');
+    expect(sql).toMatch(/wm\.status = 'ACTIVE'/);
+  });
+
+  it('ignores workspace-scoped roles named platform_admin', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ is_admin: false }], rowCount: 1 } as never);
+    await requirePlatformAdmin('user-1').catch(() => undefined);
+    const [sql] = mockQuery.mock.calls[0] as [string, unknown[]];
+    expect(sql).toContain('r.workspace_id IS NULL');
+    expect(sql).toContain('r.is_system = true');
+  });
+});

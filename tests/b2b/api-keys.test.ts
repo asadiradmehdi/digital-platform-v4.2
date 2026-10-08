@@ -1,9 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../server/core/db', () => ({ query: vi.fn() }));
+vi.mock('../../server/core/db', () => {
+  const query = vi.fn();
+  return { query, withTenantTransaction: vi.fn(async (_ws: string, _u: string | undefined, fn: (c: { query: typeof query }) => unknown) => fn({ query })) };
+});
 
-import { query } from '../../server/core/db';
-import { resolveApiKey, revokeApiKey, listApiKeys } from '../../server/b2b/api-keys';
+import { query, withTenantTransaction } from '../../server/core/db';
+import { resolveApiKey, revokeApiKey, listApiKeys, createApiKey } from '../../server/b2b/api-keys';
 import { requireScope, type ApiKeyContext } from '../../server/b2b/api-middleware';
 import { checkApiKeyRateLimit } from '../../server/b2b/rate-limit';
 
@@ -73,7 +76,7 @@ describe('requireScope', () => {
 describe('checkApiKeyRateLimit', () => {
   it('returns allowed=true when no rate limit configured', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as never);
-    const result = await checkApiKeyRateLimit('key-1', 60);
+    const result = await checkApiKeyRateLimit('key-1', 'ws-1', 60);
     expect(result.allowed).toBe(true);
     expect(result.remaining).toBe(-1);
   });
@@ -81,7 +84,7 @@ describe('checkApiKeyRateLimit', () => {
   it('returns allowed=true when under limit', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [{ max_requests: 100 }], rowCount: 1 } as never);
     mockQuery.mockResolvedValueOnce({ rows: [{ count: '42' }], rowCount: 1 } as never);
-    const result = await checkApiKeyRateLimit('key-1', 60);
+    const result = await checkApiKeyRateLimit('key-1', 'ws-1', 60);
     expect(result.allowed).toBe(true);
     expect(result.remaining).toBe(58);
   });
@@ -89,8 +92,32 @@ describe('checkApiKeyRateLimit', () => {
   it('returns allowed=false when at limit', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [{ max_requests: 10 }], rowCount: 1 } as never);
     mockQuery.mockResolvedValueOnce({ rows: [{ count: '10' }], rowCount: 1 } as never);
-    const result = await checkApiKeyRateLimit('key-1', 60);
+    const result = await checkApiKeyRateLimit('key-1', 'ws-1', 60);
     expect(result.allowed).toBe(false);
     expect(result.remaining).toBe(0);
+  });
+});
+
+describe('api_keys RLS access paths', () => {
+  // Regression: api_keys has FORCE RLS; the pool lookup by hash never matched under the production role,
+  // so every API key was rejected, and create/list/revoke silently failed or returned nothing.
+  it('authenticates through system_resolve_api_key with only the key hash', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as never);
+    await resolveApiKey('dp_live_secret');
+    const [sql, params] = mockQuery.mock.calls[0] as [string, unknown[]];
+    expect(sql).toContain('system_resolve_api_key($1)');
+    expect(sql).not.toMatch(/FROM api_keys/);
+    expect(params).toHaveLength(1);
+    expect(params[0]).toMatch(/^[0-9a-f]{64}$/);
+    expect(params[0]).not.toContain('secret');
+  });
+
+  it('creates, lists and revokes keys inside the workspace context', async () => {
+    mockQuery.mockResolvedValue({ rows: [], rowCount: 1 } as never);
+    await createApiKey('ws-c', 'k', ['*']);
+    await listApiKeys('ws-l');
+    await revokeApiKey('key-1', 'ws-r');
+    expect(vi.mocked(withTenantTransaction).mock.calls.map(c => c[0])).toEqual(['ws-c', 'ws-l', 'ws-r']);
+    mockQuery.mockReset();
   });
 });

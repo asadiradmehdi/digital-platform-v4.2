@@ -4,7 +4,7 @@
  */
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 
-vi.mock('../../server/core/db', () => ({ query: vi.fn() }));
+vi.mock('../../server/core/db', () => ({ query: vi.fn(), withTenantTransaction: vi.fn() }));
 vi.mock('../../server/identity/request-user', () => ({ requireRequestUser: vi.fn() }));
 vi.mock('../../server/identity/rbac', () => ({ requireWorkspacePermission: vi.fn() }));
 vi.mock('../../server/core/security-boundary', () => ({
@@ -15,7 +15,7 @@ vi.mock('../../server/core/validation', () => ({ requireUuid: vi.fn() }));
 vi.mock('../../server/payments/refund', () => ({ createRefund: vi.fn() }));
 vi.mock('../../server/payments/mock-gateway', () => ({ mockGateway: {} }));
 
-import { query } from '../../server/core/db';
+import { query, withTenantTransaction } from '../../server/core/db';
 import { requireRequestUser } from '../../server/identity/request-user';
 import { requireWorkspacePermission } from '../../server/identity/rbac';
 import { requireUuid } from '../../server/core/validation';
@@ -28,7 +28,10 @@ const mockRequirePermission = vi.mocked(requireWorkspacePermission);
 const mockRequireUuid = vi.mocked(requireUuid);
 const mockCreateRefund = vi.mocked(createRefund);
 
-beforeEach(() => vi.resetAllMocks());
+beforeEach(() => {
+  vi.resetAllMocks();
+  vi.mocked(withTenantTransaction).mockImplementation((async (_ws: string, _u: string | undefined, fn: (c: unknown) => unknown) => fn({ query: mockQuery })) as never);
+});
 
 type RouteModule = typeof import('../../app/api/v1/orders/[id]/refund/route');
 let POST: RouteModule['POST'];
@@ -116,5 +119,21 @@ describe('POST /api/v1/orders/:id/refund', () => {
 
     await POST(makeRequest({ workspaceId: 'ws-1' }, 'my-idem-key'), makeParams('order-1'));
     expect(mockCreateRefund).toHaveBeenCalledWith(expect.objectContaining({ idempotencyKey: 'my-idem-key' }));
+  });
+});
+
+describe('refund payment lookup RLS context', () => {
+  // Regression: payments/orders have FORCE RLS; the pool lookup found no PAID payment under the
+  // production role, so every refund answered 404.
+  it('looks up the paid payment inside the workspace context after the permission check', async () => {
+    mockRequireUuid.mockReturnValueOnce('ws-7' as never);
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    mockRequirePermission.mockResolvedValueOnce(undefined as never);
+    mockQuery.mockResolvedValueOnce({ rows: [paymentRow], rowCount: 1 } as never);
+    mockCreateRefund.mockResolvedValueOnce({ id: 'ref-1', status: 'REFUNDED' } as never);
+    await POST(makeRequest({ workspaceId: 'ws-7' }), makeParams('order-1'));
+    const mockTx = vi.mocked(withTenantTransaction);
+    expect(mockTx).toHaveBeenCalledWith('ws-7', 'user-1', expect.any(Function));
+    expect(mockRequirePermission.mock.invocationCallOrder[0]).toBeLessThan(mockTx.mock.invocationCallOrder[0]);
   });
 });

@@ -3,10 +3,11 @@ import { correlationId, handleRouteError, json } from '../../../../../../server/
 import { requireRequestUser } from '../../../../../../server/identity/request-user';
 import { requireWorkspacePermission } from '../../../../../../server/identity/rbac';
 import { assertSameOrigin } from '../../../../../../server/core/security-boundary';
-import { query } from '../../../../../../server/core/db';
+import { withTenantTransaction } from '../../../../../../server/core/db';
 import { beginCheckout } from '../../../../../../server/payments/service';
 import { mockGateway } from '../../../../../../server/payments/mock-gateway';
 import { AppError } from '../../../../../../server/core/errors';
+import { requireUuid } from '../../../../../../server/core/validation';
 import { randomUUID } from 'node:crypto';
 
 type Params = { params: Promise<{ id: string }> };
@@ -25,13 +26,16 @@ export async function POST(request: NextRequest, { params }: Params) {
     const userId = await requireRequestUser(request);
     const body = await request.json() as Record<string, unknown>;
 
-    const session = await query<{ workspace_id: string; status: string; total_minor: string; currency: string; quote_hash: string; expires_at: string }>(
-      `SELECT workspace_id, status, total_minor, currency, quote_hash, expires_at FROM checkout_sessions WHERE id=$1`,
-      [sessionId]
-    );
+    // checkout_sessions is RLS-protected, so the caller names the workspace; permission is checked
+    // before any tenant data is read, and every statement runs inside that workspace's context.
+    const workspaceId = requireUuid(body.workspaceId, 'workspaceId');
+    await requireWorkspacePermission(userId, workspaceId, 'orders.create');
+    const session = await withTenantTransaction(workspaceId, userId, client => client.query<{ workspace_id: string; status: string; total_minor: string; currency: string; quote_hash: string; expires_at: string }>(
+      `SELECT workspace_id, status, total_minor, currency, quote_hash, expires_at FROM checkout_sessions WHERE id=$1 AND workspace_id=$2`,
+      [sessionId, workspaceId]
+    ));
     if (!session.rows[0]) throw new AppError('NOT_FOUND', 'Checkout session not found.');
     const s = session.rows[0];
-    await requireWorkspacePermission(userId, s.workspace_id, 'orders.create');
 
     if (s.status !== 'OPEN') throw new AppError('CONFLICT', `Checkout session is not open (current status: ${s.status}).`);
     if (new Date(s.expires_at) <= new Date()) throw new AppError('CONFLICT', 'Checkout session has expired.');
@@ -54,10 +58,10 @@ export async function POST(request: NextRequest, { params }: Params) {
     });
 
     // Mark checkout session as payment-pending.
-    await query(
-      `UPDATE checkout_sessions SET status='PAYMENT_PENDING', updated_at=now() WHERE id=$1 AND status='OPEN'`,
-      [sessionId]
-    );
+    await withTenantTransaction(workspaceId, userId, client => client.query(
+      `UPDATE checkout_sessions SET status='PAYMENT_PENDING', updated_at=now() WHERE id=$1 AND workspace_id=$2 AND status='OPEN'`,
+      [sessionId, workspaceId]
+    ));
 
     return json({ paymentId: result.paymentId, checkoutUrl: result.checkoutUrl }, { correlationId: id });
   } catch (e) {

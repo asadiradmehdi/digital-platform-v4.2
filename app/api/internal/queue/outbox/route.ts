@@ -2,7 +2,7 @@ import { env } from '../../../../../server/core/config';
 import { claimOutboxBatch, markOutboxPublished, markOutboxFailed } from '../../../../../server/queue/outbox-dispatch';
 import { dispatchOrder } from '../../../../../server/providers/dispatch';
 import { transitionOrder } from '../../../../../server/commerce/orders';
-import { query } from '../../../../../server/core/db';
+import { withTenantTransaction } from '../../../../../server/core/db';
 
 function assertCron(request: Request) {
   const expected = env('QUEUE_CRON_SECRET');
@@ -24,14 +24,16 @@ async function handleOrderPaid(event: OutboxRow) {
   if (!orderId || !workspaceId) return;
 
   // Look up the service ID from the order.
-  const r = await query<{ service_id: string; status: string }>(
+  // orders is RLS-protected: read it inside the event's workspace context (set server-side when the
+  // outbox row was written in the same transaction as the order).
+  const r = await withTenantTransaction(workspaceId, undefined, client => client.query<{ service_id: string; status: string }>(
     `SELECT oi.service_id, o.status
      FROM orders o
      JOIN order_items oi ON oi.order_id=o.id
      WHERE o.id=$1 AND o.workspace_id=$2
      LIMIT 1`,
     [orderId, workspaceId],
-  );
+  ));
   const row = r.rows[0];
   if (!row) return;
   // Only dispatch if order is in a dispatchable state.
