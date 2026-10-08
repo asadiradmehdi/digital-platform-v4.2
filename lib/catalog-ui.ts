@@ -32,7 +32,8 @@ export function categoryMeta(key: string): CategoryMeta | undefined {
 
 export type ServiceKind =
   | 'followers' | 'members' | 'subscribers' | 'likes' | 'views' | 'reach' | 'comments' | 'shares' | 'saves'
-  | 'reactions' | 'votes' | 'starts' | 'watch' | 'months' | 'content' | 'posts' | 'other';
+  | 'reactions' | 'votes' | 'starts' | 'watch' | 'months' | 'content' | 'posts'
+  | 'design' | 'automation' | 'aicontent' | 'other';
 
 /** `group` is the short service label inside a category; `per` is the quantity the list price is quoted for. */
 export type KindMeta = { group: string; unit: string; icon: IconName; quantities: number[]; per: number };
@@ -42,6 +43,7 @@ const SMALL_Q = [10, 25, 50, 100, 200, 300, 500, 750, 1000];
 const UNIT_Q = [1, 3, 5, 10, 20, 30, 50, 75, 100];
 const HOURS_Q = [100, 250, 500, 1000, 2000, 4000];
 const MONTHS_Q = [1, 3, 6, 12];
+const PIECES_Q = [1, 3, 5, 10];
 
 export const KINDS: Record<ServiceKind, KindMeta> = {
   followers: { group: 'فالوور', unit: 'فالوور', icon: 'user', quantities: SOCIAL_Q, per: 1000 },
@@ -60,11 +62,16 @@ export const KINDS: Record<ServiceKind, KindMeta> = {
   months: { group: 'اشتراک', unit: 'ماه', icon: 'aiSub', quantities: MONTHS_Q, per: 1 },
   content: { group: 'تولید محتوا', unit: 'محتوا', icon: 'ai', quantities: UNIT_Q, per: 1 },
   posts: { group: 'انتشار خودکار', unit: 'پست', icon: 'au', quantities: UNIT_Q, per: 1 },
+  design: { group: 'طراحی', unit: 'طرح', icon: 'ds', quantities: PIECES_Q, per: 1 },
+  automation: { group: 'اتوماسیون', unit: 'ماه', icon: 'au', quantities: MONTHS_Q, per: 1 },
+  aicontent: { group: 'تولید محتوا', unit: 'مورد', icon: 'ai', quantities: PIECES_Q, per: 1 },
   other: { group: 'سرویس‌ها', unit: 'عدد', icon: 'box', quantities: UNIT_Q, per: 1 },
 };
 
 /** Derive the presentation kind from a catalogue slug such as `ig-story-views`, `tg-bot-starts` or `sub-claude-pro`. */
 export function serviceKind(slug: string): ServiceKind {
+  const creative = CREATIVE_SERVICES[slug];
+  if (creative) return creative.kind;
   if (/^sub-/.test(slug)) return 'months';
   if (/followers$/.test(slug)) return 'followers';
   if (/members$/.test(slug)) return 'members';
@@ -100,11 +107,12 @@ export function shortServiceName(name: string, categoryName: string): string {
   return s || name;
 }
 
-const KIND_ORDER: ServiceKind[] = ['months', 'followers', 'members', 'subscribers', 'likes', 'views', 'reach', 'comments', 'shares', 'saves', 'reactions', 'votes', 'starts', 'watch', 'content', 'posts', 'other'];
+const KIND_ORDER: ServiceKind[] = ['months', 'followers', 'members', 'subscribers', 'likes', 'views', 'reach', 'comments', 'shares', 'saves', 'reactions', 'votes', 'starts', 'watch', 'design', 'automation', 'aicontent', 'content', 'posts', 'other'];
 
 /** Stable display order inside a category: by kind (followers before likes …), then the catalogue order. */
 export function sortServices<T extends { slug: string }>(items: T[]): T[] {
-  const pos = (slug: string) => { const i = SERVICE_ORDER.indexOf(slug); return i < 0 ? SERVICE_ORDER.length + KIND_ORDER.indexOf(serviceKind(slug)) : i; };
+  const order = [...SERVICE_ORDER, ...CREATIVE_ORDER()];
+  const pos = (slug: string) => { const i = order.indexOf(slug); return i < 0 ? order.length + KIND_ORDER.indexOf(serviceKind(slug)) : i; };
   return items.map((it, i) => ({ it, i })).sort((a, b) => pos(a.it.slug) - pos(b.it.slug) || a.i - b.i).map(x => x.it);
 }
 
@@ -118,10 +126,14 @@ const SERVICE_ORDER = [
   'bl-members', 'bl-views', 'et-members', 'et-views',
   'sub-chatgpt-plus', 'sub-claude-pro', 'sub-gemini-pro', 'sub-supergrok', 'sub-chatgpt-pro', 'sub-claude-max',
   'sub-perplexity-pro', 'sub-midjourney-standard', 'sub-cursor-pro', 'sub-copilot-pro', 'sub-elevenlabs-creator', 'sub-suno-pro',
+  // Creative services keep the priority order of their table below.
 ];
+const CREATIVE_ORDER = (): string[] => Object.keys(CREATIVE_SERVICES);
 
 /** Glyph for one service: a few services read better with their own icon than their kind's. */
 export function serviceIcon(slug: string): IconName {
+  const creative = CREATIVE_SERVICES[slug];
+  if (creative) return creative.icon;
   if (/story-views$/.test(slug)) return 'story';
   if (/live-views$/.test(slug)) return 'live';
   if (/reach$/.test(slug)) return 'rise';
@@ -136,7 +148,13 @@ export function perLabel(kind: KindMeta): string {
 }
 
 /** Order-form target field, by category and kind. The value is sent as `parameters.target`. */
-export function targetField(category: string, kind: ServiceKind, slug = ''): { label: string; placeholder: string; ltr: boolean } {
+export function targetField(category: string, kind: ServiceKind, slug = ''): TargetSpec {
+  const creative = CREATIVE_SERVICES[slug];
+  if (creative) return creative.target;
+  return { ...socialTarget(category, kind, slug), required: true };
+}
+
+function socialTarget(category: string, kind: ServiceKind, slug: string): { label: string; placeholder: string; ltr: boolean } {
   const user = (host: string) => ({ label: 'نام کاربری یا لینک صفحه', placeholder: host ? `${host}/username` : '@username', ltr: true });
   if (kind === 'months') return { label: 'ایمیل حساب', placeholder: 'you@example.com', ltr: true };
   if (kind === 'content') return { label: 'موضوع محتوا', placeholder: 'مثلاً معرفی محصول جدید', ltr: false };
@@ -168,4 +186,106 @@ export function targetField(category: string, kind: ServiceKind, slug = ''): { l
     default:
       return { label: 'لینک', placeholder: 'https://…', ltr: true };
   }
+}
+
+// ─── Creative services: design, automation and AI content ────────────────────────────────────────
+// Fulfilled by the ZOHALPAY team (services.fulfillment_mode = 'MANUAL'), so the order form asks for a
+// brief, and the order page states delivery time, revisions and the refund rule. Prices come from
+// db/seeds/003_creative_services.sql; nothing here is authoritative for money.
+
+export type TargetSpec = { label: string; placeholder: string; ltr: boolean; required: boolean };
+export type BriefSpec = { label: string; placeholder: string; min: number; max: number };
+export type CreativeService = {
+  kind: 'design' | 'automation' | 'aicontent';
+  icon: IconName;
+  unit: string;
+  quantities: number[];
+  /** `monthly`: paid upfront per month, never renewed automatically. `once`: one-time per piece/project. */
+  billing: 'once' | 'monthly';
+  /** Working days to deliver (one-time) or to set up (monthly). */
+  days: number;
+  /** Free revision rounds included with each piece (design). */
+  revisions?: number;
+  target: TargetSpec;
+  brief: BriefSpec;
+};
+
+/** Length bounds enforced by the server (server/commerce/order-input.ts). */
+export const BRIEF_MIN = 10;
+export const BRIEF_MAX = 3000;
+export const TARGET_MAX = 500;
+
+/** Categories whose orders are fulfilled by the team rather than an external provider. */
+export const TEAM_CATEGORIES = ['design', 'automation', 'ai', 'ai-subscriptions'] as const;
+export function isTeamFulfilled(category: string | null | undefined): boolean {
+  return (TEAM_CATEGORIES as readonly string[]).includes(category ?? '');
+}
+
+const page = (required: boolean): TargetSpec => ({ label: required ? 'پیج یا کانال' : 'پیج یا برند (اختیاری)', placeholder: '@yourpage', ltr: true, required });
+const site = (label: string, placeholder: string, required = false): TargetSpec => ({ label, placeholder, ltr: true, required });
+const brief = (placeholder: string, label = 'شرح سفارش'): BriefSpec => ({ label, placeholder, min: BRIEF_MIN, max: BRIEF_MAX });
+const design = (icon: IconName, unit: string, days: number, b: string, quantities = PIECES_Q, target = page(false)): CreativeService =>
+  ({ kind: 'design', icon, unit, quantities, billing: 'once', days, revisions: 2, target, brief: brief(b) });
+const monthly = (kind: 'automation' | 'aicontent', icon: IconName, days: number, b: string, target = page(true)): CreativeService =>
+  ({ kind, icon, unit: 'ماه', quantities: MONTHS_Q, billing: 'monthly', days, target, brief: brief(b, 'توضیح نیاز') });
+const ai = (icon: IconName, unit: string, quantities: number[], days: number, b: string, label?: string, target = page(false)): CreativeService =>
+  ({ kind: 'aicontent', icon, unit, quantities, billing: 'once', days, target, brief: brief(b, label) });
+
+/** Every creative service, in display (demand) order within its category. */
+export const CREATIVE_SERVICES: Record<string, CreativeService> = {
+  // طراحی و گرافیک
+  'ds-post': design('dsPost', 'طرح', 2, 'موضوع، متن روی طرح، رنگ‌ها و یک نمونه‌ی مورد علاقه'),
+  'ds-carousel': design('dsCarousel', 'کاروسل', 3, 'موضوع و متن هر اسلاید (تا ۷ اسلاید)، رنگ‌ها و نمونه'),
+  'ds-story': design('dsStory', 'طرح', 2, 'موضوع استوری، متن، لینک یا کد تخفیف'),
+  'ds-highlight': design('dsHighlight', 'کاور', 2, 'عنوان هر هایلایت و رنگ‌های برند', [3, 5, 10, 15]),
+  'ds-logo': design('dsLogo', 'لوگو', 7, 'نام برند، حوزه‌ی کار، سلیقه‌ی رنگ و نمونه‌هایی که می‌پسندید', [1]),
+  'ds-thumbnail': design('dsThumb', 'طرح', 2, 'عنوان ویدیو، متن روی کاور و حس مورد نظر', PIECES_Q, site('لینک کانال (اختیاری)', 'https://youtube.com/@channel')),
+  'ds-banner': design('dsBanner', 'طرح', 3, 'محل استفاده (هدر یوتیوب، کاور تلگرام، بنر سایت)، ابعاد و متن', [1, 2, 3, 5]),
+  'ds-mockup': design('dsMockup', 'طرح', 3, 'نوع محصول و بسته‌بندی؛ فایل لوگو را بعد از ثبت از پشتیبانی بفرستید'),
+  'ds-identity': design('dsBrand', 'پکیج', 10, 'معرفی برند، مخاطب و سلیقه‌ی رنگ (پالت، فونت و ۳ قالب پست و استوری)', [1]),
+  // اتوماسیون
+  'auto-posting': monthly('automation', 'auSchedule', 2, 'شبکه‌ها و برنامه‌ی انتشار (مثلاً هر روز ساعت ۱۸)'),
+  'au-comment-reply': monthly('automation', 'auComment', 2, 'کلیدواژه‌ها و پاسخی که برای هر کدام می‌خواهید'),
+  'au-dm-reply': monthly('automation', 'auDm', 2, 'پیام‌های پرتکرار مشتری‌ها و پاسخ هر کدام'),
+  'au-cross-post': monthly('automation', 'auCross', 2, 'شبکه‌ی مبدأ و شبکه‌های مقصد (اینستاگرام، تلگرام، بله، ایتا…)'),
+  'au-lead-capture': monthly('automation', 'auLead', 3, 'چه اطلاعاتی از مشتری گرفته شود و کجا ذخیره شود'),
+  'au-report': monthly('automation', 'auReport', 2, 'شاخص‌های مهم برای شما و مقصد گزارش (ایمیل یا تلگرام)'),
+  'au-telegram-bot': {
+    kind: 'automation', icon: 'auTgBot', unit: 'ربات', quantities: [1], billing: 'once', days: 10,
+    target: site('آیدی کانال یا ربات (اختیاری)', '@your_bot'), brief: brief('ربات چه کاری انجام دهد؛ منوها، پاسخ‌ها و اتصال‌های لازم', 'توضیح نیاز'),
+  },
+  // تولید محتوا با AI
+  'ai-caption': ai('aiCaption', 'کپشن', [5, 10, 20, 30], 1, 'موضوع پست‌ها، لحن (رسمی یا صمیمی) و مخاطب'),
+  'ai-image': ai('aiImage', 'تصویر', [3, 5, 10, 20], 1, 'سوژه، سبک (واقعی، تصویرسازی، سه‌بعدی) و ابعاد'),
+  'ai-script': ai('aiScript', 'سناریو', PIECES_Q, 2, 'موضوع ویدیو، مدت (مثلاً ۳۰ ثانیه) و پیام اصلی'),
+  'ai-voiceover': ai('aiVoice', 'دقیقه', PIECES_Q, 1, 'متن نریشن یا موضوع آن؛ صدای زن یا مرد', 'متن یا موضوع نریشن'),
+  'ai-product': ai('aiProduct', 'محصول', [5, 10, 20, 50], 2, 'نام و ویژگی‌های هر محصول', undefined, site('لینک فروشگاه (اختیاری)', 'https://')),
+  'ai-article': ai('aiArticle', 'مقاله', PIECES_Q, 3, 'موضوع، کلمه‌ی کلیدی اصلی و مخاطب (هر مقاله حدود ۱۲۰۰ کلمه)', undefined, site('آدرس سایت (اختیاری)', 'https://')),
+  'ai-subtitle': ai('aiSubtitle', 'دقیقه', [1, 5, 10, 30], 2, 'زبان ویدیو و زبان زیرنویس', undefined, site('لینک ویدیو', 'https://', true)),
+  'ai-calendar': monthly('aicontent', 'aiCalendar', 3, 'حوزه‌ی کسب‌وکار، مخاطب و تعداد پست در هفته'),
+  'ai-dm-assistant': monthly('aicontent', 'aiAssistant', 3, 'محصولات، قیمت‌ها و پرسش‌های پرتکرار مشتری‌ها'),
+};
+
+/** Presentation unit, presets and icon for one service (creative services override their kind's defaults). */
+export function serviceMeta(slug: string): KindMeta {
+  const creative = CREATIVE_SERVICES[slug];
+  const kind = KINDS[serviceKind(slug)];
+  return creative ? { ...kind, unit: creative.unit, quantities: creative.quantities, icon: creative.icon } : kind;
+}
+
+const faInt = (n: number) => new Intl.NumberFormat('fa-IR').format(n);
+
+/** Order-form inputs and the plain terms shown before paying. */
+export type OrderFact = { icon: IconName; text: string };
+export type OrderForm = { target: TargetSpec; brief: BriefSpec | null; facts: OrderFact[]; refund: string };
+export function orderForm(category: string, slug: string): OrderForm {
+  const creative = CREATIVE_SERVICES[slug];
+  const target = targetField(category, serviceKind(slug), slug);
+  if (!creative) return { target, brief: null, facts: [], refund: 'بازگشت وجه در صورت لغو' };
+  const facts: OrderFact[] = creative.billing === 'monthly'
+    ? [{ icon: 'clock', text: `راه‌اندازی ${faInt(creative.days)} روز کاری` }, { icon: 'hist', text: 'ماهانه، بدون تمدید خودکار' }]
+    : [{ icon: 'clock', text: `تحویل ${faInt(creative.days)} روز کاری` }];
+  if (creative.revisions) facts.push({ icon: 'edit', text: `${faInt(creative.revisions)} بار اصلاح رایگان` });
+  facts.push({ icon: 'shieldS', text: 'بازگشت وجه اگر تحویل نشود' });
+  return { target, brief: creative.brief, facts, refund: 'هر بخشی که تحویل نشود، مبلغش به کیف پول برمی‌گردد.' };
 }

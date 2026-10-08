@@ -1,6 +1,6 @@
 // View models for the native app: the server owns pricing, stages, loyalty level and wording,
 // so the mobile client only renders (no domain logic is duplicated in React Native).
-import { CATEGORIES, categoryMeta, KINDS, perLabel, serviceBrand, serviceIcon, serviceKind, shortServiceName, sortServices, targetField } from '../../lib/catalog-ui';
+import { CATEGORIES, categoryMeta, isTeamFulfilled, orderForm, perLabel, serviceBrand, serviceIcon, serviceMeta, shortServiceName, sortServices } from '../../lib/catalog-ui';
 import { formatQuantityWords, formatWhen, orderCode, toToman } from '../../lib/format';
 import { orderStage } from '../../lib/order-progress';
 import { tierFor } from '../../lib/tiers';
@@ -9,8 +9,8 @@ import type { CatalogItem, OrderCard, WalletEntry } from './overview';
 export function catalogView(items: CatalogItem[]) {
   const priced = sortServices(items.filter(i => i.unitPriceMinor));
   const services = priced.map(i => {
-    const kindKey = serviceKind(i.slug);
-    const kind = KINDS[kindKey];
+    const kind = serviceMeta(i.slug);
+    const form = orderForm(i.productSlug, i.slug);
     const min = i.minQuantity ? Number(i.minQuantity) : 1;
     const max = i.maxQuantity ? Number(i.maxQuantity) : Number.MAX_SAFE_INTEGER;
     const quantities = kind.quantities.filter(q => q >= min && q <= max);
@@ -20,7 +20,7 @@ export function catalogView(items: CatalogItem[]) {
       group: kind.group, unit: kind.unit, icon: serviceIcon(i.slug), per: kind.per,
       unitPriceToman: Number(i.unitPriceMinor),
       quantities: quantities.length ? quantities : [min],
-      target: targetField(i.productSlug, kindKey, i.slug),
+      target: form.target, brief: form.brief, facts: form.facts, refund: form.refund,
     };
   });
   const categories = CATEGORIES.map(c => ({ ...c, live: services.some(s => s.category === c.key), count: services.filter(s => s.category === c.key).length }));
@@ -28,7 +28,6 @@ export function catalogView(items: CatalogItem[]) {
 }
 
 export function orderCardView(o: OrderCard) {
-  const kind = KINDS[serviceKind(o.serviceSlug ?? '')];
   const cat = categoryMeta(o.productSlug ?? '');
   const q = Number(o.quantity ?? 0);
   return {
@@ -36,8 +35,8 @@ export function orderCardView(o: OrderCard) {
     code: orderCode(o.id),
     title: o.serviceName ? (q > 1 ? `${formatQuantityWords(q)} ${o.serviceName}` : o.serviceName) : `سفارش ${orderCode(o.id)}`,
     subtitle: `${cat ? `${cat.name} · ` : ''}${formatWhen(o.createdAt)}`,
-    icon: kind.icon,
-    stage: orderStage(o.status),
+    icon: serviceIcon(o.serviceSlug ?? ''),
+    stage: orderStage(o.status, isTeamFulfilled(o.productSlug)),
     amountToman: toToman(o.totalMinor, o.currency),
   };
 }
