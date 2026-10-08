@@ -59,7 +59,7 @@ describe('POST /api/internal/queue/renewal', () => {
   });
 
   it('processes each due subscription', async () => {
-    mockDue.mockResolvedValue(['sub-1', 'sub-2']);
+    mockDue.mockResolvedValue([{ subscriptionId: 'sub-1', workspaceId: 'ws-1' }, { subscriptionId: 'sub-2', workspaceId: 'ws-2' }]);
     mockProcess
       .mockResolvedValueOnce({ status: 'RENEWED' } as never)
       .mockResolvedValueOnce({ status: 'SKIPPED' } as never);
@@ -70,10 +70,13 @@ describe('POST /api/internal/queue/renewal', () => {
     expect(body.renewals).toHaveLength(2);
     expect(body.renewals[0]).toMatchObject({ subscriptionId: 'sub-1', status: 'RENEWED' });
     expect(body.renewals[1]).toMatchObject({ subscriptionId: 'sub-2', status: 'SKIPPED' });
+    // Each renewal runs in the workspace returned by the RLS-safe due scan.
+    expect(mockProcess).toHaveBeenNthCalledWith(1, 'sub-1', 'ws-1');
+    expect(mockProcess).toHaveBeenNthCalledWith(2, 'sub-2', 'ws-2');
   });
 
   it('includes error in renewals when processSubscriptionRenewal returns error', async () => {
-    mockDue.mockResolvedValue(['sub-bad']);
+    mockDue.mockResolvedValue([{ subscriptionId: 'sub-bad', workspaceId: 'ws-1' }]);
     mockProcess.mockResolvedValueOnce({ status: 'FAILED', error: 'db error' } as never);
 
     const res = await POST(makeRequest());

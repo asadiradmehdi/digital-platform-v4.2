@@ -100,7 +100,6 @@ describe('resetUsagePeriod', () => {
       });
 
     mockTx.mockImplementationOnce(async (_wid, _userId, fn) => fn({ query: clientQuery } as never));
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
 
     await resetUsagePeriod(resetInput);
 
@@ -118,7 +117,6 @@ describe('resetUsagePeriod', () => {
       .mockResolvedValueOnce({ rows: [{ metric_key: 'api_calls', limit_quantity: '50' }], rowCount: 1 })
       .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // conflict — do nothing
     mockTx.mockImplementationOnce(async (_wid, _userId, fn) => fn({ query: clientQuery } as never));
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
 
     // Should not throw even when row already exists
     await expect(resetUsagePeriod(resetInput)).resolves.not.toThrow();
@@ -131,11 +129,12 @@ describe('resetUsagePeriod', () => {
     const clientQuery = vi.fn()
       .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // no metrics — nothing to reset
     mockTx.mockImplementationOnce(async (_wid, _userId, fn) => fn({ query: clientQuery } as never));
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
 
     await resetUsagePeriod(resetInput);
 
-    const [sql, params] = mockQuery.mock.calls[0];
+    // Regression: this UPDATE ran on the plain pool, where RLS on subscriptions matched no row.
+    expect(mockQuery).not.toHaveBeenCalled();
+    const [sql, params] = clientQuery.mock.calls[1] as [string, unknown[]];
     expect(sql).toContain('UPDATE subscriptions');
     expect(sql).toContain('current_period_start');
     expect(sql).toContain('current_period_end');
@@ -146,12 +145,27 @@ describe('resetUsagePeriod', () => {
     let insertParams: unknown[] = [];
     const clientQuery = vi.fn()
       .mockResolvedValueOnce({ rows: [{ metric_key: 'tokens', limit_quantity: '1000' }], rowCount: 1 })
-      .mockImplementation(async (_sql: string, p: unknown[]) => { insertParams = p; return { rows: [], rowCount: 1 }; });
+      .mockImplementation(async (sql: string, p: unknown[]) => { if (sql.includes('INSERT INTO usage_counters')) insertParams = p; return { rows: [], rowCount: 1 }; });
     mockTx.mockImplementationOnce(async (_wid, _userId, fn) => fn({ query: clientQuery } as never));
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
 
     await resetUsagePeriod({ ...resetInput, rolloverQuantity: 200n });
 
     expect(insertParams).toContain('200');
+  });
+});
+
+describe('resetUsagePeriod tenant context', () => {
+  it('opens a workspace transaction when none is passed, and joins the caller\'s when one is', async () => {
+    const clientQuery = vi.fn().mockResolvedValue({ rows: [], rowCount: 0 });
+    mockTx.mockImplementationOnce(async (_wid, _userId, fn) => fn({ query: clientQuery } as never));
+    const input = { subscriptionId: 'sub-1', workspaceId: 'ws-r', newPeriodStart: new Date(), newPeriodEnd: new Date() };
+    await resetUsagePeriod(input);
+    expect(mockTx).toHaveBeenCalledWith('ws-r', undefined, expect.any(Function));
+
+    mockTx.mockClear();
+    const callerClient = { query: vi.fn().mockResolvedValue({ rows: [], rowCount: 0 }) };
+    await resetUsagePeriod(input, callerClient as never);
+    expect(mockTx).not.toHaveBeenCalled();
+    expect(callerClient.query).toHaveBeenCalledTimes(2);
   });
 });

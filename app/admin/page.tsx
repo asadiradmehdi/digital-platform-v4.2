@@ -22,69 +22,9 @@ import { AppShell } from '../../components/AppShell';
 import { SystemStrip } from '../../components/ProductSurface';
 import { requireCurrentUser } from '../../server/identity/request-user';
 import { isPlatformAdmin } from '../../server/identity/platform-admin';
-import { query } from '../../server/core/db';
+import { getPlatformAdminStats } from '../../server/admin/platform-stats';
 
 export const metadata: Metadata = { title: 'Admin — پنل عملیاتی', robots: { index: false, follow: false } };
-
-async function getAdminStats() {
-  const [orders, orders24h, payments, subs, providers, alerts, users, queueStats] = await Promise.all([
-    query<{ status: string; count: string }>(
-      `SELECT status, COUNT(*)::text AS count FROM orders GROUP BY status`,
-      [],
-    ),
-    query<{ count: string }>(
-      `SELECT COUNT(*)::text AS count FROM orders WHERE created_at > now() - interval '24 hours'`,
-      [],
-    ),
-    query<{ status: string; count: string; total: string }>(
-      `SELECT status, COUNT(*)::text AS count, COALESCE(SUM(amount_minor),0)::text AS total FROM payments GROUP BY status`,
-      [],
-    ),
-    query<{ status: string; count: string }>(
-      `SELECT status, COUNT(*)::text AS count FROM subscriptions GROUP BY status`,
-      [],
-    ),
-    query<{ provider_id: string; status: string; latency_ms: number; checked_at: string }>(
-      `SELECT DISTINCT ON (provider_id) provider_id, status, latency_ms, checked_at
-       FROM provider_health_checks ORDER BY provider_id, checked_at DESC`,
-      [],
-    ),
-    query<{ severity: string; count: string; last_at: string }>(
-      `SELECT severity, COUNT(*)::text AS count, MAX(created_at)::text AS last_at
-       FROM operational_events WHERE created_at > now() - interval '24 hours'
-       GROUP BY severity ORDER BY severity`,
-      [],
-    ),
-    query<{ count: string }>(
-      `SELECT COUNT(*)::text AS count FROM users`,
-      [],
-    ),
-    query<{ status: string; count: string }>(
-      `SELECT status, COUNT(*)::text AS count FROM orders
-       WHERE status IN ('QUEUED','PROCESSING','PROVIDER_SUBMITTED')
-       GROUP BY status`,
-      [],
-    ),
-  ]);
-
-  const orderMap = Object.fromEntries(orders.rows.map(r => [r.status, Number(r.count)]));
-  const paymentMap = Object.fromEntries(payments.rows.map(r => [r.status, { count: Number(r.count), total: BigInt(r.total) }]));
-  const subMap = Object.fromEntries(subs.rows.map(r => [r.status, Number(r.count)]));
-  const alertBySev = Object.fromEntries(alerts.rows.map(r => [r.severity, { count: Number(r.count), lastAt: r.last_at }]));
-  const queueTotal = queueStats.rows.reduce((acc, r) => acc + Number(r.count), 0);
-  const orders24hCount = Number(orders24h.rows[0]?.count ?? 0);
-
-  return {
-    orderMap,
-    paymentMap,
-    subMap,
-    providers: providers.rows,
-    alertBySev,
-    userCount: Number(users.rows[0]?.count ?? 0),
-    queueTotal,
-    orders24hCount,
-  };
-}
 
 /** Translates an order/subscription status to a human-readable Persian label */
 function statusLabel(status: string): string {
@@ -152,7 +92,7 @@ export default async function AdminPage() {
     );
   }
 
-  const stats = await getAdminStats();
+  const stats = await getPlatformAdminStats(userId);
   const { orderMap, paymentMap, subMap, providers, alertBySev, userCount, queueTotal, orders24hCount } = stats;
 
   const totalOrders = Object.values(orderMap).reduce((a, b) => a + b, 0);
