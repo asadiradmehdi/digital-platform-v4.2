@@ -1,1 +1,1 @@
-import { OrdersScreen } from '../../src/screens/OrdersScreen'; export default OrdersScreen;
+import { OrdersScreen } from '../../src/screens/zp/OrdersScreen'; export default OrdersScreen;
