@@ -12,10 +12,16 @@ import { REFERRAL_COOKIE } from '../referrals/service';
 import { AppError } from '../core/errors';
 
 /** Only same-site relative paths survive as a post-sign-in destination (no open redirect). */
+/**
+ * Where to go after sign-in / sign-up (`next=`): only a same-origin relative path starting with a single
+ * `/` is accepted — `//host`, a scheme (`https:`, `javascript:`), a backslash or control characters fall
+ * back to the dashboard.
+ */
 export function safeNextPath(raw: unknown, fallback = '/dashboard') {
   if (typeof raw !== 'string' || raw.length > 300) return fallback;
   if (!raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\') || /[\u0000-\u001f]/.test(raw)) return fallback;
-  if (raw.startsWith('/auth') || raw.startsWith('/api/')) return fallback;
+  // Never bounce back into sign-in or onto an API endpoint.
+  if (/^\/auth(?:$|[/?#])/.test(raw) || raw.startsWith('/api/')) return fallback;
   return raw;
 }
 

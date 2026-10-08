@@ -233,6 +233,7 @@ export default function AuthForm({ initialMode = 'login', invite = null, otpEnab
         {step === 'password' && (
           <>
             <form className="auth-form" onSubmit={e => void submitPassword(e)} noValidate>
+              <input type="hidden" name="next" value={next} />
               {mode === 'register' && invite && <input type="hidden" name="referralCode" value={invite.code} />}
               {mode === 'register' && (
                 <label>نام و نام خانوادگی<input name="name" autoComplete="name" required minLength={2} maxLength={120} /></label>

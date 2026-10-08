@@ -8,6 +8,9 @@ describe('post-sign-in destination', () => {
     ['/orders/1', '/orders/1'], ['/dashboard?x=1', '/dashboard?x=1'],
     ['//evil.example', '/dashboard'], ['https://evil.example', '/dashboard'], ['/\\evil.example', '/dashboard'],
     ['/auth?next=/x', '/dashboard'], ['/api/v1/auth/logout', '/dashboard'], [undefined, '/dashboard'], ['javascript:alert(1)', '/dashboard'],
+    // Regression: public service pages link to /auth?mode=register&next=/orders/new?service=…
+    ['/orders/new?service=instagram-followers', '/orders/new?service=instagram-followers'], ['/authors', '/authors'],
+    ['\\evil.example', '/dashboard'], ['/\t/evil.example', '/dashboard'], ['http:/evil.example', '/dashboard'], ['', '/dashboard'], ['/auth/x', '/dashboard'],
   ])('%s → %s', (input, out) => expect(safeNextPath(input)).toBe(out));
 });
 

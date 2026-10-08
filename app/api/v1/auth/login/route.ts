@@ -11,7 +11,7 @@ import { recordSecurityEvent } from '../../../../../server/core/security-events'
 import { setSessionCookie } from '../../../../../server/identity/session-cookie';
 import { isLoginLocked, recordLoginFailure, recordLoginSuccess } from '../../../../../server/identity/account-security';
 import { hasMfaEnabled, issueMfaChallenge } from '../../../../../server/identity/mfa-service';
-import { describeUserAgent } from '../../../../../server/identity/sign-in';
+import { describeUserAgent, safeNextPath } from '../../../../../server/identity/sign-in';
 
 export async function POST(request: NextRequest) {
   const id = correlationId(request);
@@ -51,7 +51,9 @@ export async function POST(request: NextRequest) {
 
     await recordSecurityEvent({ eventType: 'LOGIN_SUCCESS', severity: 'INFO', userId: row.id, sourceIp: ip, userAgent: request.headers.get('user-agent') ?? undefined, correlationId: id });
     const token = await createSession(row.id, undefined, { clientType: 'WEB', authMethod: 'PASSWORD', lastIp: ip, lastUserAgent: request.headers.get('user-agent') ?? undefined, deviceName: describeUserAgent(request.headers.get('user-agent')) });
-    const response = isForm ? NextResponse.redirect(new URL('/dashboard', request.url)) : json({ ok: true }, { correlationId: id });
+    // Only a same-origin relative path is honoured; anything else lands on the dashboard.
+    const next = safeNextPath(body.next);
+    const response = isForm ? NextResponse.redirect(new URL(next, request.url)) : json({ ok: true, next }, { correlationId: id });
     response.headers.set('x-correlation-id', id);
     setSessionCookie(response, token);
     return response;
