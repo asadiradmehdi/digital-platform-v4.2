@@ -5,6 +5,7 @@ import { requireString } from '../../../../../../server/core/validation';
 import { clientFingerprint } from '../../../../../../server/core/security-boundary';
 import { recordSecurityEvent } from '../../../../../../server/core/security-events';
 import { createSession } from '../../../../../../server/identity/sessions';
+import { describeUserAgent } from '../../../../../../server/identity/sign-in';
 import { setSessionCookie } from '../../../../../../server/identity/session-cookie';
 import { AppError } from '../../../../../../server/core/errors';
 import { consumeDistributedRateLimit } from '../../../../../../server/core/distributed-rate-limit';
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
       correlationId: id,
       metadata: { mfaVerified: true, codeType },
     });
-    const token = await createSession(userId);
+    const token = await createSession(userId, undefined, { clientType: 'WEB', authMethod: 'MFA', lastIp: ip, lastUserAgent: request.headers.get('user-agent') ?? undefined, deviceName: describeUserAgent(request.headers.get('user-agent')) });
     const response = json({ ok: true }, { correlationId: id });
     setSessionCookie(response, token);
     return response;

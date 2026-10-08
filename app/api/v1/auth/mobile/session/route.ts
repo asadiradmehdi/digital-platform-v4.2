@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     await recordLoginSuccess(row.id);
-    const session = await createMobileSession({ userId: row.id, platform: platform as 'IOS' | 'ANDROID', deviceId, deviceName, platformVersion, ip, userAgent: request.headers.get('user-agent') ?? undefined });
+    const session = await createMobileSession({ userId: row.id, platform: platform as 'IOS' | 'ANDROID', deviceId, deviceName, platformVersion, ip, userAgent: request.headers.get('user-agent') ?? undefined, authMethod: 'PASSWORD' });
     await recordSecurityEvent({ eventType: 'MOBILE_LOGIN_SUCCESS', severity: 'INFO', userId: row.id, sourceIp: ip, userAgent: request.headers.get('user-agent') ?? undefined, correlationId: id, metadata: { platform } });
     return json({ ok: true, accessToken: session.token, tokenType: 'Bearer' }, { correlationId: id });
   } catch (error) {

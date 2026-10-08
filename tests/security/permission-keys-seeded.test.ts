@@ -26,7 +26,15 @@ describe('permission keys', () => {
   });
 
   it('signup never grants staff-only permissions', () => {
-    const route = readFileSync('app/api/v1/auth/register/route.ts', 'utf8');
-    expect(route).toMatch(/key NOT IN \('admin\.ops','orders\.refund'\)/);
+    // Every signup path (password, phone code, Google) builds the workspace through createPersonalWorkspace.
+    const helper = readFileSync('server/identity/signup.ts', 'utf8');
+    expect(helper).toMatch(/key NOT IN \('admin\.ops','orders\.refund'\)/);
+    for (const f of ['app/api/v1/auth/register/route.ts', 'server/identity/signup.ts']) {
+      const src = readFileSync(f, 'utf8');
+      expect(src, f).toMatch(/createPersonalWorkspace\(client/);
+    }
+    // No other file grants role permissions at signup with its own (possibly broader) rule.
+    const granting = [...files('app'), ...files('server')].filter(f => /INSERT INTO role_permissions\(role_id,permission_id\) SELECT/.test(readFileSync(f, 'utf8')));
+    expect(granting).toEqual(['server/identity/signup.ts']);
   });
 });
