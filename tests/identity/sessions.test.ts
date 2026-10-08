@@ -120,3 +120,32 @@ describe('rotateSession', () => {
     expect(mockQuery).toHaveBeenCalledTimes(1);
   });
 });
+
+// ─── lifetime policy (7-day sliding idle, 30-day absolute) ────────────────────
+
+describe('session lifetime policy', () => {
+  it('creates sessions with a 7-day idle window under a 30-day absolute cap', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
+    await createSession('user-1', undefined, { authMethod: 'OTP' });
+    const [sql, params] = mockQuery.mock.calls[0] as unknown as [string, unknown[]];
+    expect(sql).toContain('absolute_expires_at');
+    expect(params[2]).toBe(7 * 24 * 3600);
+    expect(params[9]).toBe('OTP');
+    expect(params[10]).toBe(30 * 24 * 3600);
+  });
+
+  it('never lets a requested idle TTL exceed the absolute cap', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
+    await createSession('user-1', 365 * 24 * 3600);
+    expect((mockQuery.mock.calls[0][1] as unknown[])[2]).toBe(30 * 24 * 3600);
+  });
+
+  it('resolves only sessions inside both limits and slides the idle window, capped by the absolute expiry', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ user_id: 'u' }], rowCount: 1 } as never);
+    await resolveSession('tok');
+    const [sql, params] = mockQuery.mock.calls[0] as unknown as [string, unknown[]];
+    expect(sql).toContain('expires_at>now() AND absolute_expires_at>now()');
+    expect(sql).toContain("LEAST(now()+($2 || ' seconds')::interval, sessions.absolute_expires_at)");
+    expect(params[1]).toBe(7 * 24 * 3600);
+  });
+});
