@@ -105,7 +105,7 @@ describe('issueInvoice', () => {
     const n = f.calls.find(c => c.sql.includes('INSERT INTO notifications'))!;
     expect(n.sql).toContain("'invoice.issued'");
     expect(n.values.slice(0, 2)).toEqual(['ws-1', 'user-1']);
-    expect(n.values[2]).toMatchObject({ href: '/invoices/inv-1', invoiceId: 'inv-1', title: 'فاکتور خرید شما صادر شد', body: '۲ هزار فالوور اینستاگرام · ۹۰٬۰۰۰ تومان' });
+    expect(n.values[2]).toMatchObject({ href: '/invoices/inv-1', invoiceId: 'inv-1', title: 'فاکتور خرید شما صادر شد', body: '۲ هزار فالوور اینستاگرام، ۹۰٬۰۰۰ تومان' });
   });
 
   it('writes no notification when the workspace owner is unknown', async () => {

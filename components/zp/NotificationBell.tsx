@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ZIcon } from './ZIcon';
 import { Tile } from './brand';
+import './notification-bell.css';
 
 type Item = { id: string; type: string; title: string | null; body: string | null; href: string | null; read: boolean; createdAt: string };
 
@@ -76,7 +77,7 @@ export function NotificationBell() {
         {unread && <span className="zp-dot" aria-hidden="true" />}
       </button>
       {open && (
-        <div className="zp-pop" role="dialog" aria-label="اعلان‌ها" style={state.status === 'ok' && state.items.length ? { justifyItems: 'stretch', textAlign: 'start', gap: 6, padding: 10 } : undefined}>
+        <div className={`zp-pop zp-nb${state.status === 'ok' && state.items.length ? ' list' : ''}`} role="dialog" aria-label="اعلان‌ها">
           {state.status === 'loading' ? (
             <span role="status">در حال دریافت اعلان‌ها…</span>
           ) : state.status === 'error' ? (
@@ -95,18 +96,18 @@ export function NotificationBell() {
               const href = safeHref(n.href);
               const inner = (
                 <>
-                  <Tile icon={n.type === 'invoice.issued' ? 'doc' : 'bell'} size={34} />
-                  <span style={{ display: 'grid', gap: 2, minWidth: 0, flex: 1 }}>
-                    <b style={{ fontSize: 13, fontWeight: n.read ? 600 : 700 }}>{n.title ?? 'اعلان'}</b>
-                    {n.body && <span style={{ fontSize: 11.2, lineHeight: 1.7 }}>{n.body}</span>}
+                  <Tile icon={n.type === 'invoice.issued' ? 'doc' : 'bell'} />
+                  <span className="tx">
+                    <b>{n.title ?? 'اعلان'}</b>
+                    {n.body && <span>{n.body}</span>}
                   </span>
-                  {!n.read && <i aria-label="خوانده‌نشده" style={{ width: 7, height: 7, borderRadius: 7, background: 'var(--vermilion)', flex: 'none' }} />}
+                  {!n.read && <i aria-label="خوانده‌نشده" />}
                 </>
               );
-              const style = { display: 'flex', alignItems: 'center', gap: 10, padding: 8, borderRadius: 14, background: n.read ? undefined : 'var(--surface-2)' } as const;
+              const cls = `zp-nb-item${n.read ? '' : ' unread'}`;
               return href
-                ? <Link key={n.id} href={href} className="zp-press" style={style} onClick={() => { markRead(n.id); setOpen(false); }}>{inner}</Link>
-                : <div key={n.id} style={style}>{inner}</div>;
+                ? <Link key={n.id} href={href} className={`${cls} zp-press`} onClick={() => { markRead(n.id); setOpen(false); }}>{inner}</Link>
+                : <div key={n.id} className={cls}>{inner}</div>;
             })
           )}
         </div>

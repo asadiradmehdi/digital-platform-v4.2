@@ -41,7 +41,7 @@ export async function notifyInvoiceIssued(client: Queryable, invoice: IssuedInvo
       `INSERT INTO notifications(workspace_id,user_id,notification_type,payload) VALUES($1,$2,'invoice.issued',$3)`,
       [invoice.workspaceId, invoice.buyerUserId, {
         title: receipt ? 'رسید شارژ کیف پول صادر شد' : 'فاکتور خرید شما صادر شد',
-        body: `${invoice.title} · ${amount} تومان`,
+        body: `${invoice.title}، ${amount} تومان`,
         href: invoice.href,
         invoiceId: invoice.invoiceId,
         invoiceNumber: invoice.invoiceNumber,
