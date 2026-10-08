@@ -31,7 +31,39 @@ export type AppOverview = {
   mfa: boolean;
 };
 
+/** Support (mirrors server/support/app-views.ts and server/content/trust.ts). */
+export type SupportTone = Tone | 'idle';
+export type AppSupportPhone = { label: string; display: string; tel: string };
+export type AppSupportCategory = { key: string; label: string; hint: string; icon: IconName };
+export type AppTicketCard = {
+  id: string; code: string; subject: string; icon: IconName; categoryLabel: string;
+  status: { key: string; label: string; tone: SupportTone; note: string };
+  preview: string; when: string; unread: boolean; closed: boolean;
+};
+export type AppTicketMessage = { id: string; mine: boolean; body: string; when: string };
+export type AppTicketDetail = AppTicketCard & { order: { id: string; code: string } | null; createdWhen: string; messages: AppTicketMessage[] };
+export type AppSupport = { workspaceId: string | null; phones: AppSupportPhone[]; hours: string; categories: AppSupportCategory[]; tickets: AppTicketCard[] };
+export type AppLicense = { key: string; title: string; issuer: string; text: string; icon: IconName; status: 'active' | 'pending'; verifyUrl: string | null };
+export type AppTrust = { licenses: AppLicense[]; phones: AppSupportPhone[]; hours: string };
+
 const V = '/api/v1';
+
+export const supportApi = {
+  overview: () => apiFetch<AppSupport>(`${V}/app/support`),
+  ticket: (id: string) => apiFetch<{ workspaceId: string; ticket: AppTicketDetail }>(`${V}/app/support/${encodeURIComponent(id)}`),
+  create: (body: { workspaceId: string; category: string; orderId?: string; subject: string; message: string }) =>
+    apiFetch<{ ticket: { id: string; code: string } }>(`${V}/support/tickets`, { method: 'POST', body: JSON.stringify(body) }),
+  reply: (id: string, body: string) =>
+    apiFetch<{ status: string; reopened: boolean }>(`${V}/support/tickets/${encodeURIComponent(id)}/messages`, { method: 'POST', body: JSON.stringify({ body }) }),
+  close: (id: string) =>
+    apiFetch<{ ticket: { id: string; status: string } }>(`${V}/support/tickets/${encodeURIComponent(id)}/close`, { method: 'POST', body: JSON.stringify({}) }),
+  /** Public: licences, support numbers and hours. */
+  trust: () => apiFetch<AppTrust>(`${V}/app/trust`),
+};
+
+export const SUBJECT_MAX = 160;
+export const BODY_MIN = 2;
+export const BODY_MAX = 4000;
 
 export const appApi = {
   catalog: () => apiFetch<AppCatalog>(`${V}/app/catalog`),
