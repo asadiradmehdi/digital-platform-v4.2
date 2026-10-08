@@ -48,6 +48,7 @@ export function AccountScreen() {
           const t = o.tier;
           const rows: Array<{ icon: IconName; label: string; note: string; tag?: boolean; href: Href }> = [
             { icon: 'gift', label: 'دعوت از دوستان', note: 'از هر خرید دوستانتان سهم بگیرید', href: '/invite' },
+            { icon: 'doc', label: 'فاکتورها', note: 'فاکتور خرید و رسید شارژ', href: '/invoices' },
             { icon: 'userCard', label: 'اطلاعات حساب', note: 'نام، شماره و ایمیل', href: '/settings' },
             { icon: 'shield', label: 'امنیت و ورود', note: o.mfa ? 'ورود دومرحله‌ای فعال' : 'فعال‌سازی ورود دومرحله‌ای', tag: o.mfa, href: '/security' },
             { icon: 'bell', label: 'اعلان‌ها', note: 'وضعیت سفارش و پیشنهادها', href: '/settings' },
