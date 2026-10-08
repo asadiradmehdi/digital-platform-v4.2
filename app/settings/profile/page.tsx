@@ -6,6 +6,7 @@ import { AppShell } from '../../../components/AppShell';
 import { requireCurrentUser } from '../../../server/identity/request-user';
 import { query } from '../../../server/core/db';
 import ProfileForm from './ProfileForm';
+import PhoneSection from './PhoneSection';
 
 export const metadata: Metadata = { title: 'پروفایل', robots: { index: false, follow: false } };
 
@@ -17,9 +18,9 @@ export default async function ProfileSettings() {
     redirect('/auth');
   }
 
-  const r = await query<{ display_name: string; email: string | null; phone: string | null }>(
+  const r = await query<{ display_name: string; email: string | null; phone: string | null; phone_verified: boolean }>(
     `SELECT COALESCE(display_name, split_part(COALESCE(email,''), '@', 1)) AS display_name,
-            email, phone
+            email, phone, (phone_verified_at IS NOT NULL) AS phone_verified
      FROM users WHERE id=$1`,
     [userId],
   );
@@ -113,11 +114,13 @@ export default async function ProfileSettings() {
                 />
               </label>
               <p style={{ margin: '5px 0 0', fontSize: 10, color: 'var(--subtle)' }}>
-                ایمیل برای ورود استفاده می‌شود و قابل تغییر نیست.
+                ایمیل برای ورود با رمز عبور و گوگل استفاده می‌شود.
               </p>
             </div>
 
-            <ProfileForm initialDisplayName={user?.display_name ?? ''} initialPhone={user?.phone ?? ''} />
+            <PhoneSection phone={user?.phone ?? null} verified={Boolean(user?.phone_verified)} />
+
+            <ProfileForm initialDisplayName={user?.display_name ?? ''} />
           </article>
 
           {/* Danger zone */}

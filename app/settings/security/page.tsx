@@ -10,7 +10,11 @@ import { query } from '../../../server/core/db';
 import { listPasskeys } from '../../../server/identity/passkey-service';
 import { listTrustedDevices } from '../../../server/identity/trusted-devices';
 import PasswordForm from './PasswordForm';
+import { listSignedInDevices } from '../../../server/identity/sessions';
+import { getContactState } from '../../../server/identity/reauth';
 import SessionManager from './SessionManager';
+
+const METHOD_LABEL: Record<string, string> = { OTP: 'ورود با پیامک', GOOGLE: 'ورود با گوگل', PASSWORD: 'ورود با رمز عبور', MFA: 'ورود دومرحله‌ای', PASSKEY: 'ورود با Passkey' };
 
 export const metadata: Metadata = { title: 'امنیت', robots: { index: false, follow: false } };
 
@@ -30,28 +34,16 @@ export default async function SecuritySettings() {
   const cookieName = process.env.SESSION_COOKIE_NAME ?? (process.env.NODE_ENV === 'production' ? '__Host-dp_session' : 'dp_session');
   const currentTokenHash = store.get(cookieName)?.value ? hashToken(store.get(cookieName)!.value) : null;
 
-  const [sessionsResult, mfaResult, passkeys, trustedDevices] = await Promise.all([
-    query<{
-      id: string; tokenHash: string; clientType: string | null; deviceName: string | null;
-      lastUserAgent: string | null; lastSeenAt: string | null; createdAt: string;
-    }>(
-      `SELECT id, token_hash AS "tokenHash", client_type AS "clientType",
-              device_name AS "deviceName", last_user_agent AS "lastUserAgent",
-              last_seen_at AS "lastSeenAt", created_at AS "createdAt"
-       FROM sessions
-       WHERE user_id=$1 AND revoked_at IS NULL AND expires_at > now()
-       ORDER BY last_seen_at DESC NULLS LAST`,
-      [userId],
-    ),
+  const [sessions, mfaResult, passkeys, trustedDevices, contact] = await Promise.all([
+    listSignedInDevices(userId, currentTokenHash),
     query<{ methodType: string; enabled: boolean }>(
       `SELECT method_type AS "methodType", enabled FROM mfa_methods WHERE user_id=$1`,
       [userId],
     ),
     listPasskeys(userId).catch(() => [] as Awaited<ReturnType<typeof listPasskeys>>),
     listTrustedDevices(userId).catch(() => [] as Awaited<ReturnType<typeof listTrustedDevices>>),
+    getContactState(userId),
   ]);
-
-  const sessions = sessionsResult.rows;
   const hasMfa = mfaResult.rows.some(m => m.enabled);
 
   return (
@@ -61,7 +53,7 @@ export default async function SecuritySettings() {
           <div>
             <span className="eyebrow">حساب کاربری · امنیت</span>
             <h1>امنیت حساب</h1>
-            <p>رمز عبور، MFA، Passkey، نشست‌های فعال و دستگاه‌های مورد اعتماد.</p>
+            <p>رمز عبور، MFA، Passkey، دستگاه‌های واردشده و دستگاه‌های مورد اعتماد. هر ورود پس از ۷ روز بی‌استفادگی و حداکثر ۳۰ روز پس از ورود بسته می‌شود.</p>
           </div>
           <Link className="button secondary" href="/settings">
             <ArrowRight size={15} />
@@ -120,10 +112,10 @@ export default async function SecuritySettings() {
                 >
                   PASSWORD
                 </span>
-                <h2>تغییر رمز عبور</h2>
+                <h2>{contact.has_password ? 'تغییر رمز عبور' : 'ساخت رمز عبور'}</h2>
               </div>
             </div>
-            <PasswordForm />
+            <PasswordForm hasPassword={contact.has_password} phoneVerified={contact.phone_verified} />
           </article>
 
           {/* MFA */}
@@ -268,7 +260,7 @@ export default async function SecuritySettings() {
                 >
                   ACTIVE SESSIONS
                 </span>
-                <h2>نشست‌های فعال</h2>
+                <h2>دستگاه‌های واردشده</h2>
               </div>
               <span className="status-pill info" style={{ fontSize: 11 }}>
                 {sessions.length} نشست
@@ -276,23 +268,23 @@ export default async function SecuritySettings() {
             </div>
             <SessionManager
               sessions={sessions.map(s => {
-                const isCurrent = s.tokenHash === currentTokenHash;
                 const ua = s.lastUserAgent ?? '';
                 let label = s.deviceName ?? '';
-                if (!label) {
-                  if (/iPhone|iPad/.test(ua)) label = 'Safari — iOS';
+                if (!label || label === 'ZOHALPAY Mobile') {
+                  if (s.clientType === 'IOS') label = 'اپ زُحل پی — iOS';
+                  else if (s.clientType === 'ANDROID') label = 'اپ زُحل پی — Android';
+                  else if (/iPhone|iPad/.test(ua)) label = 'Safari — iOS';
                   else if (/Android/.test(ua)) label = 'Chrome — Android';
-                  else if (/Chrome/.test(ua)) label = 'Chrome — Desktop';
-                  else if (/Firefox/.test(ua)) label = 'Firefox — Desktop';
-                  else if (/Safari/.test(ua)) label = 'Safari — Desktop';
-                  else if (s.clientType === 'IOS') label = 'iOS App';
-                  else if (s.clientType === 'ANDROID') label = 'Android App';
-                  else label = 'مرورگر وب';
+                  else label = label || 'مرورگر وب';
                 }
-                const lastSeen = s.lastSeenAt
-                  ? new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(s.lastSeenAt))
-                  : new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(new Date(s.createdAt));
-                return { ...s, isCurrent, label, lastSeen };
+                const fmt = (d: string, time = true) => new Intl.DateTimeFormat('fa-IR', time ? { dateStyle: 'medium', timeStyle: 'short' } : { dateStyle: 'medium' }).format(new Date(d));
+                return {
+                  id: s.id, clientType: s.clientType, isCurrent: s.current, label,
+                  method: METHOD_LABEL[s.authMethod ?? ''] ?? null,
+                  lastSeen: fmt(s.lastSeenAt ?? s.createdAt),
+                  // The earlier of the idle and the absolute limit.
+                  expires: fmt(new Date(Math.min(new Date(s.expiresAt).getTime(), new Date(s.absoluteExpiresAt).getTime())).toISOString(), false),
+                };
               })}
             />
           </article>

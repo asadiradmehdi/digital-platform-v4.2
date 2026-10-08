@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
     // The inbox spans workspaces: read it under the user's own scope (notifications_user_read, 0032).
     const result = await withUserTransaction(userId, client => client.query(`
       SELECT id, notification_type AS "type", payload->>'title' AS title,
+             payload->>'body' AS body, payload->>'link' AS link,
              (read_at IS NOT NULL) AS read,
              read_at AS "readAt",
              created_at AS "createdAt"
