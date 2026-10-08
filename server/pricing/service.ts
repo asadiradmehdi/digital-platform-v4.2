@@ -35,6 +35,7 @@ export async function refreshPricing(provider: FxProvider, baseCurrencies = ['US
       for (const rule of rules.rows) {
         const finalAmount = calculateSellPriceMinor({
           baseAmountMinor: BigInt(rule.baseAmountMinor),
+          baseCurrency: rule.baseCurrency,
           rateNumerator: rate.numerator,
           rateDenominator: rate.denominator,
           marginBps: rule.marginBps,
