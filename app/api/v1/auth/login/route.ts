@@ -22,7 +22,8 @@ export async function POST(request: NextRequest) {
     const body = isForm
       ? Object.fromEntries((await request.formData()).entries())
       : await request.json() as Record<string, unknown>;
-    const identifier = requireString(body.identifier, 'identifier', 3, 320);
+    // The web form posts `email`; API clients send `identifier` (email or phone).
+    const identifier = requireString(body.identifier ?? body.email, 'identifier', 3, 320);
     const password = requireString(body.password, 'password', 12, 200);
     const r = await query<{ id: string; credentialHash: string }>(
       `SELECT u.id, uc.credential_hash AS "credentialHash"
