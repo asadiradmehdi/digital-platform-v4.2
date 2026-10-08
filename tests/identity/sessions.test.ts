@@ -15,6 +15,18 @@ beforeEach(() => vi.clearAllMocks());
 // ─── createSession ────────────────────────────────────────────────────────────
 
 describe('createSession', () => {
+  // Regression: mobile sign-in passed the 'unknown' client fingerprint into the inet column,
+  // so every app login failed with 500 when TRUST_PROXY is off.
+  it('stores a non-IP client fingerprint as NULL and keeps real IPs', async () => {
+    mockQuery.mockResolvedValue({ rows: [], rowCount: 1 } as never);
+    await createSession('user-1', 60, { clientType: 'ANDROID', lastIp: 'unknown' });
+    await createSession('user-1', 60, { clientType: 'ANDROID', lastIp: '203.0.113.7' });
+    await createSession('user-1', 60, { clientType: 'IOS', lastIp: '2001:db8::1' });
+    expect((mockQuery.mock.calls[0][1] as unknown[])[7]).toBeNull();
+    expect((mockQuery.mock.calls[1][1] as unknown[])[7]).toBe('203.0.113.7');
+    expect((mockQuery.mock.calls[2][1] as unknown[])[7]).toBe('2001:db8::1');
+  });
+
   it('inserts a session row and returns a raw token string', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
     const token = await createSession('user-1');

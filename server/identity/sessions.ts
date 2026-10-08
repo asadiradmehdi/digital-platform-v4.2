@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
+import { isIP } from 'node:net';
 import { query } from '../core/db';
 const hash = (token: string) => createHash('sha256').update(token).digest('hex');
 const DEFAULT_SESSION_TTL_SECONDS = Number(process.env.SESSION_TTL_SECONDS || 60 * 60 * 24 * 30);
@@ -12,12 +13,16 @@ type SessionClientMetadata = {
   lastUserAgent?: string;
 };
 
+// sessions.last_ip is `inet`: without TRUST_PROXY the client fingerprint is the placeholder 'unknown',
+// which Postgres rejects, so anything that is not a literal IP is stored as NULL.
+const inetOrNull = (ip?: string) => (ip && isIP(ip) ? ip : null);
+
 export async function createSession(userId: string, ttlSeconds = DEFAULT_SESSION_TTL_SECONDS, metadata: SessionClientMetadata = {}) {
   const raw = randomBytes(32).toString('base64url');
   await query(
     `INSERT INTO sessions(user_id, token_hash, expires_at, client_type, device_id_hash, device_name, platform_version, last_ip, last_user_agent, last_seen_at)
      VALUES($1,$2,now()+($3 || ' seconds')::interval,$4,$5,$6,$7,$8,$9,now())`,
-    [userId, hash(raw), ttlSeconds, metadata.clientType ?? 'WEB', metadata.deviceIdHash ?? null, metadata.deviceName ?? null, metadata.platformVersion ?? null, metadata.lastIp ?? null, metadata.lastUserAgent ?? null]
+    [userId, hash(raw), ttlSeconds, metadata.clientType ?? 'WEB', metadata.deviceIdHash ?? null, metadata.deviceName ?? null, metadata.platformVersion ?? null, inetOrNull(metadata.lastIp), metadata.lastUserAgent ?? null]
   );
   return raw;
 }
