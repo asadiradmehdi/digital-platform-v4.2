@@ -136,7 +136,7 @@ export const REFERRAL_TOPUP_EVENT = 'referral.topup_settled';
  * Call inside the transaction that credits a VERIFIED gateway top-up (never for gift, refund or admin
  * credit). The reward work itself runs from the outbox, so the top-up commit never waits on it.
  */
-export async function enqueueReferralTopup(client: PoolClient, input: { workspaceId: string; paymentId: string; amountMinor: bigint; currency: string }) {
+export async function enqueueReferralTopup(client: Pick<PoolClient, 'query'>, input: { workspaceId: string; paymentId: string; amountMinor: bigint; currency: string }) {
   await client.query(
     `INSERT INTO outbox_events(aggregate_type, aggregate_id, event_type, payload) VALUES('payment',$1,$2,$3)`,
     [input.paymentId, REFERRAL_TOPUP_EVENT, { workspaceId: input.workspaceId, paymentId: input.paymentId, amountMinor: input.amountMinor.toString(), currency: input.currency.trim() }],

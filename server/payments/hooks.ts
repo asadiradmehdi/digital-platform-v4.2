@@ -1,4 +1,5 @@
 import type { PoolClient } from 'pg';
+import { enqueueReferralTopup } from '../referrals/service';
 
 export type VerifiedGatewayPayment = {
   workspaceId: string;
@@ -11,11 +12,9 @@ export type VerifiedGatewayPayment = {
 /**
  * Called inside the transaction that records a gateway-verified payment as PAID (wallet top-up or
  * direct order/checkout payment), exactly once per payment. Wallet-balance payments never call it.
- * Intentionally a no-op for now; the referral program wires its top-up bonus in here
- * (enqueueReferralTopup). It runs on the caller's tenant transaction, so whatever it writes commits
- * or rolls back together with the payment.
+ * Queues the «دعوت از دوستان» reward work on the outbox. It runs on the caller's tenant transaction,
+ * so the event commits or rolls back together with the payment.
  */
 export async function onVerifiedGatewayPayment(client: Pick<PoolClient, 'query'>, input: VerifiedGatewayPayment): Promise<void> {
-  void client;
-  void input;
+  await enqueueReferralTopup(client, input);
 }
