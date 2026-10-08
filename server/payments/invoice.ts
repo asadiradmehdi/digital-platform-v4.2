@@ -1,4 +1,4 @@
-import { withWorkspaceTransaction, query } from '../core/db';
+import { withWorkspaceTransaction } from '../core/db';
 import { AppError } from '../core/errors';
 
 /**
@@ -77,30 +77,33 @@ async function allocateInvoiceNumber(client: { query: (...args: unknown[]) => Pr
 
 /** Returns all invoices for a workspace. */
 export async function listInvoices(workspaceId: string) {
-  const r = await query(
+  const r = await withWorkspaceTransaction(workspaceId, undefined, client => client.query(
     `SELECT i.id, i.invoice_number, i.currency, i.subtotal_minor, i.discount_minor, i.total_minor,
             i.status, i.order_id, i.payment_id, i.issued_at, i.created_at
      FROM invoices i
      WHERE i.workspace_id=$1
      ORDER BY i.created_at DESC`,
     [workspaceId]
-  );
+  ));
   return r.rows;
 }
 
 /** Returns a single invoice with line items. */
 export async function getInvoice(workspaceId: string, invoiceId: string) {
-  const inv = await query(
-    `SELECT id, invoice_number, currency, subtotal_minor, discount_minor, total_minor,
-            status, order_id, payment_id, issued_at, created_at, metadata
-     FROM invoices WHERE id=$1 AND workspace_id=$2`,
-    [invoiceId, workspaceId]
-  );
-  if (!inv.rows[0]) throw new AppError('NOT_FOUND', 'Invoice not found.');
-  const items = await query(
-    `SELECT id, description, quantity, unit_price_minor, total_minor, currency
-     FROM invoice_items WHERE invoice_id=$1`,
-    [invoiceId]
-  );
-  return { ...inv.rows[0], items: items.rows };
+  return withWorkspaceTransaction(workspaceId, undefined, async client => {
+    const inv = await client.query(
+      `SELECT id, invoice_number, currency, subtotal_minor, discount_minor, total_minor,
+              status, order_id, payment_id, issued_at, created_at, metadata
+       FROM invoices WHERE id=$1 AND workspace_id=$2`,
+      [invoiceId, workspaceId]
+    );
+    if (!inv.rows[0]) throw new AppError('NOT_FOUND', 'Invoice not found.');
+    // invoice_items has no workspace column; it is read only after the RLS-checked invoice row above.
+    const items = await client.query(
+      `SELECT id, description, quantity, unit_price_minor, total_minor, currency
+       FROM invoice_items WHERE invoice_id=$1`,
+      [invoiceId]
+    );
+    return { ...inv.rows[0], items: items.rows };
+  });
 }

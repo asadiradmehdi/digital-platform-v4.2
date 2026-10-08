@@ -1,9 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../server/core/db', () => ({
-  query: vi.fn(),
-  withWorkspaceTransaction: vi.fn(async (_wid: string, _opts: unknown, fn: Function) => fn({ query: vi.fn() })),
-}));
+vi.mock('../../server/core/db', () => {
+  const query = vi.fn();
+  return {
+    query,
+    withWorkspaceTransaction: vi.fn(async (_wid: string, _opts: unknown, fn: Function) => fn({ query: vi.fn() })),
+    withTenantTransaction: vi.fn(async (_wid: string, _opts: unknown, fn: Function) => fn({ query })),
+  };
+});
 vi.mock('../../server/core/idempotency', () => ({
   requireIdempotencyKey: vi.fn(),
 }));
@@ -87,9 +91,12 @@ describe('dispatchPaymentWebhook', () => {
   });
 
   it('skips already-paid payments', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'pay-1', workspace_id: 'ws-1', order_id: null, amount_minor: '5000', currency: 'IRR', status: 'PAID' }], rowCount: 1 } as never);
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ payment_id: 'pay-1', workspace_id: 'ws-1' }], rowCount: 1 } as never)
+      .mockResolvedValueOnce({ rows: [{ id: 'pay-1', workspace_id: 'ws-1', order_id: null, amount_minor: '5000', currency: 'IRR', status: 'PAID' }], rowCount: 1 } as never);
     await dispatchPaymentWebhook({ source: 'acme', eventType: 'payment.paid', payload: { gateway_reference: 'gw-ref-1' }, correlationId: 'c3' });
-    // Only one query (the lookup), no markPaymentPaid transaction.
-    expect(mockQuery).toHaveBeenCalledTimes(1);
+    // Only the two lookups (locate + tenant read), no markPaymentPaid transaction.
+    expect(mockQuery).toHaveBeenCalledTimes(2);
+    expect(mockTx).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,4 @@
-import { query } from '../core/db';
+import { query, withTenantTransaction } from '../core/db';
 import { markPaymentPaid } from './service';
 import { generateInvoice } from './invoice';
 
@@ -25,12 +25,21 @@ export async function dispatchPaymentWebhook(input: {
   const gatewayReference = extractGatewayReference(input.payload);
   if (!gatewayReference) return;
 
-  // Look up the payment by gateway reference.
-  const r = await query<{ id: string; workspace_id: string; order_id: string | null; amount_minor: string; currency: string; status: string }>(
-    `SELECT id, workspace_id, order_id, amount_minor, currency, status
-     FROM payments WHERE gateway_reference=$1`,
+  // The workspace is unknown until the payment is found: system_find_payment_by_gateway_reference()
+  // (migration 0031) returns only (payment_id, workspace_id). An ambiguous reference is refused rather
+  // than guessed. The payment itself is then read inside its own workspace's RLS context.
+  const located = await query<{ payment_id: string; workspace_id: string }>(
+    `SELECT payment_id, workspace_id FROM system_find_payment_by_gateway_reference($1)`,
     [gatewayReference]
   );
+  if (located.rows.length !== 1) return;
+  const { payment_id: paymentId, workspace_id: workspaceId } = located.rows[0];
+
+  const r = await withTenantTransaction(workspaceId, undefined, client => client.query<{ id: string; workspace_id: string; order_id: string | null; amount_minor: string; currency: string; status: string }>(
+    `SELECT id, workspace_id, order_id, amount_minor, currency, status
+     FROM payments WHERE id=$1 AND workspace_id=$2`,
+    [paymentId, workspaceId]
+  ));
   const payment = r.rows[0];
   if (!payment || payment.status === 'PAID') return;
 

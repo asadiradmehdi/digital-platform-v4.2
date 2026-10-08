@@ -1,4 +1,4 @@
-import { query } from '../core/db';
+import { withTenantTransaction } from '../core/db';
 import { markPaymentPaid } from './service';
 import type { PaymentGateway } from './service';
 import { logger } from '../observability/logger';
@@ -18,7 +18,7 @@ export async function reconcileUnconfirmedPayments(
   const staleSince = options.staleSinceMinutes ?? 15;
   const limit = options.limit ?? 50;
 
-  const r = await query<{ id: string; gateway_reference: string | null; amount_minor: string; currency: string }>(
+  const r = await withTenantTransaction(workspaceId, undefined, client => client.query<{ id: string; gateway_reference: string | null; amount_minor: string; currency: string }>(
     `SELECT id, gateway_reference, amount_minor::text, currency
      FROM payments
      WHERE workspace_id=$1
@@ -27,7 +27,7 @@ export async function reconcileUnconfirmedPayments(
        AND created_at <= now() - ($3 || ' minutes')::interval
      LIMIT $4`,
     [workspaceId, gateway.name, staleSince.toString(), limit]
-  );
+  ));
 
   const result: ReconciliationResult = { checked: r.rows.length, reconciled: 0, failed: 0, errors: [] };
 

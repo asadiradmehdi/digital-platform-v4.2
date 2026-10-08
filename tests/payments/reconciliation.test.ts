@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../server/core/db', () => ({ query: vi.fn(), withWorkspaceTransaction: vi.fn() }));
+vi.mock('../../server/core/db', () => ({ query: vi.fn(), withWorkspaceTransaction: vi.fn(), withTenantTransaction: vi.fn() }));
 vi.mock('../../server/observability/logger', () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }));
 
-import { query, withWorkspaceTransaction } from '../../server/core/db';
+import { query, withWorkspaceTransaction, withTenantTransaction } from '../../server/core/db';
 import { reconcileUnconfirmedPayments } from '../../server/payments/reconciliation';
 import type { PaymentGateway } from '../../server/payments/service';
 
@@ -20,6 +20,7 @@ const mockGateway: PaymentGateway = {
 beforeEach(() => {
   vi.clearAllMocks();
   mockTransaction.mockImplementation(async (_ws, _opts, fn) => fn({ query: mockQuery } as never));
+  vi.mocked(withTenantTransaction).mockImplementation(async (_ws, _opts, fn) => fn({ query: mockQuery } as never));
 });
 
 describe('reconcileUnconfirmedPayments', () => {
@@ -75,5 +76,15 @@ describe('reconcileUnconfirmedPayments', () => {
     const result = await reconcileUnconfirmedPayments(mockGateway, 'ws-1');
     expect(result.failed).toBe(1);
     expect(result.errors[0]).toContain('Gateway timeout');
+  });
+});
+
+describe('reconciliation RLS context', () => {
+  // Regression: payments has FORCE RLS; the stale-payment scan used the plain pool and always found 0 rows.
+  it('scans stale payments inside the workspace transaction', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as never);
+    await reconcileUnconfirmedPayments(mockGateway, 'ws-r');
+    expect(vi.mocked(withTenantTransaction)).toHaveBeenCalledWith('ws-r', undefined, expect.any(Function));
+    expect(mockQuery.mock.calls[0][1]).toEqual(['ws-r', 'mock', '15', 50]);
   });
 });
