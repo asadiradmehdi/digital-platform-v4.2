@@ -84,3 +84,15 @@ describe('getModelPrice', () => {
     expect(price).toBeNull();
   });
 });
+
+describe('getModelPrice ordering column', () => {
+  // Regression: prices were ordered by a non-existent created_at column, so every lookup failed with
+  // "column created_at does not exist" (42703) and AI generation could never be priced.
+  it('orders price rows by effective_from', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] } as never);
+    await getModelPrice('model-uuid-1');
+    const [sql] = mockQuery.mock.calls[0] as [string, unknown[]];
+    expect(sql).toContain('ORDER BY effective_from DESC');
+    expect(sql).not.toContain('created_at');
+  });
+});

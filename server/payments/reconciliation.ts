@@ -23,7 +23,7 @@ export async function reconcileUnconfirmedPayments(
      FROM payments
      WHERE workspace_id=$1
        AND gateway=$2
-       AND status IN ('PENDING','PROCESSING')
+       AND status IN ('PENDING','AUTHORIZED')
        AND created_at <= now() - ($3 || ' minutes')::interval
      LIMIT $4`,
     [workspaceId, gateway.name, staleSince.toString(), limit]

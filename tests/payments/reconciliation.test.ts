@@ -88,3 +88,15 @@ describe('reconciliation RLS context', () => {
     expect(mockQuery.mock.calls[0][1]).toEqual(['ws-r', 'mock', '15', 50]);
   });
 });
+
+describe('reconciliation status filter', () => {
+  // Regression: the scan filtered on status 'PROCESSING', which is not a payment_status value, so
+  // PostgreSQL rejected every reconciliation run ("invalid input value for enum payment_status").
+  it('only uses real non-final payment_status values', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as never);
+    await reconcileUnconfirmedPayments(mockGateway, 'ws-1');
+    const [sql] = mockQuery.mock.calls[0] as [string, unknown[]];
+    expect(sql).toContain("status IN ('PENDING','AUTHORIZED')");
+    expect(sql).not.toContain('PROCESSING');
+  });
+});

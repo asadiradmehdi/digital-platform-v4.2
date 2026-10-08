@@ -53,7 +53,7 @@ export async function syncModelCatalog(models: ModelDefinition[] = KNOWN_MODELS)
 
 export async function getModelPrice(modelId: string): Promise<{ inputPriceMinorPer1K: bigint; outputPriceMinorPer1K: bigint; currency: string } | null> {
   const r = await query<{ input_price_minor: string; output_price_minor: string; currency: string }>(
-    `SELECT input_price_minor, output_price_minor, currency FROM ai_model_prices WHERE ai_model_id=$1 ORDER BY created_at DESC LIMIT 1`,
+    `SELECT input_price_minor, output_price_minor, currency FROM ai_model_prices WHERE ai_model_id=$1 ORDER BY effective_from DESC LIMIT 1`,
     [modelId]
   );
   if (!r.rows[0]) return null;
