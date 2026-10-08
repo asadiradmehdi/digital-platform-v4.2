@@ -163,7 +163,7 @@ export type AiModelSummary = { id: string; slug: string; provider: string; conte
 // ---------------------------------------------------------------------------
 // Notifications
 // ---------------------------------------------------------------------------
-export type NotificationSummary = { id: string; type: string; title: string; read: boolean; createdAt: string };
+export type NotificationSummary = { id: string; type: string; title: string; body?: string | null; link?: string | null; read: boolean; createdAt: string };
 
 // ---------------------------------------------------------------------------
 // Invoices
