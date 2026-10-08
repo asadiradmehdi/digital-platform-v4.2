@@ -31,11 +31,19 @@ export type AppOverview = {
   mfa: boolean;
 };
 
+export type AppReferral = {
+  code: string; link: string; enabled: boolean;
+  sharePercent: number; nextSharePercent: number | null; friendsToNext: number | null; welcomePercent: number;
+  invited: number; active: number; earnedToman: number; pendingToman: number;
+  friends: Array<{ name: string; joinedAt: string; active: boolean }>;
+};
+
 const V = '/api/v1';
 
 export const appApi = {
   catalog: () => apiFetch<AppCatalog>(`${V}/app/catalog`),
   overview: () => apiFetch<AppOverview>(`${V}/app/overview`),
+  referral: () => apiFetch<AppReferral>(`${V}/app/referral`),
   orders: (workspaceId: string, page: number) =>
     apiFetch<{ items: AppOrderCard[]; page: number; hasMore: boolean }>(`${V}/app/orders?workspaceId=${encodeURIComponent(workspaceId)}&page=${page}`),
   /** Creates the order and pays it from the wallet in one server transaction flow. */
