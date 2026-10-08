@@ -1,6 +1,7 @@
 import './fonts';
 import './globals.css';
 import './zohal.css';
+import './zohal-site.css';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { connection } from 'next/server';
