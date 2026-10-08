@@ -24,6 +24,7 @@ export default async function Account() {
   const contact = viewer.phone ?? viewer.email ?? '';
 
   const rows: Array<{ href: string; icon: IconName; label: string; note?: string; tag?: boolean }> = [
+    { href: '/invite', icon: 'gift', label: 'دعوت از دوستان', note: 'از هر خرید دوستانتان سهم بگیرید' },
     { href: '/settings/profile', icon: 'userCard', label: 'اطلاعات حساب', note: 'نام، شماره و ایمیل' },
     { href: '/settings/security', icon: 'shield', label: 'امنیت و ورود', note: mfa ? 'ورود دومرحله‌ای فعال' : 'فعال‌سازی ورود دومرحله‌ای', tag: mfa },
     { href: '/settings/notifications', icon: 'bell', label: 'اعلان‌ها', note: 'وضعیت سفارش و پیشنهادها' },

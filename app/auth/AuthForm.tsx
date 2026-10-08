@@ -2,14 +2,17 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, ArrowLeft, Loader2, ShieldCheck } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Gift, Loader2, ShieldCheck } from 'lucide-react';
 import { Wordmark } from '../../components/zp/brand';
 import { apiErrorMessage } from '../../lib/api-error';
 
 type Mode = 'login' | 'register';
 type Status = 'idle' | 'loading' | 'error';
 
-export default function AuthForm({ initialMode = 'login' }: { initialMode?: Mode }) {
+export type Invite = { code: string; welcomePercent: number };
+const faNum = (n: number) => n.toLocaleString('fa-IR');
+
+export default function AuthForm({ initialMode = 'login', invite = null }: { initialMode?: Mode; invite?: Invite | null }) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>(initialMode);
   const [status, setStatus] = useState<Status>('idle');
@@ -70,8 +73,19 @@ export default function AuthForm({ initialMode = 'login' }: { initialMode?: Mode
           </div>
         )}
 
+        {mode === 'register' && invite && invite.welcomePercent > 0 && (
+          <div className="auth-invite" role="note">
+            <Gift size={18} aria-hidden />
+            <div>
+              <b>دعوت‌نامه‌ی ویژه</b>
+              <span>با اولین خرید یا شارژ، {faNum(invite.welcomePercent)}٪ اعتبار هدیه می‌گیرید.</span>
+            </div>
+          </div>
+        )}
+
         {/* Form */}
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
+          {mode === 'register' && invite && <input type="hidden" name="referralCode" value={invite.code} />}
           {mode === 'register' && (
             <label>
               نام و نام خانوادگی
@@ -111,6 +125,13 @@ export default function AuthForm({ initialMode = 'login' }: { initialMode?: Mode
               </span>
             )}
           </label>
+
+          {mode === 'register' && !invite && (
+            <label>
+              کد دعوت <span style={{ color: 'var(--subtle)', fontWeight: 400 }}>(اختیاری)</span>
+              <input name="referralCode" autoComplete="off" dir="ltr" maxLength={12} style={{ textTransform: 'uppercase', letterSpacing: 2 }} />
+            </label>
+          )}
 
           {mode === 'login' && (
             <div style={{ display: 'flex', justifyContent: 'flex-start' }}>

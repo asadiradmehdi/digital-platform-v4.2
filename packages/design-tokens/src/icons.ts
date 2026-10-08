@@ -54,6 +54,8 @@ export const ICONS = {
   "clock": "<circle class=\"d\" cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"9\"/><path stroke-width=\"2.2\" d=\"M12 7v5l3.2 2\"/>",
   "rise": "<path class=\"d\" d=\"M3 20.5h18V9l-6 5-4-4-8 7z\"/><path stroke-width=\"2.2\" d=\"M3 16.5l8-7 4 4 6.5-6.5M16 7h5.5v5.5\"/>",
   "story": "<circle cx=\"12\" cy=\"12\" r=\"9.5\" stroke-dasharray=\"4.2 2.4\"/><circle class=\"f\" cx=\"12\" cy=\"12\" r=\"5.5\"/>",
+  "friends": "<circle class=\"f\" cx=\"9\" cy=\"8\" r=\"3.6\"/><path class=\"d\" d=\"M2.5 20c.7-3.9 3.2-6 6.5-6s5.8 2.1 6.5 6z\"/><path d=\"M2.5 20c.7-3.9 3.2-6 6.5-6s5.8 2.1 6.5 6\"/><path d=\"M15.5 4.7a3.4 3.4 0 0 1 0 6.6M17.5 14.3c2.2.6 3.6 2.6 4 5.7\"/>",
+  "copy": "<rect class=\"d\" x=\"8.5\" y=\"8.5\" width=\"12\" height=\"12\" rx=\"2.5\"/><rect x=\"8.5\" y=\"8.5\" width=\"12\" height=\"12\" rx=\"2.5\"/><path d=\"M15.5 5.5V5A1.5 1.5 0 0 0 14 3.5H5A1.5 1.5 0 0 0 3.5 5v9A1.5 1.5 0 0 0 5 15.5h.5\"/>",
 } as const;
 
 export type IconName = keyof typeof ICONS;

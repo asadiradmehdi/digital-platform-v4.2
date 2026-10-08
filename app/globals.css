@@ -515,6 +515,11 @@ h1,h2,h3,h4{letter-spacing:-.02em;line-height:1.25}
   border-radius:var(--radius-sm);padding:12px 14px;margin-top:14px;font-size:12px;color:var(--danger);line-height:1.8;
 }
 .auth-error svg{flex:none;margin-top:1px}
+.auth-invite{display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px 14px;border-radius:var(--radius-md);
+  background:linear-gradient(135deg,var(--gold-0),#fff7e3);border:1px solid color-mix(in srgb,var(--gold-2) 45%,transparent);color:var(--gold-4)}
+.auth-invite svg{flex:none;color:var(--gold-3)}
+.auth-invite b{display:block;font-size:13px;color:var(--ink)}
+.auth-invite span{font-size:12px;line-height:1.8}
 .auth-divider{display:flex;align-items:center;gap:8px;margin-top:18px;font-size:12px;color:var(--muted)}
 .auth-divider::before,.auth-divider::after{content:"";flex:1;height:1px;background:var(--line)}
 .auth-switch{background:none;color:var(--brand);font-size:12px;font-weight:700;text-decoration:underline;text-underline-offset:3px;padding:0}
