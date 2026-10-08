@@ -304,23 +304,17 @@ export default async function BillingSettings() {
                         <td>{date}</td>
                         <td>{formatMoney(inv.totalMinor, inv.currency)}</td>
                         <td>
-                          <span className={`status-pill ${inv.status === 'PAID' ? 'success' : 'warning'}`}>
+                          <span className={`status-pill ${inv.status === 'PAID' || inv.status === 'ISSUED' ? 'success' : 'warning'}`}>
                             {statusLabel(inv.status)}
                           </span>
                         </td>
                         <td style={{ display: 'flex', gap: 8 }}>
-                          <button
-                            aria-label="دانلود"
-                            style={{ background: 'none', color: 'var(--subtle)' }}
-                          >
+                          <Link href={`/invoices/${inv.id}`} aria-label="دانلود PDF" style={{ color: 'var(--subtle)' }}>
                             <Download size={14} />
-                          </button>
-                          <button
-                            aria-label="مشاهده"
-                            style={{ background: 'none', color: 'var(--subtle)' }}
-                          >
+                          </Link>
+                          <Link href={`/invoices/${inv.id}`} aria-label="مشاهده" style={{ color: 'var(--subtle)' }}>
                             <ExternalLink size={14} />
-                          </button>
+                          </Link>
                         </td>
                       </tr>
                     );
