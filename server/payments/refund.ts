@@ -103,6 +103,10 @@ export async function refundOrder(input: {
       await writeAudit({ workspaceId: input.workspaceId, actorUserId: input.actorUserId, action: 'order.cancelled', entityType: 'order', entityId: o.id, metadata: { from: o.status, refunded: false } }, client);
       return { done: true as const, outcome: { orderId: o.id, orderStatus: 'CANCELLED', refund: null } };
     }
+    if (input.mode === 'CANCEL' && o.status === 'IN_PROGRESS') {
+      // Team-fulfilled work (design, automation, AI content) has started: refuse rather than refund.
+      throw new AppError('CONFLICT', 'کار روی این سفارش شروع شده است و دیگر قابل لغو نیست. برای پیگیری با پشتیبانی در تماس باشید.', { status: o.status });
+    }
     if (input.mode === 'CANCEL' && !CANCELLABLE_PAID.includes(o.status)) {
       throw new AppError('CONFLICT', 'این سفارش به مرحله‌ی اجرا رسیده است و دیگر قابل لغو نیست.', { status: o.status });
     }

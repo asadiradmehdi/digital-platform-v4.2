@@ -6,12 +6,15 @@ import { ZIcon, type IconName } from '../../../components/zp/ZIcon';
 import { BrandTile, Ornament, Tile } from '../../../components/zp/brand';
 import type { BrandLogo } from '../../../packages/design-tokens/src/brand-logos';
 import { apiErrorMessage } from '../../../lib/api-error';
+import type { BriefSpec, OrderFact, TargetSpec } from '../../../lib/catalog-ui';
 import { formatQuantityWords, formatTomanNumber, magnitudeParts, orderCode } from '../../../lib/format';
 
 export type PickerService = {
   id: string; slug: string; name: string; note: string; icon: IconName; brand?: BrandLogo; unit: string;
   unitPriceToman: number; quantities: number[];
-  target: { label: string; placeholder: string; ltr: boolean };
+  target: TargetSpec;
+  /** Team-fulfilled services ask for a written brief and show their delivery terms. */
+  brief: BriefSpec | null; facts: OrderFact[]; refund: string;
 };
 
 const PER_PAGE = 9;
@@ -24,6 +27,7 @@ export function PackagePicker({ service, workspaceId, walletToman }: { service: 
   const [qty, setQty] = useState<number | null>(null);
   const [sheet, setSheet] = useState(false);
   const [target, setTarget] = useState('');
+  const [brief, setBrief] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ id: string; label: string; amount: number } | null>(null);
@@ -56,14 +60,16 @@ export function PackagePicker({ service, workspaceId, walletToman }: { service: 
   const pay = async () => {
     if (!qty || !workspaceId) return;
     const t = target.trim();
-    if (!t) { setError(`${service.target.label} را وارد کنید.`); return; }
+    const b = brief.trim();
+    if (service.target.required && !t) { setError(`${service.target.label} را وارد کنید.`); return; }
+    if (service.brief && b.length < service.brief.min) { setError(`${service.brief.label} را کامل‌تر بنویسید.`); return; }
     setBusy(true); setError(null);
     try {
       const res = await fetch('/api/v1/orders', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idemKey.current ?? crypto.randomUUID() },
-        body: JSON.stringify({ workspaceId, serviceId: service.id, quantity: qty, parameters: { target: t }, paymentMethod: method }),
+        body: JSON.stringify({ workspaceId, serviceId: service.id, quantity: qty, parameters: service.brief ? { ...(t ? { target: t } : {}), brief: b } : { target: t }, paymentMethod: method }),
       });
       if (!res.ok) throw new Error(await apiErrorMessage(res, method === 'gateway' ? 'اتصال به درگاه پرداخت انجام نشد. دوباره تلاش کنید.' : 'ثبت سفارش انجام نشد. دوباره تلاش کنید.'));
       const body = await res.json() as { id?: string; payment?: { method?: string; checkoutUrl?: string } };
@@ -91,6 +97,12 @@ export function PackagePicker({ service, workspaceId, walletToman }: { service: 
         {service.brand ? <BrandTile brand={service.brand} size={52} /> : <Tile icon={service.icon} size={52} />}
         <div><h1 style={{ fontSize: 18 }}>{service.name}</h1><p>{service.note}</p></div>
       </div>
+
+      {service.facts.length > 0 && (
+        <ul className="zp-facts" aria-label="شرایط سرویس">
+          {service.facts.map(f => <li key={f.text}><ZIcon name={f.icon} />{f.text}</li>)}
+        </ul>
+      )}
 
       <div
         className={`zp-pk${service.quantities.length <= 4 ? " few" : ""}`}
@@ -145,8 +157,16 @@ export function PackagePicker({ service, workspaceId, walletToman }: { service: 
         <label className="zp-fld">
           {service.target.label}
           <input className={service.target.ltr ? 'ltr' : undefined} dir={service.target.ltr ? 'ltr' : 'rtl'} value={target}
-            onChange={e => setTarget(e.target.value)} placeholder={service.target.placeholder} autoComplete="off" maxLength={500} tabIndex={sheet ? 0 : -1} />
+            onChange={e => setTarget(e.target.value)} placeholder={service.target.placeholder} autoComplete="off" maxLength={500} tabIndex={sheet ? 0 : -1}
+            required={service.target.required} />
         </label>
+        {service.brief && (
+          <label className="zp-fld">
+            <span className="hd">{service.brief.label}<small aria-live="polite">{new Intl.NumberFormat('fa-IR').format(brief.length)} / {new Intl.NumberFormat('fa-IR').format(service.brief.max)}</small></span>
+            <textarea value={brief} onChange={e => setBrief(e.target.value)} placeholder={service.brief.placeholder} rows={3}
+              minLength={service.brief.min} maxLength={service.brief.max} required tabIndex={sheet ? 0 : -1} />
+          </label>
+        )}
         <div className="zp-sum">
           <div><span>مبلغ بسته</span><b>{formatTomanNumber(price)} تومان</b></div>
           <div><span>موجودی کیف پول</span><b className={short ? 'no' : 'ok'}>{walletToman == null ? '—' : `${formatTomanNumber(walletToman)} تومان`}</b></div>
@@ -163,7 +183,7 @@ export function PackagePicker({ service, workspaceId, walletToman }: { service: 
         <button type="button" className="zp-cta full zp-press" onClick={pay} disabled={busy || redirecting || !workspaceId || (method === 'wallet' && short)} tabIndex={sheet ? 0 : -1}>
           {redirecting ? 'در حال انتقال به درگاه…' : busy ? 'در حال ثبت…' : method === 'gateway' ? 'پرداخت آنلاین و ثبت سفارش' : 'پرداخت از کیف پول و ثبت سفارش'}
         </button>
-        <div className="zp-secure"><ZIcon name="shieldS" />{method === 'gateway' ? 'پرداخت امن با درگاه بانکی · ثبت سفارش پس از تأیید بانک' : 'پرداخت امن از کیف پول · بازگشت وجه در صورت لغو'}</div>
+        <div className="zp-secure"><ZIcon name="shieldS" />{method === 'gateway' ? 'پرداخت امن با درگاه بانکی · ثبت سفارش پس از تأیید بانک' : 'پرداخت امن از کیف پول'} · {service.refund}</div>
       </div>
 
       <div className={`zp-done${done ? ' on' : ''}`} role="status" aria-hidden={!done}>
@@ -173,7 +193,7 @@ export function PackagePicker({ service, workspaceId, walletToman }: { service: 
             <div className="zp-chk"><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#1d1404" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></div>
           </div>
           <h2>سفارش ثبت شد</h2>
-          <p>پرداخت انجام شد و سفارش در صف انجام است.</p>
+          <p>{service.brief ? 'پرداخت انجام شد و سفارش به تیم سپرده شد؛ پیشرفت را از صفحه‌ی سفارش ببینید.' : 'پرداخت انجام شد و سفارش در صف انجام است.'}</p>
           {done && (
             <div className="zp-receipt">
               <div><span>سرویس</span><b>{done.label}</b></div>

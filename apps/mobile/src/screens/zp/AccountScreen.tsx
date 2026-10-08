@@ -52,6 +52,8 @@ export function AccountScreen() {
             { icon: 'userCard', label: 'اطلاعات حساب', note: 'نام، شماره و ایمیل', href: '/settings' },
             { icon: 'shield', label: 'امنیت و ورود', note: o.mfa ? 'ورود دومرحله‌ای فعال' : 'فعال‌سازی ورود دومرحله‌ای', tag: o.mfa, href: '/security' },
             { icon: 'bell', label: 'اعلان‌ها', note: 'وضعیت سفارش و پیشنهادها', href: '/settings' },
+            { icon: 'chat', label: 'پشتیبانی', note: 'تیکت و تماس تلفنی', href: '/support' },
+            { icon: 'cert', label: 'مجوزها و نمادها', note: 'اینماد و ساماندهی', href: '/licenses' },
           ];
           return (
             <>

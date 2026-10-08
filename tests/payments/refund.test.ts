@@ -131,6 +131,13 @@ describe('refundOrder', () => {
     }
   });
 
+  it('refuses to cancel team work in progress with a Persian message and moves no money', async () => {
+    const { calls } = setup({ order: { id: 'o1', status: 'IN_PROGRESS' }, payment: walletPayment, refunded: '0', refundRowStatus: 'PENDING' });
+    await expect(refundOrder({ workspaceId: WS, orderId: 'o1', mode: 'CANCEL', idempotencyKey: KEY }))
+      .rejects.toMatchObject({ code: 'CONFLICT', message: expect.stringContaining('کار روی این سفارش شروع شده است') });
+    expect(calls.some(c => c.sql.includes('INSERT INTO refunds') || c.sql.includes('UPDATE orders SET status'))).toBe(false);
+  });
+
   it('cancels a queued, wallet-paid order to CANCELLED with a full refund', async () => {
     setup({ order: { id: 'o1', status: 'QUEUED' }, payment: walletPayment, refunded: '0', refundRowStatus: 'PENDING' });
     const out = await refundOrder({ workspaceId: WS, orderId: 'o1', mode: 'CANCEL', idempotencyKey: KEY });

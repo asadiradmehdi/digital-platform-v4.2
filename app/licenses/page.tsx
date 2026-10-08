@@ -6,8 +6,13 @@ import { Tile } from '../../components/zp/brand';
 import { ZIcon } from '../../components/zp/ZIcon';
 import { optionalViewer } from '../../server/account/page-context';
 import { licensesView } from '../../server/content/trust';
+import { metadataForPage } from '../../lib/seo/site';
 
-export const metadata: Metadata = { title: 'مجوزها و نمادها', description: 'مجوزها و نمادهای اعتماد زُحل پی.' };
+export const metadata: Metadata = metadataForPage({
+  title: 'مجوزها و نمادهای اعتماد',
+  description: 'مجوزها و نمادهای اعتماد زُحل پی (ZOHALPAY): اینماد، ساماندهی و عضویت صنفی، هرکدام با لینک استعلام از سایت رسمی صادرکننده.',
+  path: '/licenses',
+});
 
 export default async function LicensesPage() {
   const viewer = await optionalViewer();

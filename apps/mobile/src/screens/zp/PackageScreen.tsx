@@ -6,7 +6,7 @@ import Svg, { Ellipse, Path } from 'react-native-svg';
 import { appApi, errorText, newIdempotencyKey, siteUrl, type AppService } from '../../api/app';
 import { formatQuantityWords, formatTomanNumber, magnitudeParts } from '../../format';
 import { useRemote } from '../../hooks/useRemote';
-import { atLeft, C, F, back, card, fwd, right, row, shadow, tRight } from '../../zp/base';
+import { atLeft, C, F, back, card, faNum, fwd, right, row, shadow, tRight } from '../../zp/base';
 import { BrandTile, Enamel, Fill, Ornament, Tile } from '../../zp/brand';
 import { Icon } from '../../zp/Icon';
 import { SubScreen } from '../../zp/Shell';
@@ -55,6 +55,8 @@ function Picker({ service, workspaceId, walletToman, reload }: { service: AppSer
   const [qty, setQty] = useState<number | null>(null);
   const [sheet, setSheet] = useState(false);
   const [target, setTarget] = useState('');
+  const [brief, setBrief] = useState('');
+  const needsTarget = service.target.required !== false;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ id: string; label: string; amount: number } | null>(null);
@@ -89,10 +91,12 @@ function Picker({ service, workspaceId, walletToman, reload }: { service: AppSer
   const pay = async () => {
     if (!qty || !workspaceId) return;
     const t = target.trim();
-    if (!t) { setError(`${service.target.label} را وارد کنید.`); return; }
+    const b = brief.trim();
+    if (needsTarget && !t) { setError(`${service.target.label} را وارد کنید.`); return; }
+    if (service.brief && b.length < service.brief.min) { setError(`${service.brief.label} را کامل‌تر بنویسید.`); return; }
     setBusy(true); setError(null);
     try {
-      const res = await appApi.placeOrder({ workspaceId, serviceId: service.id, quantity: qty, target: t, paymentMethod: method }, idem.current ?? newIdempotencyKey());
+      const res = await appApi.placeOrder({ workspaceId, serviceId: service.id, quantity: qty, target: t, brief: service.brief ? b : undefined, paymentMethod: method }, idem.current ?? newIdempotencyKey());
       if (method === 'gateway') {
         // The order stays unpaid until the bank confirms the payment on the server.
         const url = res.payment?.checkoutUrl;
@@ -122,6 +126,17 @@ function Picker({ service, workspaceId, walletToman, reload }: { service: AppSer
           <T size={12} color={C.muted} numberOfLines={2}>{service.description ?? 'ثبت آنی · پیگیری لحظه‌ای'}</T>
         </View>
       </View>
+
+      {service.facts?.length ? (
+        <View accessibilityLabel="شرایط سرویس" style={{ flexDirection: row, flexWrap: 'wrap', gap: 6 }}>
+          {service.facts.map(f => (
+            <View key={f.text} style={{ flexDirection: row, alignItems: 'center', gap: 5, paddingVertical: 5, paddingHorizontal: 10, borderRadius: 999, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line }}>
+              <Icon name={f.icon} size={14} color={C.gold3} />
+              <T w="sb" size={11} color={C.ink2}>{f.text}</T>
+            </View>
+          ))}
+        </View>
+      ) : null}
 
       <View {...pan.panHandlers} accessibilityLabel="بسته‌ها" style={few ? { height: 280, gap: 12 } : { flex: 1, minHeight: 300, maxHeight: 560, gap: 12 }}>
         {Array.from({ length: few ? 2 : 3 }, (_, r) => (
@@ -192,6 +207,19 @@ function Picker({ service, workspaceId, walletToman, reload }: { service: AppSer
             style={{ fontFamily: F.m, fontSize: 14.5, color: C.ink, backgroundColor: C.surface2, borderWidth: 1.5, borderColor: C.line, borderRadius: 14, padding: 14, textAlign: service.target.ltr ? (tRight === 'right' ? 'left' : 'right') : tRight }}
           />
         </View>
+        {service.brief ? (
+          <View style={{ gap: 7 }}>
+            <View style={{ flexDirection: row, justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <T w="sb" size={12.5} color={C.ink2}>{service.brief.label}</T>
+              <T size={10.5} color={C.subtle}>{`${faNum(brief.length)} / ${faNum(service.brief.max)}`}</T>
+            </View>
+            <TextInput
+              value={brief} onChangeText={setBrief} placeholder={service.brief.placeholder} placeholderTextColor={C.subtle}
+              multiline maxLength={service.brief.max} accessibilityLabel={service.brief.label} textAlignVertical="top"
+              style={{ fontFamily: F.m, fontSize: 14.5, lineHeight: 24, color: C.ink, backgroundColor: C.surface2, borderWidth: 1.5, borderColor: C.line, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, minHeight: 96, maxHeight: 180, textAlign: tRight }}
+            />
+          </View>
+        ) : null}
         <View style={{ backgroundColor: C.surface2, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 14, gap: 9 }}>
           <View style={{ flexDirection: row, justifyContent: 'space-between' }}><T size={13.5} color={C.ink2}>مبلغ بسته</T><T w="b" size={13.5}>{formatTomanNumber(price)} تومان</T></View>
           <View style={{ flexDirection: row, justifyContent: 'space-between' }}><T size={13.5} color={C.ink2}>موجودی کیف پول</T><T w="b" size={13.5} color={short ? C.danger : C.success}>{walletToman == null ? '—' : `${formatTomanNumber(walletToman)} تومان`}</T></View>
@@ -214,7 +242,7 @@ function Picker({ service, workspaceId, walletToman, reload }: { service: AppSer
         <Cta full label={busy ? (method === 'gateway' ? 'در حال اتصال به درگاه…' : 'در حال ثبت…') : method === 'gateway' ? 'پرداخت آنلاین و ثبت سفارش' : 'پرداخت از کیف پول و ثبت سفارش'} busy={busy} disabled={!workspaceId || (method === 'wallet' && short)} onPress={pay} />
         <View style={{ flexDirection: row, alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: -4 }}>
           <Icon name="shieldS" size={14} color={C.turquoiseInk} />
-          <T size={11} color={C.muted} style={{ textAlign: 'center' }}>{method === 'gateway' ? 'پرداخت امن با درگاه بانکی · ثبت سفارش پس از تأیید بانک' : 'پرداخت امن از کیف پول · بازگشت وجه در صورت لغو'}</T>
+          <T size={11} color={C.muted} style={{ textAlign: 'center', flexShrink: 1 }}>{`${method === 'gateway' ? 'پرداخت امن با درگاه بانکی · ثبت سفارش پس از تأیید بانک' : 'پرداخت امن از کیف پول'} · ${service.refund ?? 'بازگشت وجه در صورت لغو'}`}</T>
         </View>
       </Sheet>
 

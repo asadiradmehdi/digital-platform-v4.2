@@ -11,14 +11,19 @@ import { Cta, IconBtn, Press, T } from './ui';
 import { siteUrl } from '../api/app';
 
 type DrawerLink = { label: string; icon: IconName; href?: Href; web?: string };
+/** Mirrors the web drawer in components/AppShell.tsx (same order, labels and glyphs). */
 const DRAWER: DrawerLink[] = [
   { label: 'خانه', icon: 'tHome', href: '/' },
   { label: 'همه‌ی خدمات', icon: 'grid', href: '/services' },
   { label: 'سفارش‌های من', icon: 'tOrders', href: '/orders' },
   { label: 'کیف پول و تراکنش‌ها', icon: 'tWallet', href: '/wallet' },
-  { label: 'اشتراک‌ها', icon: 'pr', href: '/subscriptions' },
-  { label: 'هوش مصنوعی', icon: 'ai', href: '/ai' },
+  { label: 'دعوت از دوستان', icon: 'gift', href: '/invite' },
+  { label: 'اشتراک هوش مصنوعی', icon: 'aiSub', href: '/services/ai-subscriptions' },
+  { label: 'پلن‌های زُحل پی', icon: 'pr', href: '/subscriptions' },
+  { label: 'ابزارهای هوش مصنوعی', icon: 'ai', href: '/ai' },
   { label: 'اتوماسیون', icon: 'au', href: '/automation' },
+  { label: 'پشتیبانی و تیکت', icon: 'chat', href: '/support' },
+  { label: 'مجوزها و نمادها', icon: 'cert', href: '/licenses' },
   { label: 'قوانین و مقررات', icon: 'doc', web: '/terms' },
   { label: 'درباره‌ی زُحل پی', icon: 'info', web: '/about' },
 ];

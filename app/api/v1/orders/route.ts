@@ -1,5 +1,8 @@
 import { NextRequest } from 'next/server';
 import { createOrder, listOrders } from '../../../../server/commerce/orders';
+import { getService } from '../../../../server/commerce/catalog';
+import { validateOrderParameters } from '../../../../server/commerce/order-input';
+import { AppError } from '../../../../server/core/errors';
 import { payOrderByGateway, payOrderFromWallet } from '../../../../server/payments/service';
 import { parsePaymentMethod, paymentCallbackUrl, resolvePaymentGateway } from '../../../../server/payments/gateways';
 import { correlationId, handleRouteError, json } from '../../../../server/core/http';
@@ -41,13 +44,17 @@ export async function POST(request: NextRequest) {
     await requireWorkspacePermission(userId,workspaceId,'orders.create');
     const method = parsePaymentMethod(body.paymentMethod);
     const key=request.headers.get('idempotency-key') ?? '';
+    const serviceId=requireUuid(body.serviceId,'serviceId');
+    const service=await getService(serviceId);
+    if (!service.active) throw new AppError('CONFLICT','این سرویس در حال حاضر فعال نیست.');
+    const parameters=validateOrderParameters(service.slug, body.parameters && typeof body.parameters==='object' ? body.parameters : {});
     // Resolve the gateway first so an unavailable gateway never leaves an unpaid order behind.
     const gateway = method === 'gateway' ? resolvePaymentGateway(null) : null;
     const parentTrace = parseTraceparent(request.headers.get('traceparent'));
     const { value: order } = await withSpan(
       'order.create',
       { correlationId: id, workspaceId, trace: parentTrace },
-      async () => createOrder({ workspaceId, serviceId:requireUuid(body.serviceId,'serviceId'), quantity:BigInt(safePositiveInteger(body.quantity,'quantity')), parameters:(body.parameters && typeof body.parameters==='object'?body.parameters:{}) as Record<string,unknown>, idempotencyKey:key }),
+      async () => createOrder({ workspaceId, serviceId, quantity:BigInt(safePositiveInteger(body.quantity,'quantity')), parameters, idempotencyKey:key }),
     );
     if (gateway) {
       const intent = await payOrderByGateway({ workspaceId, orderId: order.id, gateway, callbackUrl: paymentCallbackUrl(), idempotencyKey: `gw:${key}` });

@@ -12,7 +12,13 @@ export type AppService = {
   /** Name inside its category («سیو» on the Instagram page); `brand` is set for AI plans. */
   short: string; brand: BrandLogo | null; perLabel: string;
   group: string; unit: string; icon: IconName; per: number; unitPriceToman: number; quantities: number[];
-  target: { label: string; placeholder: string; ltr: boolean };
+  /** `required` is false for optional targets (design / AI content: page or site is a hint). */
+  target: { label: string; placeholder: string; ltr: boolean; required?: boolean };
+  /** Team-fulfilled services (design, automation, AI content) ask for a written brief. */
+  brief?: { label: string; placeholder: string; min: number; max: number } | null;
+  /** Delivery terms shown above the packages (delivery days, revisions, no auto-renewal, refund). */
+  facts?: Array<{ icon: IconName; text: string }>;
+  refund?: string;
 };
 export type AppCatalog = { categories: AppCategory[]; services: AppService[] };
 
@@ -37,8 +43,39 @@ export type AppReferral = {
   invited: number; active: number; earnedToman: number; pendingToman: number;
   friends: Array<{ name: string; joinedAt: string; active: boolean }>;
 };
+/** Support (mirrors server/support/app-views.ts and server/content/trust.ts). */
+export type SupportTone = Tone | 'idle';
+export type AppSupportPhone = { label: string; display: string; tel: string };
+export type AppSupportCategory = { key: string; label: string; hint: string; icon: IconName };
+export type AppTicketCard = {
+  id: string; code: string; subject: string; icon: IconName; categoryLabel: string;
+  status: { key: string; label: string; tone: SupportTone; note: string };
+  preview: string; when: string; unread: boolean; closed: boolean;
+};
+export type AppTicketMessage = { id: string; mine: boolean; body: string; when: string };
+export type AppTicketDetail = AppTicketCard & { order: { id: string; code: string } | null; createdWhen: string; messages: AppTicketMessage[] };
+export type AppSupport = { workspaceId: string | null; phones: AppSupportPhone[]; hours: string; categories: AppSupportCategory[]; tickets: AppTicketCard[] };
+export type AppLicense = { key: string; title: string; issuer: string; text: string; icon: IconName; status: 'active' | 'pending'; verifyUrl: string | null };
+export type AppTrust = { licenses: AppLicense[]; phones: AppSupportPhone[]; hours: string };
 
 const V = '/api/v1';
+
+export const supportApi = {
+  overview: () => apiFetch<AppSupport>(`${V}/app/support`),
+  ticket: (id: string) => apiFetch<{ workspaceId: string; ticket: AppTicketDetail }>(`${V}/app/support/${encodeURIComponent(id)}`),
+  create: (body: { workspaceId: string; category: string; orderId?: string; subject: string; message: string }) =>
+    apiFetch<{ ticket: { id: string; code: string } }>(`${V}/support/tickets`, { method: 'POST', body: JSON.stringify(body) }),
+  reply: (id: string, body: string) =>
+    apiFetch<{ status: string; reopened: boolean }>(`${V}/support/tickets/${encodeURIComponent(id)}/messages`, { method: 'POST', body: JSON.stringify({ body }) }),
+  close: (id: string) =>
+    apiFetch<{ ticket: { id: string; status: string } }>(`${V}/support/tickets/${encodeURIComponent(id)}/close`, { method: 'POST', body: JSON.stringify({}) }),
+  /** Public: licences, support numbers and hours. */
+  trust: () => apiFetch<AppTrust>(`${V}/app/trust`),
+};
+
+export const SUBJECT_MAX = 160;
+export const BODY_MIN = 2;
+export const BODY_MAX = 4000;
 
 export const appApi = {
   catalog: () => apiFetch<AppCatalog>(`${V}/app/catalog`),
@@ -49,13 +86,13 @@ export const appApi = {
   /**
    * Creates the order and pays it: 'wallet' debits the balance in the same request; 'gateway' leaves
    * the order unpaid and returns payment.checkoutUrl — the server marks it paid only after the bank
-   * confirms the payment.
+   * confirms the payment. Team-fulfilled services send a brief; the target is then optional.
    */
-  placeOrder: (body: { workspaceId: string; serviceId: string; quantity: number; target: string; paymentMethod: 'wallet' | 'gateway' }, idempotencyKey: string) =>
+  placeOrder: (body: { workspaceId: string; serviceId: string; quantity: number; target: string; brief?: string; paymentMethod: 'wallet' | 'gateway' }, idempotencyKey: string) =>
     apiFetch<{ id: string; status: string; payment?: { method: 'wallet' | 'gateway'; status: string; checkoutUrl?: string } }>(`${V}/orders`, {
       method: 'POST',
       headers: { 'Idempotency-Key': idempotencyKey },
-      body: JSON.stringify({ workspaceId: body.workspaceId, serviceId: body.serviceId, quantity: body.quantity, parameters: { target: body.target }, paymentMethod: body.paymentMethod }),
+      body: JSON.stringify({ workspaceId: body.workspaceId, serviceId: body.serviceId, quantity: body.quantity, parameters: body.brief != null ? { ...(body.target ? { target: body.target } : {}), brief: body.brief } : { target: body.target }, paymentMethod: body.paymentMethod }),
     }),
   /**
    * Starts a top-up: the server creates a gateway payment intent and returns the gateway page.

@@ -20,7 +20,7 @@ const RLS_TABLES = [
   'agent_runs', 'ai_cost_events', 'ai_requests', 'ai_usage_events', 'api_keys', 'api_usage_events',
   'audit_logs', 'checkout_sessions', 'commissions', 'coupon_redemptions', 'invoices', 'ledger_transactions',
   'notifications', 'operational_events', 'orders', 'payments', 'risk_events', 'security_action_evidence',
-  'subscriptions', 'support_tickets', 'usage_counters', 'usage_events', 'wallets', 'workflow_runs',
+  'subscriptions', 'support_ticket_messages', 'support_tickets', 'usage_counters', 'usage_events', 'wallets', 'workflow_runs',
 ];
 const TABLE_RE = new RegExp(`\\b(${RLS_TABLES.join('|')})\\b`, 'g');
 

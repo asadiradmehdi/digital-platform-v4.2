@@ -1,18 +1,11 @@
 import type { MetadataRoute } from 'next';
-import { absoluteUrl } from '../lib/seo/site';
-import { publicEntities } from '../content/marketing/catalog';
+import { buildSitemap } from '../lib/seo/sitemap';
+import { getPublicCatalog } from '../server/seo/public-catalog';
 
-const staticRoutes = ['/', '/services', '/ai', '/social', '/automation', '/pricing', '/blog', '/about', '/contact', '/faq', '/privacy', '/terms'];
-const channelRoutes = ['instagram', 'telegram', 'tiktok', 'youtube', 'x'].map((x) => `/social/${x}`);
-const blogRoutes = ['ai-gateway', 'workflow-automation', 'social-growth', 'api-security', 'multi-workspace'].map((x) => `/blog/${x}`);
+// Built from the live catalogue on each request: a new service or price change shows up immediately,
+// with lastModified = the later of the service's own update and its active price's update.
+export const dynamic = 'force-dynamic';
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
-  const routes = [...staticRoutes, ...channelRoutes, ...blogRoutes, ...publicEntities.map((x) => x.href)];
-  return [...new Set(routes)].map((path) => ({
-    url: absoluteUrl(path),
-    lastModified: now,
-    changeFrequency: path === '/' ? 'daily' : path.startsWith('/blog') ? 'weekly' : 'monthly',
-    priority: path === '/' ? 1 : path.startsWith('/services') || path.startsWith('/ai') || path.startsWith('/social') ? 0.8 : 0.6,
-  }));
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  return buildSitemap(await getPublicCatalog());
 }

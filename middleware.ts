@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { isPrivatePath } from './lib/seo/routes';
 
 const PRIVATE_PREFIXES=['/dashboard','/account','/workspace','/settings','/orders','/wallet','/analytics','/subscriptions','/referrals','/support'];
 
@@ -26,7 +27,7 @@ export function middleware(request: NextRequest){
   const pathname=request.nextUrl.pathname;
   if(PRIVATE_PREFIXES.some(p=>pathname===p||pathname.startsWith(`${p}/`))){
     const token=request.cookies.get(process.env.SESSION_COOKIE_NAME ?? (process.env.NODE_ENV === 'production' ? '__Host-dp_session' : 'dp_session'))?.value;
-    if(!token){const url=new URL('/auth',request.url);url.searchParams.set('next',pathname);return NextResponse.redirect(url);}
+    if(!token){const url=new URL('/auth',request.url);url.searchParams.set('next',pathname);const r=NextResponse.redirect(url);r.headers.set('X-Robots-Tag','noindex, nofollow');return r;}
   }
   const nonce = crypto.randomUUID().replaceAll('-','');
   const requestHeaders = new Headers(request.headers);
@@ -43,6 +44,8 @@ export function middleware(request: NextRequest){
   response.headers.set('Cross-Origin-Opener-Policy','same-origin');
   response.headers.set('Cross-Origin-Resource-Policy','same-origin');
   response.headers.set('Origin-Agent-Cluster','?1');
+  // Account, money and session pages never enter a search index, even if a crawler ignores robots.txt.
+  if (isPrivatePath(pathname)) response.headers.set('X-Robots-Tag','noindex, nofollow');
   if (process.env.NODE_ENV === 'production') response.headers.set('Strict-Transport-Security','max-age=31536000; includeSubDomains; preload');
   return response;
 }

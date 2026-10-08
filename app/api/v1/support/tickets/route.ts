@@ -1,61 +1,39 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { requireRequestUser } from '../../../../../server/identity/request-user';
-import { assertSameOrigin } from '../../../../../server/core/security-boundary';
-import { requireWorkspacePermission } from '../../../../../server/identity/rbac';
-import { withTenantTransaction } from '../../../../../server/core/db';
+import { assertSameOrigin, clientFingerprint } from '../../../../../server/core/security-boundary';
 import { AppError } from '../../../../../server/core/errors';
 import { correlationId, handleRouteError, json } from '../../../../../server/core/http';
+import { createTicket, listTickets } from '../../../../../server/support/tickets';
+import { noWorkspace, resolveSupportWorkspace } from '../../../../../server/support/workspace';
 
+/** The caller's tickets, open ones first. workspaceId is optional (defaults to the user's workspace). */
 export async function GET(request: NextRequest) {
   const id = correlationId(request);
   try {
     const userId = await requireRequestUser(request);
-    const workspaceId = request.nextUrl.searchParams.get('workspaceId');
-    if (!workspaceId) return json({ error: { code: 'VALIDATION_ERROR', message: 'workspaceId required' } }, { status: 400, correlationId: id });
-    await requireWorkspacePermission(userId, workspaceId, 'workspace.read');
-    const result = await withTenantTransaction(workspaceId, userId, client => client.query<{ id: string; subject: string; status: string; priority: string; createdAt: string }>(
-      `SELECT id, subject, status, priority, created_at AS "createdAt"
-       FROM support_tickets WHERE workspace_id=$1 ORDER BY created_at DESC LIMIT 20`,
-      [workspaceId],
-    ));
-    return json({ items: result.rows }, { correlationId: id });
+    const workspaceId = await resolveSupportWorkspace(userId, request.nextUrl.searchParams.get('workspaceId'), 'workspace.read');
+    if (!workspaceId) return json({ items: [], workspaceId: null }, { correlationId: id });
+    const items = await listTickets(workspaceId, userId);
+    return json({ items, workspaceId }, { correlationId: id });
   } catch (error) { return handleRouteError(error, id); }
 }
 
-export async function POST(req: NextRequest) {
-  try { assertSameOrigin(req); } catch {
-    return NextResponse.json({ error: { code: 'FORBIDDEN' } }, { status: 403 });
-  }
-
-  const userId = await requireRequestUser(req);
-  if (!userId) return NextResponse.json({ error: { code: 'UNAUTHORIZED' } }, { status: 401 });
-
-  const body = await req.json() as {
-    workspaceId?: string; subject?: string; category?: string; priority?: string; message?: string;
-  };
-
-  const workspaceId = body.workspaceId;
-  if (!workspaceId) return NextResponse.json({ error: { code: 'VALIDATION_ERROR', message: 'workspaceId required' } }, { status: 400 });
-
-  const subject = typeof body.subject === 'string' ? body.subject.trim() : '';
-  if (!subject) return NextResponse.json({ error: { code: 'VALIDATION_ERROR', message: 'subject required' } }, { status: 400 });
-  if (subject.length > 160) return NextResponse.json({ error: { code: 'VALIDATION_ERROR', message: 'subject too long' } }, { status: 400 });
-
+/** Opens a ticket: subject + category + optional order + the first message, written atomically. */
+export async function POST(request: NextRequest) {
+  const id = correlationId(request);
   try {
-    await requireWorkspacePermission(userId, workspaceId, 'workspace.read');
-  } catch {
-    return NextResponse.json({ error: { code: 'FORBIDDEN' } }, { status: 403 });
-  }
-
-  const priority = (['LOW', 'NORMAL', 'HIGH', 'URGENT'] as const).includes(body.priority?.toUpperCase() as never)
-    ? body.priority!.toUpperCase()
-    : 'NORMAL';
-
-  const result = await withTenantTransaction(workspaceId, userId, client => client.query<{ id: string }>(
-    `INSERT INTO support_tickets(workspace_id, created_by_user_id, subject, status, priority)
-     VALUES($1,$2,$3,'OPEN',$4) RETURNING id`,
-    [workspaceId, userId, subject, priority],
-  ));
-
-  return NextResponse.json({ ticket: { id: result.rows[0].id } }, { status: 201 });
+    assertSameOrigin(request);
+    const userId = await requireRequestUser(request);
+    const body = await request.json().catch(() => null) as {
+      workspaceId?: unknown; subject?: unknown; category?: unknown; orderId?: unknown; message?: unknown; priority?: unknown;
+    } | null;
+    if (!body || typeof body !== 'object') throw new AppError('VALIDATION_ERROR', 'Request body must be JSON.');
+    const workspaceId = await resolveSupportWorkspace(userId, body.workspaceId, 'support.create') ?? noWorkspace();
+    const ticket = await createTicket({
+      workspaceId, userId, subject: body.subject, category: body.category, orderId: body.orderId,
+      message: body.message, priority: body.priority,
+      ip: clientFingerprint(request), userAgent: request.headers.get('user-agent')?.slice(0, 300) ?? undefined,
+    });
+    return json({ ticket }, { status: 201, correlationId: id });
+  } catch (error) { return handleRouteError(error, id); }
 }

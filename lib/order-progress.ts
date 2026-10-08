@@ -17,6 +17,14 @@ const STAGES: Record<string, OrderStage> = {
   REFUNDED: { label: 'وجه بازگشت داده شد', steps: 4, tone: 'bad' },
 };
 
-export function orderStage(status: string): OrderStage {
-  return STAGES[status] ?? { label: status, steps: 0, tone: 'live' };
+/** Team-fulfilled services (design, automation, AI content, AI plans) are worked on by people, not a provider. */
+const TEAM_STAGES: Record<string, OrderStage> = {
+  PAID: { label: 'پرداخت شد', steps: 1, tone: 'live' },
+  QUEUED: { label: 'در حال انجام توسط تیم', steps: 2, tone: 'live' },
+  IN_PROGRESS: { label: 'در حال انجام توسط تیم', steps: 3, tone: 'live' },
+  COMPLETED: { label: 'تحویل شد', steps: 4, tone: 'ok' },
+};
+
+export function orderStage(status: string, team = false): OrderStage {
+  return (team ? TEAM_STAGES[status] : undefined) ?? STAGES[status] ?? { label: status, steps: 0, tone: 'live' };
 }

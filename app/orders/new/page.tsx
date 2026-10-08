@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { AppShell } from '../../../components/AppShell';
 import { ShellAside } from '../../../components/zp/ShellAside';
 import { EmptyState } from '../../../components/zp/cards';
-import { categoryMeta, KINDS, serviceBrand, serviceIcon, serviceKind, targetField } from '../../../lib/catalog-ui';
+import { categoryMeta, orderForm, serviceBrand, serviceIcon, serviceMeta } from '../../../lib/catalog-ui';
 import { toToman } from '../../../lib/format';
 import { requireViewer } from '../../../server/account/page-context';
 import { getWalletSummary, listCatalogWithPrices } from '../../../server/account/overview';
@@ -30,8 +30,8 @@ export default async function OrderNewPage({ searchParams }: { searchParams: Pro
     );
   }
 
-  const kindKey = serviceKind(item.slug);
-  const kind = KINDS[kindKey];
+  const kind = serviceMeta(item.slug);
+  const form = orderForm(item.productSlug, item.slug);
   const min = item.minQuantity ? Number(item.minQuantity) : 1;
   const max = item.maxQuantity ? Number(item.maxQuantity) : Number.MAX_SAFE_INTEGER;
   const quantities = kind.quantities.filter(q => q >= min && q <= max);
@@ -46,7 +46,7 @@ export default async function OrderNewPage({ searchParams }: { searchParams: Pro
             id: item.id, slug: item.slug, name: item.name, note: item.description ?? (cat ? `خدمات ${cat.name}` : ''),
             icon: serviceIcon(item.slug), brand: serviceBrand(item.slug), unit: kind.unit, unitPriceToman: Number(item.unitPriceMinor),
             quantities: quantities.length ? quantities : [min],
-            target: targetField(item.productSlug, kindKey, item.slug),
+            target: form.target, brief: form.brief, facts: form.facts, refund: form.refund,
           }}
         />
       </main>
