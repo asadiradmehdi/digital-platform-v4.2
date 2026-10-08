@@ -7,6 +7,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockClientQuery = vi.fn();
 const mockWithWorkspaceTransaction = vi.fn(async (_ws: string, _opts: unknown, fn: (client: { query: typeof mockClientQuery }) => Promise<unknown>) => fn({ query: mockClientQuery }));
 
+// Invoice issuing has its own tests (tests/payments/invoice.test.ts, tests/integration/invoices.pg.test.ts).
+vi.mock('../../server/payments/invoice', () => ({ issueOrderInvoice: vi.fn(), issueTopupReceipt: vi.fn(), issueSubscriptionInvoice: vi.fn() }));
 vi.mock('../../server/core/db', () => ({
   withWorkspaceTransaction: (ws: string, opts: unknown, fn: (client: { query: typeof mockClientQuery }) => Promise<unknown>) => mockWithWorkspaceTransaction(ws, opts, fn),
 }));
@@ -19,6 +21,7 @@ vi.mock('../../server/core/idempotency', () => ({
 }));
 
 import { createSubscription, cancelSubscription, listSubscriptions } from '../../server/subscriptions/service';
+import { issueSubscriptionInvoice } from '../../server/payments/invoice';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -65,6 +68,8 @@ describe('createSubscription', () => {
     const debit = sqlCalls.find(([sql]) => sql.includes('INSERT INTO ledger_entries'));
     expect(debit?.[1].slice(1, 7)).toEqual(['DEBIT', '50000', 'IRR', 'SUBSCRIPTION', 'sub-new', 'subscription:sub-new']);
     expect(sqlCalls.some(([sql]) => sql.includes("'CHARGED'"))).toBe(true);
+    // The charge issues the subscription's sale invoice on the same transaction.
+    expect(vi.mocked(issueSubscriptionInvoice)).toHaveBeenCalledWith(expect.anything(), { workspaceId: 'ws-1', subscriptionId: 'sub-new', paidMinor: 5000n, currency: 'IRT', method: 'WALLET' });
   });
 
   it('refuses a paid plan with 402 when the wallet balance is short (transaction rolls back)', async () => {

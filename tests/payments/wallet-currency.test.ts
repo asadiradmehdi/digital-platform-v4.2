@@ -4,6 +4,8 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// Invoice issuing has its own tests (tests/payments/invoice.test.ts, tests/integration/invoices.pg.test.ts).
+vi.mock('../../server/payments/invoice', () => ({ issueOrderInvoice: vi.fn(), issueTopupReceipt: vi.fn(), issueSubscriptionInvoice: vi.fn() }));
 vi.mock('../../server/core/db', () => ({ query: vi.fn(), withWorkspaceTransaction: vi.fn() }));
 vi.mock('../../server/core/audit', () => ({ writeAudit: vi.fn() }));
 
@@ -77,3 +79,13 @@ describe('payOrderFromWallet gateway reference', () => {
     expect(ins?.[1]).toContain('wallet:ord-1');
   });
 });
+
+describe('payOrderFromWallet invoice', () => {
+  it('issues the order\'s sale invoice with the WALLET method on the same transaction', async () => {
+    const { issueOrderInvoice } = await import('../../server/payments/invoice');
+    runWith('5000000');
+    await payOrderFromWallet({ workspaceId: 'ws-1', orderId: 'ord-1', idempotencyKey: 'pay:idem-key-0000005' });
+    expect(vi.mocked(issueOrderInvoice)).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ workspaceId: 'ws-1', orderId: 'ord-1', method: 'WALLET' }));
+  });
+});
+

@@ -8,6 +8,7 @@ import { fulfilPaidCheckout } from '../commerce/checkout';
 import { postWalletEntry, requireMainWalletAccount, debitWalletChecked } from './wallet-ledger';
 import { toWalletMinor } from './currency';
 import { onVerifiedGatewayPayment } from './hooks';
+import { issueOrderInvoice, issueSubscriptionInvoice, issueTopupReceipt } from './invoice';
 
 /** What a gateway reports about a payment. `amountMinor`/`currency` are what was actually captured. */
 export type GatewayVerification = { paid: boolean; amountMinor?: bigint; currency?: string; raw?: unknown };
@@ -104,9 +105,20 @@ async function creditPaymentToWallet(client: Queryable, payment: LockedPayment, 
   });
 }
 
+/** Money credited to the wallet gets a «رسید شارژ کیف پول», on the same transaction. */
+async function creditPaymentToWalletWithReceipt(client: Queryable, payment: LockedPayment, workspaceId: string, reason: string, gatewayReference: string) {
+  await creditPaymentToWallet(client, payment, workspaceId, reason);
+  await issueTopupReceipt(client, {
+    workspaceId, paymentId: payment.id, amountMinor: BigInt(payment.amount_minor), currency: payment.currency.trim(),
+    reference: gatewayReference, reason,
+  });
+}
+
 /**
  * Record a gateway-verified payment, exactly once. Callers must have verified the payment with the
  * gateway (amount and currency included) — see verifyPayment / confirmPaymentByGatewayReference.
+ * The payment's document (sale invoice, or «رسید شارژ کیف پول» when the money went to the wallet) is
+ * issued on this same transaction.
  *  - ORDER: the order moves PAYMENT_PENDING → PAID. The wallet is not touched (the card paid).
  *  - CHECKOUT: the checkout session is fulfilled (order / subscription created, coupon redeemed).
  *  - TOPUP: the wallet is credited, converted into the wallet currency.
@@ -142,8 +154,9 @@ export async function markPaymentPaid(input: { paymentId: string; workspaceId: s
         await client.query(`UPDATE orders SET status='PAID',updated_at=now() WHERE id=$1 AND status='PAYMENT_PENDING'`, [o.id]);
         await client.query(`INSERT INTO order_events(order_id,from_status,to_status,metadata) VALUES($1,'PAYMENT_PENDING','PAID',$2)`, [o.id, { source: 'payment', paymentId: input.paymentId }]);
         await client.query(`INSERT INTO outbox_events(aggregate_type,aggregate_id,event_type,payload) VALUES('order',$1,'order.paid',$2)`, [o.id, { orderId: o.id, paymentId: input.paymentId, workspaceId: input.workspaceId }]);
+        await issueOrderInvoice(client, { workspaceId: input.workspaceId, orderId: o.id, paymentId: payment.id, method: 'GATEWAY', reference: input.gatewayReference });
       } else {
-        await creditPaymentToWallet(client, payment, input.workspaceId, 'ORDER_NOT_PAYABLE');
+        await creditPaymentToWalletWithReceipt(client, payment, input.workspaceId, 'ORDER_NOT_PAYABLE', input.gatewayReference);
         settledAs = 'WALLET_CREDIT';
       }
     } else if (purpose === 'CHECKOUT') {
@@ -155,11 +168,18 @@ export async function markPaymentPaid(input: { paymentId: string; workspaceId: s
         currency: payment.currency.trim(),
       });
       if (!fulfilled.fulfilled) {
-        await creditPaymentToWallet(client, payment, input.workspaceId, 'CHECKOUT_NOT_PAYABLE');
+        await creditPaymentToWalletWithReceipt(client, payment, input.workspaceId, 'CHECKOUT_NOT_PAYABLE', input.gatewayReference);
         settledAs = 'WALLET_CREDIT';
+      } else if (fulfilled.orderId) {
+        await issueOrderInvoice(client, { workspaceId: input.workspaceId, orderId: fulfilled.orderId, paymentId: payment.id, method: 'GATEWAY', reference: input.gatewayReference });
+      } else if (fulfilled.subscriptionId) {
+        await issueSubscriptionInvoice(client, {
+          workspaceId: input.workspaceId, subscriptionId: fulfilled.subscriptionId, paidMinor: BigInt(payment.amount_minor),
+          currency: payment.currency.trim(), method: 'GATEWAY', paymentId: payment.id, reference: input.gatewayReference,
+        });
       }
     } else {
-      await creditPaymentToWallet(client, payment, input.workspaceId, 'TOPUP');
+      await creditPaymentToWalletWithReceipt(client, payment, input.workspaceId, 'TOPUP', input.gatewayReference);
     }
 
     // Every verified gateway payment (top-up, direct order or checkout payment) reaches this point once.
@@ -234,6 +254,8 @@ export async function payOrderFromWallet(input: {
       `INSERT INTO outbox_events(aggregate_type,aggregate_id,event_type,payload) VALUES('order',$1,'order.paid',$2)`,
       [input.orderId, { orderId: input.orderId, paymentId, workspaceId: input.workspaceId }],
     );
+
+    await issueOrderInvoice(client, { workspaceId: input.workspaceId, orderId: input.orderId, paymentId, method: 'WALLET' });
 
     await writeAudit({ workspaceId: input.workspaceId, action: 'payment.paid', entityType: 'payment', entityId: paymentId, metadata: { gateway: 'wallet', orderId: input.orderId } }, client);
     return payment.rows[0];

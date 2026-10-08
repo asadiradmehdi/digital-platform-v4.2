@@ -62,20 +62,23 @@ function makeParams(id: string) {
   return { params: Promise.resolve({ id }) };
 }
 
-const sampleInvoice = { id: 'inv-1', workspaceId: 'ws-1', totalMinor: '50000', currency: 'IRR' };
+const INV = '7d0c5f0e-1b2a-4c3d-8e9f-0a1b2c3d4e5f';
+const sampleInvoice = { id: INV, workspaceId: 'ws-1', totalMinor: '50000', currency: 'IRR' };
 
 describe('GET /api/v1/invoices', () => {
   it('returns 200 with invoice list', async () => {
     mockRequireUser.mockResolvedValueOnce('user-1' as never);
     mockRequireUuid.mockReturnValueOnce('ws-1' as never);
     mockRequirePermission.mockResolvedValueOnce(undefined as never);
-    mockListInvoices.mockResolvedValueOnce([sampleInvoice] as never);
+    mockListInvoices.mockResolvedValueOnce({ items: [sampleInvoice], hasMore: false } as never);
 
     const response = await GET_LIST(makeListRequest('ws-1'));
     expect(response.status).toBe(200);
     const data = await response.json();
     expect(data.items).toHaveLength(1);
-    expect(data.items[0].id).toBe('inv-1');
+    expect(data.items[0].id).toBe(INV);
+    expect(mockRequirePermission).toHaveBeenCalledWith('user-1', 'ws-1', 'wallet.read');
+    expect(mockListInvoices).toHaveBeenCalledWith('ws-1', { limit: 20, offset: 0 });
   });
 
   it('returns 401 when not authenticated', async () => {
@@ -95,7 +98,7 @@ describe('GET /api/v1/invoices', () => {
     expect(response.status).toBe(400);
   });
 
-  it('returns 403 when user lacks orders.read permission', async () => {
+  it('returns 403 when user lacks wallet.read permission', async () => {
     mockRequireUser.mockResolvedValueOnce('user-1' as never);
     mockRequireUuid.mockReturnValueOnce('ws-1' as never);
     mockRequirePermission.mockRejectedValueOnce(new AppError('FORBIDDEN', 'Forbidden'));
@@ -108,7 +111,7 @@ describe('GET /api/v1/invoices', () => {
     mockRequireUser.mockResolvedValueOnce('user-1' as never);
     mockRequireUuid.mockReturnValueOnce('ws-1' as never);
     mockRequirePermission.mockResolvedValueOnce(undefined as never);
-    mockListInvoices.mockResolvedValueOnce([] as never);
+    mockListInvoices.mockResolvedValueOnce({ items: [], hasMore: false } as never);
 
     const response = await GET_LIST(makeListRequest('ws-1'));
     expect(response.status).toBe(200);
@@ -124,10 +127,11 @@ describe('GET /api/v1/invoices/:id', () => {
     mockRequirePermission.mockResolvedValueOnce(undefined as never);
     mockGetInvoice.mockResolvedValueOnce(sampleInvoice as never);
 
-    const response = await GET_DETAIL(makeDetailRequest('ws-1'), makeParams('inv-1'));
+    const response = await GET_DETAIL(makeDetailRequest('ws-1'), makeParams(INV));
     expect(response.status).toBe(200);
     const data = await response.json();
-    expect(data.id).toBe('inv-1');
+    expect(data.id).toBe(INV);
+    expect(mockGetInvoice).toHaveBeenCalledWith('ws-1', INV);
   });
 
   it('returns 404 when invoice not found', async () => {
@@ -136,16 +140,25 @@ describe('GET /api/v1/invoices/:id', () => {
     mockRequirePermission.mockResolvedValueOnce(undefined as never);
     mockGetInvoice.mockRejectedValueOnce(new AppError('NOT_FOUND', 'Invoice not found.'));
 
-    const response = await GET_DETAIL(makeDetailRequest('ws-1'), makeParams('inv-missing'));
+    const response = await GET_DETAIL(makeDetailRequest('ws-1'), makeParams(INV));
     expect(response.status).toBe(404);
   });
 
-  it('returns 403 when user lacks orders.read permission for detail', async () => {
+  it('returns 404 without touching the database for a malformed id', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    mockRequireUuid.mockReturnValueOnce('ws-1' as never);
+    mockRequirePermission.mockResolvedValueOnce(undefined as never);
+    const response = await GET_DETAIL(makeDetailRequest('ws-1'), makeParams("1' OR 1=1"));
+    expect(response.status).toBe(404);
+    expect(mockGetInvoice).not.toHaveBeenCalled();
+  });
+
+  it('returns 403 when user lacks wallet.read permission for detail', async () => {
     mockRequireUser.mockResolvedValueOnce('user-1' as never);
     mockRequireUuid.mockReturnValueOnce('ws-1' as never);
     mockRequirePermission.mockRejectedValueOnce(new AppError('FORBIDDEN', 'Forbidden'));
 
-    const response = await GET_DETAIL(makeDetailRequest('ws-1'), makeParams('inv-1'));
+    const response = await GET_DETAIL(makeDetailRequest('ws-1'), makeParams(INV));
     expect(response.status).toBe(403);
   });
 });

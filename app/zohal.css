@@ -107,16 +107,6 @@
 .zp-pop{position:absolute;top:calc(100% + 8px);left:0;width:min(300px,calc(100vw - 36px));z-index:20;background:var(--surface);border-radius:20px;padding:16px;box-shadow:0 16px 40px rgba(60,45,15,.18),inset 0 0 0 1px var(--line);display:grid;gap:10px;justify-items:center;text-align:center}
 .zp-pop b{font-size:14.4px}
 .zp-pop span{font-size:11.84px;color:var(--muted);line-height:1.8}
-.zp-inbox{justify-items:stretch;text-align:start;max-height:min(70vh,460px);overflow:auto;padding:10px}
-.zp-inbox>.zp-tile,.zp-inbox>b,.zp-inbox>span{justify-self:center;text-align:center}
-.zp-inbox-state{display:grid;justify-items:center;gap:8px;padding:18px 8px;font-size:12px;color:var(--muted)}
-.zp-inbox-list{list-style:none;margin:0;padding:0;display:grid;gap:2px}
-.zp-inbox-list a,.zp-inbox-list button{display:grid;gap:2px;width:100%;padding:10px 12px;border-radius:14px;text-align:start;background:none;color:var(--ink);text-decoration:none}
-.zp-inbox-list a:hover,.zp-inbox-list button:hover{background:var(--surface-2)}
-.zp-inbox-list li.new a,.zp-inbox-list li.new button{background:color-mix(in srgb,var(--gold-0) 55%,transparent)}
-.zp-inbox-list b{font-size:13px;font-weight:700}
-.zp-inbox-list span{font-size:11.5px;color:var(--muted);line-height:1.7}
-.zp-inbox-list small{font-size:10.5px;color:var(--subtle)}
 .zp-toast{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:0;right:0;margin-inline:auto;width:max-content;max-width:calc(100% - 32px);transform:translateY(-160%);z-index:60;background:var(--brand-strong);color:var(--gold-0);padding:10px 16px;border-radius:14px;font-size:13.12px;font-weight:600;transition:transform .38s var(--ease)}
 .zp-toast.on{transform:none;box-shadow:0 10px 30px rgba(0,0,0,.25),inset 0 0 0 1px var(--rim)}
 

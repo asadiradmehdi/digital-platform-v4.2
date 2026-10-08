@@ -1,0 +1,11 @@
+/* App-bar inbox popover (NotificationBell). Tokens only; extends .zp-pop from zohal.css. */
+.zp-pop.zp-nb{position:fixed;top:calc(env(safe-area-inset-top,0px) + 70px);left:max(16px,calc(50vw - 562px));width:min(360px,calc(100vw - 32px));max-height:min(70dvh,520px);overflow-y:auto}
+.zp-pop.zp-nb.list{justify-items:stretch;text-align:start;gap:6px;padding:10px}
+.zp-nb-item{display:flex;align-items:center;gap:10px;padding:8px;border-radius:14px}
+.zp-nb-item.unread{background:var(--surface-2)}
+.zp-nb-item .zp-tile{--s:34px;border-radius:10px;color:var(--gold-1)}
+.zp-nb-item .tx{display:grid;gap:2px;min-width:0;flex:1}
+.zp-pop .zp-nb-item .tx b{font-size:13px;color:var(--ink);font-weight:600}
+.zp-pop .zp-nb-item.unread .tx b{font-weight:700}
+.zp-pop .zp-nb-item .tx span{font-size:11.2px;line-height:1.7;color:var(--muted)}
+.zp-nb-item i{width:7px;height:7px;border-radius:7px;background:var(--vermilion);flex:none}

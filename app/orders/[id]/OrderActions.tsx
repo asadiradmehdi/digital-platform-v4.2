@@ -55,10 +55,11 @@ export function OrderActions({ status, orderId, workspaceId }: { status: string;
           {error && <span className="zp-err" role="alert" style={{ flexBasis: '100%' }}>{error}</span>}
         </>
       )}
-      {status === 'COMPLETED' && (
+      {/* Every paid order has its invoice (issued with the payment), whatever its delivery stage. */}
+      {!['CREATED', 'PAYMENT_PENDING'].includes(status) && (
         <Link
           className="button secondary"
-          href={orderId ? `/api/v1/invoices?orderId=${orderId}` : '/settings/billing'}
+          href={orderId ? `/invoices?order=${orderId}` : '/invoices'}
           style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}
         >
           <Download size={14}/>مشاهده فاکتور

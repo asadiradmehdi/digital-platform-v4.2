@@ -4,6 +4,7 @@ import { AppError } from '../core/errors';
 import { resetUsagePeriod } from './usage';
 import { lockMainWalletAccount, postWalletEntry, walletBalanceMinor } from '../payments/wallet-ledger';
 import { toWalletMinor } from '../payments/currency';
+import { issueSubscriptionInvoice } from '../payments/invoice';
 
 export type RenewalResult =
   | { subscriptionId: string; status: 'RENEWED'; newPeriodStart: Date; newPeriodEnd: Date }
@@ -153,6 +154,13 @@ export async function processSubscriptionRenewal(subscriptionId: string, workspa
         await client.query(`INSERT INTO subscription_events(subscription_id,event_type,payload) VALUES($1,'PAST_DUE',$2)`, [subscriptionId, { reason: 'insufficient_balance' }]);
         return { subscriptionId, status: 'FAILED', error: 'Insufficient wallet balance for renewal.' };
       }
+      // The renewal invoice is issued after the period advanced, so it names the period it pays for.
+      const renewed = await advanceLocked(client, sub);
+      await issueSubscriptionInvoice(client, {
+        workspaceId: sub.workspace_id, subscriptionId, paidMinor: priceMinor, currency: priceCurrency, method: 'WALLET',
+        sourceKey: chargeKey, renewal: true,
+      });
+      return renewed;
     }
 
     return advanceLocked(client, sub);

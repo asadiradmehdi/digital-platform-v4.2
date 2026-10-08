@@ -19,6 +19,9 @@ function appRoute(link: string | null | undefined): Href | null {
   if (link.startsWith('/wallet') || link.startsWith('/billing')) return '/wallet';
   if (link.startsWith('/support')) return '/support' as Href;
   if (link.startsWith('/subscriptions')) return '/subscriptions';
+  const invoice = /^\/invoices\/([0-9a-f-]{36})$/.exec(link);
+  if (invoice) return `/invoices/${invoice[1]}` as Href;
+  if (link.startsWith('/invoices')) return '/invoices' as Href;
   return null;
 }
 
@@ -78,7 +81,7 @@ export function NotificationBell() {
                 {state.items.slice(0, 20).map(i => (
                   <Pressable key={i.id} accessibilityRole="button" onPress={() => {
                     markRead(i.id);
-                    const to = appRoute(i.link);
+                    const to = appRoute(i.link ?? i.href);
                     if (to) { setOpen(false); router.navigate(to); }
                   }} style={({ pressed }) => ({ flexDirection: row, gap: 10, padding: 10, borderRadius: 14, backgroundColor: pressed ? C.surface2 : i.read ? 'transparent' : C.surface2 })}>
                     <View style={{ width: 8, paddingTop: 7 }}>{i.read ? null : <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: C.vermilion }} />}</View>

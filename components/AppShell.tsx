@@ -20,6 +20,7 @@ const DRAWER: Array<{ href: string; label: string; icon: IconName }> = [
   { href: '/services', label: 'همه‌ی خدمات', icon: 'grid' },
   { href: '/orders', label: 'سفارش‌های من', icon: 'tOrders' },
   { href: '/wallet', label: 'کیف پول و تراکنش‌ها', icon: 'tWallet' },
+  { href: '/invoices', label: 'فاکتورها و رسیدها', icon: 'doc' },
   { href: '/invite', label: 'دعوت از دوستان', icon: 'gift' },
   { href: '/services/ai-subscriptions', label: 'اشتراک هوش مصنوعی', icon: 'aiSub' },
   { href: '/subscriptions', label: 'پلن‌های زُحل پی', icon: 'pr' },
@@ -71,9 +72,7 @@ export function AppShell({ children, title, back, aside }: AppShellProps) {
           ) : (
             <Link href="/dashboard" className="zp-logo" aria-label="زُحل پی، خانه"><Wordmark id="bar-mark" /></Link>
           )}
-          {!sub && (
-            <NotificationBell />
-          )}
+          {!sub && <NotificationBell />}
           <button type="button" className="zp-ibtn zp-press" aria-label="منو" aria-expanded={drawer} onClick={() => setDrawer(true)}><ZIcon name="menu" /></button>
         </header>
 
