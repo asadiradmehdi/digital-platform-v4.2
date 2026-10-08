@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AlertCircle, ArrowLeft, Loader2, ShieldCheck } from 'lucide-react';
 import { Wordmark } from '../../components/zp/brand';
+import { apiErrorMessage } from '../../lib/api-error';
 
 type Mode = 'login' | 'register';
 type Status = 'idle' | 'loading' | 'error';
@@ -31,13 +32,9 @@ export default function AuthForm() {
       if (res.ok) {
         router.push('/dashboard');
       } else {
-        const body = await res.json().catch(() => ({}));
-        setErrorMsg(
-          body?.error?.message ??
-          (mode === 'login'
-            ? 'ایمیل یا رمز عبور اشتباه است.'
-            : 'ثبت‌نام ناموفق بود. لطفاً دوباره تلاش کنید.'),
-        );
+        setErrorMsg(await apiErrorMessage(res, mode === 'login'
+          ? 'ایمیل یا رمز عبور اشتباه است.'
+          : 'ثبت‌نام ناموفق بود. لطفاً دوباره تلاش کنید.'));
         setStatus('error');
       }
     } catch {

@@ -38,6 +38,7 @@ import { createSession } from '../../server/identity/sessions';
 import { consumeDistributedRateLimit } from '../../server/core/distributed-rate-limit';
 import { assertStrongPassword } from '../../server/identity/password-policy';
 import { requireString } from '../../server/core/validation';
+import { setSessionCookie } from '../../server/identity/session-cookie';
 import { AppError } from '../../server/core/errors';
 
 const mockWithTx = vi.mocked(withTransaction);
@@ -122,5 +123,24 @@ describe('POST /api/v1/auth/register', () => {
 
     const response = await POST(makeRequest({ email: 'not-an-email', password: 'SuperStrong!1234', name: 'Ali' }));
     expect(response.status).toBe(400);
+  });
+
+  it('accepts the JSON body the sign-up form sends and answers with JSON + session cookie', async () => {
+    // Regression: the web form posts JSON, but the route only read formData and failed with 500.
+    mockRateLimit.mockResolvedValueOnce(undefined as never);
+    mockHashPassword.mockResolvedValueOnce('hash-abc' as never);
+    mockWithTx.mockResolvedValueOnce(registrationResult as never);
+    mockCreateSession.mockResolvedValueOnce('session-tok' as never);
+    const request = {
+      json: async () => ({ email: 'new@example.com', password: 'SuperStrong!1234', name: 'Ali' }),
+      formData: async () => { throw new TypeError('not form data'); },
+      headers: { get: (k: string) => (k.toLowerCase() === 'content-type' ? 'application/json' : null) },
+      url: 'http://localhost:3000/api/v1/auth/register',
+      method: 'POST',
+    } as unknown as import('next/server').NextRequest;
+    const response = await POST(request);
+    expect(response.status).toBe(201);
+    expect(await response.json()).toEqual({ ok: true });
+    expect(vi.mocked(setSessionCookie)).toHaveBeenCalledWith(response, 'session-tok');
   });
 });
