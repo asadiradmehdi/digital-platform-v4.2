@@ -1,10 +1,11 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ZIcon, type IconName } from './zp/ZIcon';
 import { Ornament, Tile, Wordmark } from './zp/brand';
+import { NotificationBell } from './zp/NotificationBell';
 
 const TABS: Array<{ href: string; label: string; icon: IconName; match: (p: string) => boolean }> = [
   { href: '/dashboard', label: 'خانه', icon: 'tHome', match: p => p === '/dashboard' || p.startsWith('/services') || p.startsWith('/orders/new') },
@@ -44,19 +45,10 @@ export function AppShell({ children, title, back, aside }: AppShellProps) {
   const pathname = usePathname() ?? '';
   const router = useRouter();
   const [drawer, setDrawer] = useState(false);
-  const [bell, setBell] = useState(false);
-  const bellRef = useRef<HTMLDivElement>(null);
   const sub = Boolean(title);
 
   useEffect(() => {
-    if (!bell) return;
-    const close = (e: MouseEvent) => { if (bellRef.current && !bellRef.current.contains(e.target as Node)) setBell(false); };
-    document.addEventListener('mousedown', close);
-    return () => document.removeEventListener('mousedown', close);
-  }, [bell]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { setDrawer(false); setBell(false); } };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setDrawer(false); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
@@ -79,20 +71,7 @@ export function AppShell({ children, title, back, aside }: AppShellProps) {
           ) : (
             <Link href="/dashboard" className="zp-logo" aria-label="زُحل پی، خانه"><Wordmark id="bar-mark" /></Link>
           )}
-          {!sub && (
-            <div ref={bellRef} style={{ position: 'relative' }}>
-              <button type="button" className="zp-ibtn zp-press" aria-label="اعلان‌ها" aria-expanded={bell} onClick={() => setBell(o => !o)}>
-                <ZIcon name="bell" />
-              </button>
-              {bell && (
-                <div className="zp-pop" role="status">
-                  <Tile icon="bell" size={44} />
-                  <b>اعلان تازه‌ای ندارید</b>
-                  <span>وضعیت سفارش‌ها و تراکنش‌ها اینجا نمایش داده می‌شود.</span>
-                </div>
-              )}
-            </div>
-          )}
+          {!sub && <NotificationBell />}
           <button type="button" className="zp-ibtn zp-press" aria-label="منو" aria-expanded={drawer} onClick={() => setDrawer(true)}><ZIcon name="menu" /></button>
         </header>
 

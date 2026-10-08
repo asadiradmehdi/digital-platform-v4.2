@@ -9,7 +9,8 @@ export async function GET(request: NextRequest) {
     const userId = await requireRequestUser(request);
     // The inbox spans workspaces: read it under the user's own scope (notifications_user_read, 0032).
     const result = await withUserTransaction(userId, client => client.query(`
-      SELECT id, notification_type AS "type", payload->>'title' AS title,
+      SELECT id, notification_type AS "type", payload->>'title' AS title, payload->>'body' AS body,
+             CASE WHEN payload->>'href' ~ '^/[A-Za-z0-9/_?=&.-]*$' AND payload->>'href' NOT LIKE '//%' THEN payload->>'href' END AS href,
              (read_at IS NOT NULL) AS read,
              read_at AS "readAt",
              created_at AS "createdAt"
