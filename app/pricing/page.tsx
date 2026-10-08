@@ -213,7 +213,7 @@ export default function Pricing() {
             gap: 10,
             padding: '14px 16px',
             background: 'var(--accent-soft)',
-            border: '1px solid rgba(26,86,219,.12)',
+            border: '1px solid rgba(22,52,138,.12)',
             borderRadius: 14,
             maxWidth: 280,
             flexShrink: 0,

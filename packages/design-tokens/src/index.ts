@@ -2,42 +2,69 @@
 
 export const tokens = {
   colors: {
-    /** Page canvas — creates depth behind surfaces */
-    bg: '#F4F5F9',
-    bgElevated: '#FFFFFF',
+    /** Page canvas — illuminated-manuscript paper */
+    bg: '#F7F3EA',
+    bgElevated: '#FFFDF8',
 
     /** Surface hierarchy — 4 levels of depth */
-    surface: '#FFFFFF',
-    surface2: '#EFF0F5',
-    surface3: '#E6E8EF',
-    surface4: '#DDE0E9',
+    surface: '#FFFDF8',
+    surface2: '#F1EBDD',
+    surface3: '#E9E1CF',
+    surface4: '#DED4BE',
 
-    /** Typography — near-black with blue undertone */
-    ink: '#0C1224',
-    ink2: '#28304A',
-    muted: '#566079',
-    subtle: '#8B95AD',
+    /** Typography — lapis-black */
+    ink: '#0C1638',
+    ink2: '#38405F',
+    muted: '#6C6757',
+    subtle: '#958F7E',
 
     /** Borders */
-    line: 'rgba(0,0,0,0.07)',
-    lineStrong: 'rgba(0,0,0,0.12)',
+    line: '#E6DCCB',
+    lineStrong: '#D6C9B2',
 
-    /** ZOHALPAY brand — distinctive sovereign blue */
-    accent: '#1640D6',
-    accentStrong: '#1230B8',
-    accentHover: '#153CC8',
-    accentSoft: 'rgba(22,64,214,0.07)',
-    accentGlow: 'rgba(22,64,214,0.16)',
+    /** ZOHALPAY brand — lapis enamel (لاجورد) */
+    accent: '#16348A',
+    accentStrong: '#0B1B52',
+    accentHover: '#1C3F9E',
+    accentSoft: 'rgba(22,52,138,0.07)',
+    accentGlow: 'rgba(22,52,138,0.16)',
+    lapis1: '#2148A6',
+    lapis2: '#16348A',
+    lapis3: '#0B1B52',
+
+    /** Illumination gold ramp (طلای تذهیب) — gold0 lightest … gold4 bronze */
+    gold0: '#FDF1D2',
+    gold1: '#F2D390',
+    gold2: '#D6A54C',
+    gold3: '#A8762A',
+    gold4: '#7A5218',
+    goldText: '#8F6118',
+    onGold: '#1D1404',
+    rim: 'rgba(242,211,144,0.42)',
+
+    /** Turquoise (فیروزه) and vermilion (شنگرف) */
+    turquoise: '#12A39A',
+    turquoiseInk: '#0B7A73',
+    turquoiseSoft: '#DCF2EE',
+    vermilion: '#C0392B',
 
     /** Semantic */
-    success: '#059669',
-    successSoft: 'rgba(5,150,105,0.08)',
-    warning: '#D97706',
-    warningSoft: 'rgba(217,119,6,0.08)',
-    danger: '#DC2626',
-    dangerSoft: 'rgba(220,38,38,0.08)',
-    info: '#0284C7',
-    infoSoft: 'rgba(2,132,199,0.08)',
+    success: '#0B7A73',
+    successSoft: '#DCF2EE',
+    warning: '#8A5F17',
+    warningSoft: '#F6EBD2',
+    danger: '#C0392B',
+    dangerSoft: 'rgba(192,57,43,0.08)',
+    info: '#2148A6',
+    infoSoft: 'rgba(33,72,166,0.08)',
+  },
+
+  /** Gradient stops (web: linear-gradient; native: expo-linear-gradient or layered views) */
+  gradients: {
+    enamel: ['#2148A6', '#16348A', '#0B1B52'],
+    metal: ['#FDF0CF', '#EFCD86', '#CF9B44', '#E8C478', '#F8E6B6'],
+    goldLight: ['#FBEFD2', '#F1D699', '#DCAE5B'],
+    turquoiseLapis: ['#14858A', '#0F4F78', '#0B1B52'],
   },
 
   radius: {
@@ -62,8 +89,13 @@ export const tokens = {
   },
 
   typography: {
-    fa: '"Vazirmatn","IRANSansX","IRANSans","Segoe UI",Tahoma,Arial,sans-serif',
-    latin: '"Inter","Segoe UI",Arial,sans-serif',
+    /** UI + Persian numerals. Native apps load the same Fontsource files. */
+    fa: '"IBM Plex Sans Arabic","Vazirmatn",Tahoma,"Segoe UI",Arial,sans-serif',
+    /** Display / wordmark only — Kufam renders Arabic-style digits, never use it for numbers. */
+    display: '"Kufam","IBM Plex Sans Arabic",sans-serif',
+    latin: '"IBM Plex Sans Arabic","Inter","Segoe UI",Arial,sans-serif',
+    /** Brand wordmark: two words, zamme on ز */
+    wordmark: 'زُحل پی',
     displaySize: 64,
     heroSize: 52,
     h1Size: 36,
@@ -85,14 +117,15 @@ export const tokens = {
   },
 
   elevation: {
-    xs: '0 1px 2px rgba(0,0,0,0.04)',
-    sm: '0 1px 3px rgba(0,0,0,0.04),0 4px 10px rgba(0,0,0,0.05)',
-    md: '0 2px 4px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.07)',
-    lg: '0 4px 8px rgba(0,0,0,0.05),0 20px 48px rgba(0,0,0,0.10)',
-    brand: '0 4px 16px rgba(22,64,214,0.25)',
+    xs: '0 1px 2px rgba(60,45,15,0.04)',
+    sm: '0 1px 3px rgba(60,45,15,0.05),0 4px 10px rgba(60,45,15,0.06)',
+    md: '0 2px 4px rgba(60,45,15,0.04),0 8px 24px rgba(60,45,15,0.07)',
+    lg: '0 4px 8px rgba(60,45,15,0.05),0 20px 48px rgba(60,45,15,0.10)',
+    brand: '0 10px 18px -9px rgba(11,27,82,0.42)',
+    gold: '0 8px 16px -8px rgba(122,82,24,0.6)',
     /** Legacy aliases */
-    card: '0 2px 4px rgba(0,0,0,0.04),0 8px 24px rgba(0,0,0,0.07)',
-    floating: '0 1px 3px rgba(0,0,0,0.04),0 4px 10px rgba(0,0,0,0.05)',
+    card: '0 2px 4px rgba(60,45,15,0.04),0 8px 24px rgba(60,45,15,0.07)',
+    floating: '0 1px 3px rgba(60,45,15,0.05),0 4px 10px rgba(60,45,15,0.06)',
   },
 } as const;
 

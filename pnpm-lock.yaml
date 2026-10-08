@@ -14,6 +14,12 @@ importers:
       '@fontsource-variable/vazirmatn':
         specifier: 5.3.0
         version: 5.3.0
+      '@fontsource/ibm-plex-sans-arabic':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource/kufam':
+        specifier: 5.3.0
+        version: 5.3.0
       '@simplewebauthn/server':
         specifier: ^14.0.3
         version: 14.0.3
@@ -969,6 +975,12 @@ packages:
 
   '@fontsource-variable/vazirmatn@5.3.0':
     resolution: {integrity: sha512-ZA68W8JHbMdNzzwjYHUWKB2PH22QpxNEnk0ukcXM+XiqYMV6ZWJZAKuNXcrMR2JjuIAwsfAU3KknCXPI6wXUvw==}
+
+  '@fontsource/ibm-plex-sans-arabic@5.3.0':
+    resolution: {integrity: sha512-ZZ4g+JDgQY0NqSh4o0MNWU1sHQmtcee1g++aKAwyJvZxnT5y51JXsN1cIXnaQaMd40dcbK6QFYa+Z1LbaiNuqA==}
+
+  '@fontsource/kufam@5.3.0':
+    resolution: {integrity: sha512-eT3GfmixL/YOdL81Q/tUumeF20AFed2p3X2EPrL662zLYtwaz7bsNdQWJZx6a0IOR9G7d3a/038exmQ949GAMg==}
 
   '@hexagon/base64@1.1.28':
     resolution: {integrity: sha512-lhqDEAvWixy3bZ+UOYbPwUbBkwBq5C1LAJ/xPC8Oi+lL54oyakv/npbA0aU2hgCsx/1NUd4IBvV03+aUBWxerw==}
@@ -6406,6 +6418,10 @@ snapshots:
   '@fontsource-variable/inter@5.3.0': {}
 
   '@fontsource-variable/vazirmatn@5.3.0': {}
+
+  '@fontsource/ibm-plex-sans-arabic@5.3.0': {}
+
+  '@fontsource/kufam@5.3.0': {}
 
   '@hexagon/base64@1.1.28': {}
 
