@@ -3,6 +3,7 @@ import './globals.css';
 import './zohal.css';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { connection } from 'next/server';
 import { siteConfig } from '../lib/seo/site';
 
 export const metadata: Metadata = {
@@ -23,6 +24,8 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+// Nonce-based CSP needs every page rendered per request (a fresh nonce each time).
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  await connection();
   return <html lang="fa" dir="rtl"><body>{children}</body></html>;
 }

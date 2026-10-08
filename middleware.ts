@@ -2,14 +2,15 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 const PRIVATE_PREFIXES=['/dashboard','/account','/workspace','/settings','/orders','/wallet','/analytics','/subscriptions','/referrals','/support'];
 
-function buildCsp(nonce: string) {
+export function buildCsp(nonce: string) {
   return [
     `default-src 'self'`,
     `base-uri 'self'`,
     `object-src 'none'`,
     `frame-ancestors 'none'`,
     `form-action 'self'`,
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+    // 'unsafe-eval' only for the local dev server (React dev tooling); never in production builds.
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
     `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' data: blob:`,
     `font-src 'self' data:`,
@@ -30,6 +31,8 @@ export function middleware(request: NextRequest){
   const nonce = crypto.randomUUID().replaceAll('-','');
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-csp-nonce', nonce);
+  // Next.js reads the nonce from the request's CSP header and stamps it on its own scripts.
+  requestHeaders.set('Content-Security-Policy', buildCsp(nonce));
   const response=NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set('Content-Security-Policy',buildCsp(nonce));
   response.headers.set('X-Content-Type-Options','nosniff');
