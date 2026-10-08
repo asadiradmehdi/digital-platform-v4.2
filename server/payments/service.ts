@@ -113,21 +113,26 @@ export async function payOrderFromWallet(input: {
     const amountMinor = BigInt(order.rows[0].total_minor);
     const currency = order.rows[0].currency;
 
-    // Lock the ledger account row first to serialize concurrent balance check + debit.
-    const acct = await client.query<{ account_id: string; balance: string; wallet_currency?: string }>(
-      `SELECT la.id AS account_id, w.currency AS wallet_currency,
-              COALESCE(SUM(CASE WHEN le.direction='CREDIT' THEN le.amount_minor ELSE -le.amount_minor END),0)::text AS balance
+    // Lock the MAIN ledger account row first to serialize concurrent balance check + debit.
+    // Postgres forbids FOR UPDATE together with GROUP BY, so the lock and the balance
+    // sum are separate statements; the sum runs after the lock with a fresh snapshot.
+    const acct = await client.query<{ account_id: string; wallet_currency: string }>(
+      `SELECT la.id AS account_id, w.currency AS wallet_currency
        FROM wallets w
        JOIN ledger_accounts la ON la.wallet_id=w.id
-       LEFT JOIN ledger_entries le ON le.account_id=la.id
        WHERE w.workspace_id=$1 AND la.account_code='MAIN'
-       GROUP BY la.id, w.currency
+       ORDER BY w.created_at LIMIT 1
        FOR UPDATE OF la`,
       [input.workspaceId],
     );
     const accountId = acct.rows[0]?.account_id;
-    const balance = BigInt(acct.rows[0]?.balance ?? '0');
     if (!accountId) throw new AppError('CONFLICT', 'Wallet not found for this workspace.');
+    const bal = await client.query<{ balance: string }>(
+      `SELECT COALESCE(SUM(CASE WHEN direction='CREDIT' THEN amount_minor ELSE -amount_minor END),0)::text AS balance
+       FROM ledger_entries WHERE account_id=$1`,
+      [accountId],
+    );
+    const balance = BigInt(bal.rows[0]?.balance ?? '0');
     // Orders are priced in toman (IRT) while the wallet ledger is kept in rial (IRR):
     // the debit is expressed in the wallet's currency, never the raw order amount.
     const walletCurrency = acct.rows[0].wallet_currency ?? currency;
@@ -142,14 +147,16 @@ export async function payOrderFromWallet(input: {
       [accountId, debitMinor, walletCurrency, input.orderId, `charge:${input.idempotencyKey}`, { label: 'هزینه سرویس' }],
     );
 
-    // Create PAID payment record.
+    // Create PAID payment record. payments has UNIQUE(gateway, gateway_reference), so the
+    // wallet reference must be per order (an order is paid at most once), not a constant.
+    const walletReference = `wallet:${input.orderId}`;
     const payment = await client.query<{ id: string; status: string }>(
       `INSERT INTO payments(workspace_id,order_id,amount_minor,currency,status,gateway,idempotency_key,gateway_reference)
-       VALUES($1,$2,$3,$4,'PAID','wallet',$5,'wallet') RETURNING id,status`,
-      [input.workspaceId, input.orderId, amountMinor, currency, input.idempotencyKey],
+       VALUES($1,$2,$3,$4,'PAID','wallet',$5,$6) RETURNING id,status`,
+      [input.workspaceId, input.orderId, amountMinor, currency, input.idempotencyKey, walletReference],
     );
     const paymentId = payment.rows[0].id;
-    await client.query(`INSERT INTO payment_attempts(payment_id,status,gateway_reference) VALUES($1,'PAID','wallet')`, [paymentId]);
+    await client.query(`INSERT INTO payment_attempts(payment_id,status,gateway_reference) VALUES($1,'PAID',$2)`, [paymentId, walletReference]);
 
     // Transition order PAYMENT_PENDING → PAID.
     await client.query(`UPDATE orders SET status='PAID',updated_at=now() WHERE id=$1 AND status='PAYMENT_PENDING'`, [input.orderId]);

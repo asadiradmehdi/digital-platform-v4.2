@@ -254,7 +254,8 @@ describe('processSubscriptionRenewal', () => {
     mockQuery.mockResolvedValueOnce({ rows: [renewalSubscription], rowCount: 1 } as never);
     mockTx.mockImplementationOnce(async (_ws, _uid, fn) => {
       const clientQuery = vi.fn()
-        .mockResolvedValueOnce({ rows: [{ account_id: 'acct-1', balance: '1000' }] }) // balance < 5000
+        .mockResolvedValueOnce({ rows: [{ account_id: 'acct-1' }] }) // lock MAIN
+        .mockResolvedValueOnce({ rows: [{ balance: '1000' }] }) // balance < 5000
         .mockResolvedValue({ rows: [], rowCount: 1 });
       return fn({ query: clientQuery } as never);
     });
@@ -274,7 +275,8 @@ describe('processSubscriptionRenewal', () => {
     // withWorkspaceTransaction: first for the wallet charge (balance sufficient, debit inserted)
     mockTx.mockImplementationOnce(async (_ws, _uid, fn) => {
       const clientQuery = vi.fn()
-        .mockResolvedValueOnce({ rows: [{ account_id: 'acct-1', balance: '10000' }] })
+        .mockResolvedValueOnce({ rows: [{ account_id: 'acct-1' }] }) // lock MAIN
+        .mockResolvedValueOnce({ rows: [{ balance: '10000' }] })
         .mockResolvedValue({ rows: [], rowCount: 1 });
       return fn({ query: clientQuery } as never);
     });
@@ -289,20 +291,24 @@ describe('processSubscriptionRenewal', () => {
     expect(result.status).toBe('RENEWED');
   });
 
-  it('wallet balance query uses FOR UPDATE OF la to prevent concurrent double-debit', async () => {
+  it('locks the MAIN account with FOR UPDATE OF la before summing the balance', async () => {
+    // Regression: lock and SUM ... GROUP BY were one statement, which PostgreSQL rejects
+    // ("FOR UPDATE is not allowed with GROUP BY clause"), so every paid renewal failed.
     mockQuery.mockResolvedValueOnce({ rows: [renewalSubscription], rowCount: 1 } as never);
-    let capturedSql = '';
+    const sqls: string[] = [];
     mockTx.mockImplementationOnce(async (_ws, _uid, fn) => {
-      const clientQuery = vi.fn().mockImplementationOnce((sql: string) => {
-        capturedSql = sql;
-        return Promise.resolve({ rows: [{ account_id: 'acct-1', balance: '100' }] }); // balance < price
+      const clientQuery = vi.fn().mockImplementation((sql: string) => {
+        sqls.push(sql);
+        return Promise.resolve(sqls.length === 1 ? { rows: [{ account_id: 'acct-1' }] } : { rows: [{ balance: '100' }] }); // balance < price
       });
       return fn({ query: clientQuery } as never);
     });
     mockQuery.mockResolvedValue({ rows: [], rowCount: 1 } as never);
 
     await processSubscriptionRenewal('sub-1');
-    expect(capturedSql).toContain('FOR UPDATE OF la');
+    expect(sqls[0]).toContain('FOR UPDATE OF la');
+    expect(sqls[0]).not.toMatch(/GROUP BY|SUM\(/);
+    expect(sqls[1]).toMatch(/SUM\(/);
   });
 
   it('skips wallet charge and goes straight to advance when price_minor is 0', async () => {
