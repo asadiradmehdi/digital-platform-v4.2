@@ -9,6 +9,7 @@ import { Enamel, Ornament, Tile, Wordmark } from './brand';
 import { Icon, type IconName } from './Icon';
 import { Cta, IconBtn, Press, T } from './ui';
 import { siteUrl } from '../api/app';
+import { NotificationBell } from './NotificationBell';
 
 type DrawerLink = { label: string; icon: IconName; href?: Href; web?: string };
 /** Mirrors the web drawer in components/AppShell.tsx (same order, labels and glyphs). */
@@ -83,25 +84,6 @@ function Drawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   );
 }
 
-function Bell() {
-  const [open, setOpen] = useState(false);
-  return (
-    <View>
-      <IconBtn icon="bell" label="اعلان‌ها" onPress={() => setOpen(o => !o)} />
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpen(false)} accessibilityLabel="بستن" />
-        <SafeAreaView pointerEvents="box-none" style={{ paddingHorizontal: 18, paddingTop: 66, alignItems: RTL ? 'flex-end' : 'flex-start' }}>
-          <View accessibilityLiveRegion="polite" style={[{ width: 280, backgroundColor: C.surface, borderRadius: 20, padding: 16, gap: 10, alignItems: 'center', borderWidth: 1, borderColor: C.line }, shadow(16, 40, 0.18)]}>
-            <Tile icon="bell" size={44} />
-            <T w="b" size={14.4} style={{ textAlign: 'center' }}>اعلان تازه‌ای ندارید</T>
-            <T size={12} color={C.muted} style={{ textAlign: 'center', lineHeight: 21 }}>وضعیت سفارش‌ها و تراکنش‌ها اینجا نمایش داده می‌شود.</T>
-          </View>
-        </SafeAreaView>
-      </Modal>
-    </View>
-  );
-}
-
 /** Tab-level screen: wordmark bar + drawer. Body keeps a scroll fallback for very short phones. */
 export function AppScreen({ children, overlay }: PropsWithChildren<{ overlay?: ReactNode }>) {
   const [drawer, setDrawer] = useState(false);
@@ -109,7 +91,7 @@ export function AppScreen({ children, overlay }: PropsWithChildren<{ overlay?: R
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={{ flexDirection: row, alignItems: 'center', gap: 10, paddingHorizontal: 18, paddingTop: 8, paddingBottom: 8, minHeight: 62 }}>
         <View style={{ flex: 1, alignItems: right }}><Wordmark size={22} /></View>
-        <Bell />
+        <NotificationBell />
         <IconBtn icon="menu" label="منو" onPress={() => setDrawer(true)} />
       </View>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 18, paddingTop: 4, paddingBottom: 14, gap: 14 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">

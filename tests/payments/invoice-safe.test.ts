@@ -22,7 +22,7 @@ const input = { workspaceId: 'ws-1', paymentId: '00000000-0000-0000-0000-0000000
 describe('invoice issuing never fails the payment', () => {
   it('rolls back only to its savepoint and returns null when the document cannot be written', async () => {
     const c = client(/INSERT INTO invoices/);
-    await expect(issueTopupReceipt(c, input)).resolves.toBeNull();
+    await expect(issueTopupReceipt(c as never, input)).resolves.toBeNull();
     expect(c.sql[0]).toBe('SAVEPOINT invoice_issue');
     expect(c.sql).toContain('ROLLBACK TO SAVEPOINT invoice_issue');
     expect(c.sql).not.toContain('RELEASE SAVEPOINT invoice_issue');
@@ -30,7 +30,7 @@ describe('invoice issuing never fails the payment', () => {
 
   it('releases the savepoint and returns the document when it is written', async () => {
     const c = client(/^$/);
-    const r = await issueTopupReceipt(c, input);
+    const r = await issueTopupReceipt(c as never, input);
     expect(r).toMatchObject({ id: 'inv-1', created: true });
     expect(c.sql).toContain('RELEASE SAVEPOINT invoice_issue');
     expect(c.sql).not.toContain('ROLLBACK TO SAVEPOINT invoice_issue');

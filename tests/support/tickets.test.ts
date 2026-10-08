@@ -22,6 +22,8 @@ beforeEach(() => {
   q.mockImplementation(async (sql: string) => {
     if (/FOR UPDATE/.test(sql)) return { rows: [{ id: TICKET, status: 'PENDING', code: 'ZT-10002' }], rowCount: 1 };
     if (/INSERT INTO support_tickets/.test(sql)) return { rows: [{ id: TICKET, code: 'ZT-10002' }], rowCount: 1 };
+    if (/SELECT created_by_user_id/.test(sql)) return { rows: [{ uid: 'cust-1' }], rowCount: 1 };
+    if (/INSERT INTO notifications/.test(sql)) return { rows: [{ id: 'n1' }], rowCount: 1 };
     if (/INSERT INTO support_ticket_messages/.test(sql)) return { rows: [{ id: 'm9', authorKind: 'STAFF', body: 'b', createdAt: 'c' }], rowCount: 1 };
     return { rows: [], rowCount: 1 };
   });
@@ -96,6 +98,13 @@ describe('support ticket service', () => {
     expect(sqls().find(([s]) => /INSERT INTO support_ticket_messages/.test(s))![0]).toContain("'STAFF'");
     expect(sqls().find(([s]) => /SET status='ANSWERED'/.test(s))![0]).toContain('has_unread_staff_reply=true');
     expect(sqls().find(([s]) => /audit_logs/.test(s))![1][2]).toBe('support.ticket.staff_reply');
+  });
+
+  it('staff reply notifies the customer who opened the ticket, on the same transaction', async () => {
+    await addStaffReply({ workspaceId: WS, staffUserId: 'staff-1', ticketId: TICKET, body: 'بررسی شد.' });
+    const n = sqls().find(([s]) => /INSERT INTO notifications/.test(s))!;
+    expect(n[1].slice(0, 3)).toEqual([WS, 'cust-1', 'support.answered']);
+    expect(JSON.parse(String(n[1][3]))).toMatchObject({ link: `/support/${TICKET}`, category: 'support' });
   });
 });
 

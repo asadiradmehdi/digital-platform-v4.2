@@ -14,6 +14,7 @@ import { writeAudit } from '../core/audit';
 import { AppError } from '../core/errors';
 import { consumeDistributedRateLimit } from '../core/distributed-rate-limit';
 import { BODY_MAX, BODY_MIN, SUBJECT_MAX } from '../../lib/support-ui';
+import { notifyUser } from '../notifications/inbox';
 
 export const SUPPORT_CATEGORIES = ['ORDER', 'PAYMENT', 'ACCOUNT', 'AI_SUBSCRIPTION', 'TECHNICAL', 'OTHER'] as const;
 export type SupportCategory = typeof SUPPORT_CATEGORIES[number];
@@ -260,6 +261,14 @@ export async function addStaffReply(input: { workspaceId: string; staffUserId: s
        WHERE id=$1 AND workspace_id=$2`,
       [id, input.workspaceId],
     );
+    // The customer who opened the ticket hears about the answer in the bell, on the same transaction.
+    const owner = await client.query<{ uid: string }>(`SELECT created_by_user_id AS uid FROM support_tickets WHERE id=$1 AND workspace_id=$2`, [id, input.workspaceId]);
+    if (owner.rows[0]) {
+      await notifyUser({
+        workspaceId: input.workspaceId, userId: owner.rows[0].uid, type: 'support.answered', category: 'support',
+        title: `پشتیبانی به تیکت ${t.code} پاسخ داد`, body: body.slice(0, 140), link: `/support/${id}`,
+      }, client);
+    }
     await writeAudit({
       workspaceId: input.workspaceId, actorUserId: input.staffUserId, action: 'support.ticket.staff_reply',
       entityType: 'support_ticket', entityId: id, ip: auditIp(input.ip), userAgent: input.userAgent,
