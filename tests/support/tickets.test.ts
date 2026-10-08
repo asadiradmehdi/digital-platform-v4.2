@@ -69,6 +69,16 @@ describe('support ticket service', () => {
     expect(JSON.stringify(audit[1])).not.toContain('my secret details');
   });
 
+  // Regression: clientFingerprint() returns 'unknown' without TRUST_PROXY; audit_logs.ip is inet, so the
+  // insert failed and every ticket POST answered 500 against real PostgreSQL.
+  it('stores a non-IP client fingerprint as a NULL audit ip', async () => {
+    await createTicket({ workspaceId: WS, userId: 'u1', subject: 'Help', message: 'please', ip: 'unknown' });
+    expect(sqls().find(([s]) => /audit_logs/.test(s))![1][5]).toBeNull();
+    q.mockClear();
+    await createTicket({ workspaceId: WS, userId: 'u1', subject: 'Help', message: 'please', ip: '203.0.113.9' });
+    expect(sqls().find(([s]) => /audit_logs/.test(s))![1][5]).toBe('203.0.113.9');
+  });
+
   it('rejects a malformed order id without a query', async () => {
     await expect(createTicket({ workspaceId: WS, userId: 'u1', subject: 'Help', message: 'please', orderId: "1' OR 1=1" })).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
     expect(withTenantTransaction).not.toHaveBeenCalled();

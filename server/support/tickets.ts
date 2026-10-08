@@ -7,20 +7,20 @@
 //   staff reply              → ANSWERED (+ unread flag for the customer)
 //   customer reply           → PENDING  (also reopens a CLOSED ticket)
 //   customer close           → CLOSED
+import { isIP } from 'node:net';
 import type { PoolClient } from 'pg';
 import { withTenantTransaction } from '../core/db';
 import { writeAudit } from '../core/audit';
 import { AppError } from '../core/errors';
 import { consumeDistributedRateLimit } from '../core/distributed-rate-limit';
+import { BODY_MAX, BODY_MIN, SUBJECT_MAX } from '../../lib/support-ui';
 
 export const SUPPORT_CATEGORIES = ['ORDER', 'PAYMENT', 'ACCOUNT', 'AI_SUBSCRIPTION', 'TECHNICAL', 'OTHER'] as const;
 export type SupportCategory = typeof SUPPORT_CATEGORIES[number];
 export type TicketStatus = 'OPEN' | 'ANSWERED' | 'PENDING' | 'CLOSED';
 export type AuthorKind = 'CUSTOMER' | 'STAFF';
 
-export const SUBJECT_MAX = 160;
-export const BODY_MIN = 2;
-export const BODY_MAX = 4000;
+export { SUBJECT_MAX, BODY_MIN, BODY_MAX };
 
 /** Rate limits per user: new tickets and replies (staff replies are not limited here). */
 export const RATE_LIMITS = {
@@ -79,6 +79,9 @@ function ticketIdOrNotFound(v: unknown): string {
 }
 
 type Meta = { ip?: string; userAgent?: string };
+
+/** audit_logs.ip is inet: clientFingerprint() yields 'unknown' without a trusted proxy, which must become NULL. */
+const auditIp = (ip?: string) => (ip && isIP(ip) ? ip : undefined);
 
 const SUMMARY_COLUMNS = `
   t.id, t.code, t.subject, t.status, t.category, t.order_id AS "orderId",
@@ -183,7 +186,7 @@ export async function createTicket(input: NewTicketInput): Promise<{ id: string;
     );
     await writeAudit({
       workspaceId: input.workspaceId, actorUserId: input.userId, action: 'support.ticket.create',
-      entityType: 'support_ticket', entityId: ticket.id, ip: input.ip, userAgent: input.userAgent,
+      entityType: 'support_ticket', entityId: ticket.id, ip: auditIp(input.ip), userAgent: input.userAgent,
       metadata: { code: ticket.code, category, orderId, priority },
     }, client);
     return ticket;
@@ -212,7 +215,7 @@ export async function replyToTicket(input: ReplyInput): Promise<{ message: Ticke
     const reopened = t.status === 'CLOSED';
     await writeAudit({
       workspaceId: input.workspaceId, actorUserId: input.userId, action: reopened ? 'support.ticket.reopen' : 'support.ticket.reply',
-      entityType: 'support_ticket', entityId: id, ip: input.ip, userAgent: input.userAgent,
+      entityType: 'support_ticket', entityId: id, ip: auditIp(input.ip), userAgent: input.userAgent,
       metadata: { code: t.code, from: t.status, to: 'PENDING', messageId: m.rows[0].id },
     }, client);
     return { message: m.rows[0], status: 'PENDING', reopened };
@@ -231,7 +234,7 @@ export async function closeTicket(input: { workspaceId: string; userId: string; 
     );
     await writeAudit({
       workspaceId: input.workspaceId, actorUserId: input.userId, action: 'support.ticket.close',
-      entityType: 'support_ticket', entityId: id, ip: input.ip, userAgent: input.userAgent,
+      entityType: 'support_ticket', entityId: id, ip: auditIp(input.ip), userAgent: input.userAgent,
       metadata: { code: t.code, from: t.status },
     }, client);
     return { status: 'CLOSED', changed: true };
@@ -259,7 +262,7 @@ export async function addStaffReply(input: { workspaceId: string; staffUserId: s
     );
     await writeAudit({
       workspaceId: input.workspaceId, actorUserId: input.staffUserId, action: 'support.ticket.staff_reply',
-      entityType: 'support_ticket', entityId: id, ip: input.ip, userAgent: input.userAgent,
+      entityType: 'support_ticket', entityId: id, ip: auditIp(input.ip), userAgent: input.userAgent,
       metadata: { code: t.code, from: t.status, to: 'ANSWERED', messageId: m.rows[0].id },
     }, client);
     return m.rows[0];
