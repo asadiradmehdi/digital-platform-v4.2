@@ -1,139 +1,92 @@
 /**
- * Unit tests for POST /api/v1/orders/:id/refund
- * Verifies auth, permission, payment lookup, and refund creation.
+ * Unit tests for POST /api/v1/orders/:id/refund.
+ * Regression (C-6): the route fell back to randomUUID() when Idempotency-Key was missing (so retries
+ * created new refunds) and always "refunded" through the mock gateway. It now delegates to the shared
+ * refundOrder(REFUND), passes the caller's key through (required) and validates amountMinor.
  */
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 
-vi.mock('../../server/core/db', () => ({ query: vi.fn(), withTenantTransaction: vi.fn() }));
 vi.mock('../../server/identity/request-user', () => ({ requireRequestUser: vi.fn() }));
 vi.mock('../../server/identity/rbac', () => ({ requireWorkspacePermission: vi.fn() }));
-vi.mock('../../server/core/security-boundary', () => ({
-  assertSameOrigin: vi.fn(),
-  clientFingerprint: vi.fn().mockReturnValue('1.2.3.4'),
-}));
-vi.mock('../../server/core/validation', () => ({ requireUuid: vi.fn() }));
-vi.mock('../../server/payments/refund', () => ({ createRefund: vi.fn() }));
-vi.mock('../../server/payments/mock-gateway', () => ({ mockGateway: {} }));
+vi.mock('../../server/core/security-boundary', () => ({ assertSameOrigin: vi.fn() }));
+vi.mock('../../server/payments/refund', () => ({ refundOrder: vi.fn() }));
 
-import { query, withTenantTransaction } from '../../server/core/db';
 import { requireRequestUser } from '../../server/identity/request-user';
 import { requireWorkspacePermission } from '../../server/identity/rbac';
-import { requireUuid } from '../../server/core/validation';
-import { createRefund } from '../../server/payments/refund';
+import { refundOrder } from '../../server/payments/refund';
 import { AppError } from '../../server/core/errors';
 
-const mockQuery = vi.mocked(query);
 const mockRequireUser = vi.mocked(requireRequestUser);
 const mockRequirePermission = vi.mocked(requireWorkspacePermission);
-const mockRequireUuid = vi.mocked(requireUuid);
-const mockCreateRefund = vi.mocked(createRefund);
+const mockRefundOrder = vi.mocked(refundOrder);
 
-beforeEach(() => {
-  vi.resetAllMocks();
-  vi.mocked(withTenantTransaction).mockImplementation((async (_ws: string, _u: string | undefined, fn: (c: unknown) => unknown) => fn({ query: mockQuery })) as never);
-});
+const WS = '11111111-1111-4111-8111-111111111111';
+const ORDER = '33333333-3333-4333-8333-333333333333';
+const KEY = 'refund-key-0123456789';
+
+beforeEach(() => vi.resetAllMocks());
 
 type RouteModule = typeof import('../../app/api/v1/orders/[id]/refund/route');
 let POST: RouteModule['POST'];
+beforeAll(async () => { ({ POST } = await import('../../app/api/v1/orders/[id]/refund/route')); }, 60000);
 
-beforeAll(async () => {
-  ({ POST } = await import('../../app/api/v1/orders/[id]/refund/route'));
-}, 60000);
-
-function makeRequest(body: unknown, idempotencyKey?: string): import('next/server').NextRequest {
+function makeRequest(body: unknown, key: string | null = KEY): import('next/server').NextRequest {
   return {
     json: async () => body,
-    headers: {
-      get: (k: string) => (k === 'idempotency-key' ? (idempotencyKey ?? null) : null),
-    },
-    url: 'http://localhost:3000/api/v1/orders/order-1/refund',
+    headers: { get: (k: string) => (k === 'idempotency-key' ? key : null) },
+    url: `http://localhost:3000/api/v1/orders/${ORDER}/refund`,
     method: 'POST',
-    signal: { addEventListener: vi.fn() },
   } as unknown as import('next/server').NextRequest;
 }
-
-function makeParams(id: string) {
-  return { params: Promise.resolve({ id }) };
-}
-
-const paymentRow = {
-  id: 'pay-1', amount_minor: '100000', currency: 'IRR', workspace_id: 'ws-1',
-};
+const params = { params: Promise.resolve({ id: ORDER }) };
+const outcome = { orderId: ORDER, orderStatus: 'REFUNDED', refund: { id: 'r1', status: 'PAID', amountMinor: '1200000', currency: 'IRT', destination: 'WALLET' as const } };
 
 describe('POST /api/v1/orders/:id/refund', () => {
-  it('returns 200 with refund result on success', async () => {
-    mockRequireUuid.mockReturnValueOnce('ws-1' as never);
+  it('delegates a full refund to refundOrder(REFUND) with the caller key', async () => {
     mockRequireUser.mockResolvedValueOnce('user-1' as never);
-    mockRequirePermission.mockResolvedValueOnce(undefined as never);
-    mockQuery.mockResolvedValueOnce({ rows: [paymentRow], rowCount: 1 } as never);
-    mockCreateRefund.mockResolvedValueOnce({ id: 'ref-1', status: 'REFUNDED' } as never);
-
-    const response = await POST(makeRequest({ workspaceId: 'ws-1' }), makeParams('order-1'));
+    mockRefundOrder.mockResolvedValueOnce(outcome);
+    const response = await POST(makeRequest({ workspaceId: WS, reason: 'late' }), params);
     expect(response.status).toBe(200);
-    const data = await response.json();
-    expect(data.status).toBe('REFUNDED');
+    expect(await response.json()).toEqual(outcome);
+    expect(mockRequirePermission).toHaveBeenCalledWith('user-1', WS, 'orders.refund');
+    expect(mockRefundOrder).toHaveBeenCalledWith({ workspaceId: WS, orderId: ORDER, mode: 'REFUND', amountMinor: undefined, idempotencyKey: KEY, actorUserId: 'user-1', reason: 'late' });
   });
 
-  it('returns 401 when not authenticated', async () => {
+  it('passes a partial amount as bigint', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    mockRefundOrder.mockResolvedValueOnce(outcome);
+    await POST(makeRequest({ workspaceId: WS, amountMinor: '5000' }), params);
+    expect(mockRefundOrder.mock.calls[0][0].amountMinor).toBe(5000n);
+  });
+
+  it('rejects a non-positive or non-integer amount with 400 before calling the service', async () => {
+    for (const amountMinor of [0, -1, '1.5', 'abc']) {
+      mockRequireUser.mockResolvedValueOnce('user-1' as never);
+      expect((await POST(makeRequest({ workspaceId: WS, amountMinor }), params)).status).toBe(400);
+    }
+    expect(mockRefundOrder).not.toHaveBeenCalled();
+  });
+
+  it('never invents an idempotency key: a missing header reaches the service as null', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    mockRefundOrder.mockRejectedValueOnce(new AppError('VALIDATION_ERROR', 'A valid Idempotency-Key is required.'));
+    const response = await POST(makeRequest({ workspaceId: WS }, null), params);
+    expect(response.status).toBe(400);
+    expect(mockRefundOrder.mock.calls[0][0].idempotencyKey).toBeNull();
+  });
+
+  it('maps service conflicts (already refunded) to 409', async () => {
+    mockRequireUser.mockResolvedValueOnce('user-1' as never);
+    mockRefundOrder.mockRejectedValueOnce(new AppError('CONFLICT', 'مبلغ این سفارش پیش‌تر به‌طور کامل بازگردانده شده است.'));
+    expect((await POST(makeRequest({ workspaceId: WS }), params)).status).toBe(409);
+  });
+
+  it('returns 401/403 without calling the service', async () => {
     mockRequireUser.mockRejectedValueOnce(new AppError('UNAUTHORIZED', 'Unauthorized'));
-
-    const response = await POST(makeRequest({ workspaceId: 'ws-1' }), makeParams('order-1'));
-    expect(response.status).toBe(401);
-  });
-
-  it('returns 403 when user lacks orders.refund permission', async () => {
-    mockRequireUuid.mockReturnValueOnce('ws-1' as never);
+    expect((await POST(makeRequest({ workspaceId: WS }), params)).status).toBe(401);
     mockRequireUser.mockResolvedValueOnce('user-1' as never);
     mockRequirePermission.mockRejectedValueOnce(new AppError('FORBIDDEN', 'Forbidden'));
-
-    const response = await POST(makeRequest({ workspaceId: 'ws-1' }), makeParams('order-1'));
-    expect(response.status).toBe(403);
-  });
-
-  it('returns 404 when no paid payment exists for the order', async () => {
-    mockRequireUuid.mockReturnValueOnce('ws-1' as never);
-    mockRequireUser.mockResolvedValueOnce('user-1' as never);
-    mockRequirePermission.mockResolvedValueOnce(undefined as never);
-    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as never);
-
-    const response = await POST(makeRequest({ workspaceId: 'ws-1' }), makeParams('order-missing'));
-    expect(response.status).toBe(404);
-  });
-
-  it('returns 400 when amountMinor is zero or negative', async () => {
-    mockRequireUuid.mockReturnValueOnce('ws-1' as never);
-    mockRequireUser.mockResolvedValueOnce('user-1' as never);
-    mockRequirePermission.mockResolvedValueOnce(undefined as never);
-    mockQuery.mockResolvedValueOnce({ rows: [paymentRow], rowCount: 1 } as never);
-
-    const response = await POST(makeRequest({ workspaceId: 'ws-1', amountMinor: '0' }), makeParams('order-1'));
-    expect(response.status).toBe(400);
-  });
-
-  it('uses idempotency-key header when provided', async () => {
-    mockRequireUuid.mockReturnValueOnce('ws-1' as never);
-    mockRequireUser.mockResolvedValueOnce('user-1' as never);
-    mockRequirePermission.mockResolvedValueOnce(undefined as never);
-    mockQuery.mockResolvedValueOnce({ rows: [paymentRow], rowCount: 1 } as never);
-    mockCreateRefund.mockResolvedValueOnce({ id: 'ref-2', status: 'REFUNDED' } as never);
-
-    await POST(makeRequest({ workspaceId: 'ws-1' }, 'my-idem-key'), makeParams('order-1'));
-    expect(mockCreateRefund).toHaveBeenCalledWith(expect.objectContaining({ idempotencyKey: 'my-idem-key' }));
-  });
-});
-
-describe('refund payment lookup RLS context', () => {
-  // Regression: payments/orders have FORCE RLS; the pool lookup found no PAID payment under the
-  // production role, so every refund answered 404.
-  it('looks up the paid payment inside the workspace context after the permission check', async () => {
-    mockRequireUuid.mockReturnValueOnce('ws-7' as never);
-    mockRequireUser.mockResolvedValueOnce('user-1' as never);
-    mockRequirePermission.mockResolvedValueOnce(undefined as never);
-    mockQuery.mockResolvedValueOnce({ rows: [paymentRow], rowCount: 1 } as never);
-    mockCreateRefund.mockResolvedValueOnce({ id: 'ref-1', status: 'REFUNDED' } as never);
-    await POST(makeRequest({ workspaceId: 'ws-7' }), makeParams('order-1'));
-    const mockTx = vi.mocked(withTenantTransaction);
-    expect(mockTx).toHaveBeenCalledWith('ws-7', 'user-1', expect.any(Function));
-    expect(mockRequirePermission.mock.invocationCallOrder[0]).toBeLessThan(mockTx.mock.invocationCallOrder[0]);
+    expect((await POST(makeRequest({ workspaceId: WS }), params)).status).toBe(403);
+    expect(mockRefundOrder).not.toHaveBeenCalled();
   });
 });
