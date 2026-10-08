@@ -6,7 +6,7 @@ import { assertSameOrigin } from '../../../../server/core/security-boundary';
 import { requireUuid } from '../../../../server/core/validation';
 import { query, withWorkspaceTransaction } from '../../../../server/core/db';
 import { createSubscription } from '../../../../server/subscriptions/service';
-import { randomUUID } from 'node:crypto';
+import { requireIdempotencyKey } from '../../../../server/core/idempotency';
 
 export async function GET(request: NextRequest) {
   const id = correlationId(request);
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     const workspaceId = requireUuid(body.workspaceId, 'workspaceId');
     const planId = requireUuid(body.planId, 'planId');
     await requireWorkspacePermission(userId, workspaceId, 'subscriptions.create');
-    const idempotencyKey = request.headers.get('idempotency-key') ?? randomUUID();
+    const idempotencyKey = requireIdempotencyKey(request.headers.get('idempotency-key'));
     const subscription = await createSubscription({ workspaceId, planId, idempotencyKey });
     return json(subscription, { status: 201, correlationId: id });
   } catch (error) {

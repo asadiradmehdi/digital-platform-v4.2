@@ -1,25 +1,57 @@
 import { withWorkspaceTransaction } from '../core/db';
 import { AppError } from '../core/errors';
 import { requireIdempotencyKey } from '../core/idempotency';
+import type { PoolClient } from 'pg';
+import { debitWalletChecked, requireMainWalletAccount } from '../payments/wallet-ledger';
 
+type Queryable = Pick<PoolClient, 'query'>;
+
+export type PlanForSubscription = { id: string; price_minor: string; currency: string; price_version: number | null; pricing_rule_id: string | null };
+
+/** Insert a subscription (snapshotting price and entitlements) on the caller's tenant transaction. */
+export async function insertSubscription(client: Queryable, input: { workspaceId: string; plan: PlanForSubscription; idempotencyKey: string; startsAt?: Date; trialEndsAt?: Date; source: string }) {
+  // Use TRIALING only when a trial end date is explicitly provided; otherwise start ACTIVE.
+  const initialStatus = input.trialEndsAt ? 'TRIALING' : 'ACTIVE';
+  const result = await client.query<{id:string;status:string}>(`INSERT INTO subscriptions(workspace_id,plan_id,status,current_period_start,current_period_end,trial_ends_at,idempotency_key,price_minor,currency,price_version,pricing_rule_id) VALUES($1,$2,$10,COALESCE($3,now()),COALESCE($3,now())+interval '30 days',$4,$5,$6,$7,$8,$9) RETURNING id,status`,[input.workspaceId,input.plan.id,input.startsAt ?? null,input.trialEndsAt ?? null,input.idempotencyKey,input.plan.price_minor,input.plan.currency,input.plan.price_version,input.plan.pricing_rule_id,initialStatus]);
+  await client.query(`INSERT INTO subscription_events(subscription_id,event_type,payload) VALUES($1,'CREATED',$2)`,[result.rows[0].id,{source:input.source}]);
+  await client.query(
+    `INSERT INTO subscription_entitlement_snapshots(subscription_id,entitlement_key,value)
+     SELECT $1, pe.entitlement_key, pe.value FROM plan_entitlements pe WHERE pe.plan_id=$2
+     ON CONFLICT(subscription_id,entitlement_key) DO UPDATE SET value=EXCLUDED.value`,
+    [result.rows[0].id, input.plan.id]
+  );
+  return result.rows[0];
+}
+
+/**
+ * Subscribe a workspace to a plan. A paid plan's first period is charged from the wallet in the same
+ * transaction (converted into the wallet currency); with too little balance nothing is created and
+ * PAYMENT_REQUIRED (402) is returned. Idempotent by key: a retry returns the same subscription and
+ * never charges twice.
+ */
 export async function createSubscription(input: { workspaceId:string; planId:string; idempotencyKey:string; startsAt?: Date; trialEndsAt?: Date }) {
   requireIdempotencyKey(input.idempotencyKey);
   return withWorkspaceTransaction(input.workspaceId, undefined, async client => {
     const existing = await client.query<{id:string;status:string}>(`SELECT id,status FROM subscriptions WHERE workspace_id=$1 AND idempotency_key=$2`,[input.workspaceId,input.idempotencyKey]);
     if (existing.rows[0]) return existing.rows[0];
-    const plan = await client.query<{id:string;active:boolean;price_minor:string;currency:string;price_generated_at:Date;price_version:number;pricing_rule_id:string|null}>(`SELECT id,active,price_minor,currency,price_generated_at,price_version,pricing_rule_id FROM plans WHERE id=$1`,[input.planId]);
+    const plan = await client.query<PlanForSubscription & {active:boolean}>(`SELECT id,active,price_minor::text AS price_minor,currency,price_version,pricing_rule_id FROM plans WHERE id=$1`,[input.planId]);
     if (!plan.rows[0] || !plan.rows[0].active) throw new AppError('NOT_FOUND','Plan not found or inactive.');
-    // Use TRIALING only when a trial end date is explicitly provided; otherwise start ACTIVE.
-    const initialStatus = input.trialEndsAt ? 'TRIALING' : 'ACTIVE';
-    const result = await client.query<{id:string;status:string}>(`INSERT INTO subscriptions(workspace_id,plan_id,status,current_period_start,current_period_end,trial_ends_at,idempotency_key,price_minor,currency,price_version,pricing_rule_id) VALUES($1,$2,$10,COALESCE($3,now()),COALESCE($3,now())+interval '30 days',$4,$5,$6,$7,$8,$9) RETURNING id,status`,[input.workspaceId,input.planId,input.startsAt ?? null,input.trialEndsAt ?? null,input.idempotencyKey,plan.rows[0].price_minor,plan.rows[0].currency,plan.rows[0].price_version,plan.rows[0].pricing_rule_id,initialStatus]);
-    await client.query(`INSERT INTO subscription_events(subscription_id,event_type,payload) VALUES($1,'CREATED',$2)`,[result.rows[0].id,{source:'api'}]);
-    await client.query(
-      `INSERT INTO subscription_entitlement_snapshots(subscription_id,entitlement_key,value)
-       SELECT $1, pe.entitlement_key, pe.value FROM plan_entitlements pe WHERE pe.plan_id=$2
-       ON CONFLICT(subscription_id,entitlement_key) DO UPDATE SET value=EXCLUDED.value`,
-      [result.rows[0].id, input.planId]
-    );
-    return result.rows[0];
+    const p = plan.rows[0];
+    const subscription = await insertSubscription(client, { workspaceId: input.workspaceId, plan: p, idempotencyKey: input.idempotencyKey, startsAt: input.startsAt, trialEndsAt: input.trialEndsAt, source: 'api' });
+    const priceMinor = BigInt(p.price_minor ?? '0');
+    if (priceMinor > 0n && !input.trialEndsAt) {
+      const wallet = await requireMainWalletAccount(client, input.workspaceId);
+      await debitWalletChecked(client, wallet, {
+        amountMinor: priceMinor,
+        currency: String(p.currency).trim(),
+        referenceType: 'SUBSCRIPTION',
+        referenceId: subscription.id,
+        idempotencyKey: `subscription:${subscription.id}`,
+        label: 'خرید اشتراک',
+      });
+      await client.query(`INSERT INTO subscription_events(subscription_id,event_type,payload) VALUES($1,'CHARGED',$2)`,[subscription.id,{source:'wallet',amountMinor:priceMinor.toString(),currency:String(p.currency).trim()}]);
+    }
+    return subscription;
   });
 }
 
