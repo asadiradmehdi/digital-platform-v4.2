@@ -12,5 +12,10 @@ done
 if grep -RInE 'FROM (orders|payments|subscriptions|checkout_sessions|ai_usage_events|usage_events|usage_counters|ledger_transactions|wallets|api_keys)' server --include='*.ts' | grep -q 'query('; then
   echo "RLS_BOUNDARY_REVIEW: direct query() references tenant-protected tables require manual/runtime review"
 fi
+# app.rls_system_read opens the migration-0031 system_read policies; only those SQL functions may set it.
+if grep -RIn 'rls_system_read' app server components lib --include='*.ts' --include='*.tsx' 2>/dev/null; then
+  echo "RLS_BOUNDARY_FAIL: application code must never set app.rls_system_read"
+  fail=1
+fi
 if [ "$fail" -ne 0 ]; then exit 1; fi
 echo 'RLS_BOUNDARY_STATIC=PASS'
