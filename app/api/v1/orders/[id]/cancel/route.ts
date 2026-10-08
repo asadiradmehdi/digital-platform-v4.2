@@ -6,6 +6,7 @@ import { assertSameOrigin } from '../../../../../../server/core/security-boundar
 import { withWorkspaceTransaction } from '../../../../../../server/core/db';
 import { requireUuid } from '../../../../../../server/core/validation';
 import { AppError } from '../../../../../../server/core/errors';
+import { toWalletMinor } from '../../../../../../server/payments/currency';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -47,17 +48,18 @@ export async function POST(request: NextRequest, { params }: Params) {
         );
         const p = payment.rows[0];
         if (p) {
-          const acct = await client.query<{ account_id: string }>(
-            `SELECT la.id AS account_id FROM ledger_accounts la JOIN wallets w ON w.id=la.wallet_id
+          const acct = await client.query<{ account_id: string; wallet_currency?: string }>(
+            `SELECT la.id AS account_id, w.currency AS wallet_currency FROM ledger_accounts la JOIN wallets w ON w.id=la.wallet_id
              WHERE w.workspace_id=$1 AND la.account_code='MAIN' LIMIT 1`,
             [workspaceId],
           );
           if (acct.rows[0]) {
+            const walletCurrency = acct.rows[0].wallet_currency ?? p.currency;
             await client.query(
               `INSERT INTO ledger_entries(account_id,direction,amount_minor,currency,reference_type,reference_id,idempotency_key,metadata)
                VALUES($1,'CREDIT',$2,$3,'CANCELLATION_REFUND',$4,$5,$6)
                ON CONFLICT(account_id,idempotency_key) DO NOTHING`,
-              [acct.rows[0].account_id, p.amount_minor, p.currency, orderId, `cancel:${orderId}`, { label: 'لغو سفارش — بازگشت وجه' }],
+              [acct.rows[0].account_id, toWalletMinor(BigInt(p.amount_minor), p.currency, walletCurrency).toString(), walletCurrency, orderId, `cancel:${orderId}`, { label: 'لغو سفارش — بازگشت وجه' }],
             );
           }
           await client.query(

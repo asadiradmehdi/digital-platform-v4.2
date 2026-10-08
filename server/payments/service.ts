@@ -3,6 +3,7 @@ import { withWorkspaceTransaction } from '../core/db';
 import { AppError } from '../core/errors';
 import { requireIdempotencyKey } from '../core/idempotency';
 import { writeAudit } from '../core/audit';
+import { toWalletMinor } from './currency';
 
 export type PaymentGateway = {
   readonly name: string;
@@ -113,28 +114,32 @@ export async function payOrderFromWallet(input: {
     const currency = order.rows[0].currency;
 
     // Lock the ledger account row first to serialize concurrent balance check + debit.
-    const acct = await client.query<{ account_id: string; balance: string }>(
-      `SELECT la.id AS account_id,
+    const acct = await client.query<{ account_id: string; balance: string; wallet_currency?: string }>(
+      `SELECT la.id AS account_id, w.currency AS wallet_currency,
               COALESCE(SUM(CASE WHEN le.direction='CREDIT' THEN le.amount_minor ELSE -le.amount_minor END),0)::text AS balance
        FROM wallets w
        JOIN ledger_accounts la ON la.wallet_id=w.id
        LEFT JOIN ledger_entries le ON le.account_id=la.id
        WHERE w.workspace_id=$1 AND la.account_code='MAIN'
-       GROUP BY la.id
+       GROUP BY la.id, w.currency
        FOR UPDATE OF la`,
       [input.workspaceId],
     );
     const accountId = acct.rows[0]?.account_id;
     const balance = BigInt(acct.rows[0]?.balance ?? '0');
     if (!accountId) throw new AppError('CONFLICT', 'Wallet not found for this workspace.');
-    if (balance < amountMinor) throw new AppError('PAYMENT_REQUIRED', 'موجودی کافی نیست. لطفاً کیف پول خود را شارژ کنید.');
+    // Orders are priced in toman (IRT) while the wallet ledger is kept in rial (IRR):
+    // the debit is expressed in the wallet's currency, never the raw order amount.
+    const walletCurrency = acct.rows[0].wallet_currency ?? currency;
+    const debitMinor = toWalletMinor(amountMinor, currency, walletCurrency);
+    if (balance < debitMinor) throw new AppError('PAYMENT_REQUIRED', 'موجودی کافی نیست. لطفاً کیف پول خود را شارژ کنید.');
 
     // Debit wallet.
     await client.query(
       `INSERT INTO ledger_entries(account_id,direction,amount_minor,currency,reference_type,reference_id,idempotency_key,metadata)
        VALUES($1,'DEBIT',$2,$3,'SERVICE_CHARGE',$4,$5,$6)
        ON CONFLICT(account_id,idempotency_key) DO NOTHING`,
-      [accountId, amountMinor, currency, input.orderId, `charge:${input.idempotencyKey}`, { label: 'هزینه سرویس' }],
+      [accountId, debitMinor, walletCurrency, input.orderId, `charge:${input.idempotencyKey}`, { label: 'هزینه سرویس' }],
     );
 
     // Create PAID payment record.

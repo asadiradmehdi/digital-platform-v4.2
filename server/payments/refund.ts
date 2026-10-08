@@ -2,6 +2,7 @@ import { withWorkspaceTransaction } from '../core/db';
 import { AppError } from '../core/errors';
 import { requireIdempotencyKey } from '../core/idempotency';
 import { writeAudit } from '../core/audit';
+import { toWalletMinor } from './currency';
 import type { PaymentGateway } from './service';
 
 export async function createRefund(input: {
@@ -76,17 +77,18 @@ export async function createRefund(input: {
     );
 
     // Credit the workspace wallet for the refunded amount.
-    const acct = await client.query<{ account_id: string }>(
-      `SELECT la.id AS account_id FROM ledger_accounts la JOIN wallets w ON w.id=la.wallet_id
+    const acct = await client.query<{ account_id: string; wallet_currency?: string }>(
+      `SELECT la.id AS account_id, w.currency AS wallet_currency FROM ledger_accounts la JOIN wallets w ON w.id=la.wallet_id
        WHERE w.workspace_id=$1 AND la.account_code='MAIN' LIMIT 1`,
       [input.workspaceId],
     );
     if (acct.rows[0]) {
+      const walletCurrency = acct.rows[0].wallet_currency ?? input.currency;
       await client.query(
         `INSERT INTO ledger_entries(account_id,direction,amount_minor,currency,reference_type,reference_id,idempotency_key,metadata)
          VALUES($1,'CREDIT',$2,$3,'REFUND',$4,$5,$6)
          ON CONFLICT(account_id,idempotency_key) DO NOTHING`,
-        [acct.rows[0].account_id, input.amountMinor.toString(), input.currency, refundId, `refund:${refundId}`, { label: 'بازگشت وجه' }],
+        [acct.rows[0].account_id, toWalletMinor(input.amountMinor, input.currency, walletCurrency).toString(), walletCurrency, refundId, `refund:${refundId}`, { label: 'بازگشت وجه' }],
       );
     }
 
