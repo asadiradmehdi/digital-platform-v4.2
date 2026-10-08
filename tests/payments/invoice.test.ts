@@ -137,6 +137,32 @@ describe('issueOrderInvoice', () => {
     expect(item.values[7]).toMatchObject({ target: 'al•••@gmail.com', quantityWords: '۲ هزار', unit: 'فالوور', category: 'اینستاگرام' });
     expect(ins.values.at(-1)).toMatchObject({ orderCode: 'ZP-ORD1' });
   });
+
+  it('team-fulfilled creative order paid at the gateway: own unit, clean target label, never the private brief', async () => {
+    const f = fakeClient({
+      order: { currency: 'IRT', discount_minor: '0' },
+      orderItems: [{ quantity: '1', unit_price_minor: '2500000', total_minor: '2500000', parameters: { target: '@zohal.brand', brief: 'نام برند زحل، رنگ سرمه‌ای و طلایی' }, name: 'طراحی لوگو', slug: 'ds-logo', product_slug: 'design' }],
+    });
+    await issueOrderInvoice(f.client, { workspaceId: 'ws-1', orderId: 'ord-1', paymentId: 'pay-9', method: 'GATEWAY', reference: 'zp_ref_77' });
+    const ins = f.insert();
+    expect(col(ins, 'document_type')).toBe('SALE');
+    expect(col(ins, 'title')).toBe('طراحی لوگو');
+    expect(ins.values).toContain('GATEWAY');
+    expect(ins.values).toContain('zp_ref_77');
+    const item = f.calls.find(c => c.sql.includes('INSERT INTO invoice_items'))!;
+    expect(item.values[7]).toMatchObject({ unit: 'لوگو', quantityWords: '۱', category: 'طراحی و گرافیک', target: '@zohal.brand', targetLabel: 'پیج یا برند' });
+    expect(JSON.stringify(f.calls.map(c => c.values))).not.toContain('سرمه‌ای');
+  });
+
+  it('monthly automation order is billed in months', async () => {
+    const f = fakeClient({
+      order: { currency: 'IRT', discount_minor: '0' },
+      orderItems: [{ quantity: '3', unit_price_minor: '1200000', total_minor: '3600000', parameters: { target: '@shop', brief: 'پاسخ خودکار به کامنت‌ها' }, name: 'پاسخ خودکار کامنت', slug: 'au-comment-reply', product_slug: 'automation' }],
+    });
+    await issueOrderInvoice(f.client, { workspaceId: 'ws-1', orderId: 'ord-1', method: 'WALLET' });
+    const item = f.calls.find(c => c.sql.includes('INSERT INTO invoice_items'))!;
+    expect(item.values[7]).toMatchObject({ unit: 'ماه', category: 'اتوماسیون', targetLabel: 'پیج یا کانال' });
+  });
 });
 
 describe('issueSubscriptionInvoice', () => {

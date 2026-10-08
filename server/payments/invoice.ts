@@ -9,7 +9,7 @@
 import type { PoolClient } from 'pg';
 import { withWorkspaceTransaction } from '../core/db';
 import { AppError } from '../core/errors';
-import { categoryMeta, KINDS, serviceKind, targetField } from '../../lib/catalog-ui';
+import { categoryMeta, serviceKind, serviceMeta, targetField } from '../../lib/catalog-ui';
 import { formatQuantityWords, orderCode } from '../../lib/format';
 import { documentToman, maskTarget, vatPortion } from '../../lib/invoice-format';
 import { notifyInvoiceIssued } from './invoice-notify';
@@ -168,9 +168,11 @@ export async function issueOrderInvoice(client: Queryable, input: {
       metadata: {
         serviceSlug: it.slug,
         category: categoryMeta(it.product_slug)?.name ?? null,
-        unit: KINDS[kindKey].unit,
+        // Creative (team-fulfilled) services carry their own unit: «لوگو», «طرح», «ماه», …
+        unit: serviceMeta(it.slug).unit,
         quantityWords: formatQuantityWords(Number(q)),
-        ...(target ? { target, targetLabel: field.label, targetLtr: field.ltr } : {}),
+        // Only the masked target is printed; a creative order's private brief never goes on the document.
+        ...(target ? { target, targetLabel: field.label.replace(/\s*\(اختیاری\)$/, ''), targetLtr: field.ltr } : {}),
       },
     };
   });
