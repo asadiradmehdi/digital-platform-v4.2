@@ -1,35 +1,22 @@
 import type { Metadata } from 'next';
 import { AppShell } from '../../components/AppShell';
-import { SystemStrip } from '../../components/ProductSurface';
-import ServicesCatalog from './ServicesCatalog';
-import { listServices } from '../../server/commerce/catalog';
-import type { CatalogService } from '../../server/commerce/catalog';
+import { ShellAside } from '../../components/zp/ShellAside';
+import { CategoryGrid } from '../../components/zp/CategoryGrid';
+import { SecHead } from '../../components/zp/cards';
+import { optionalViewer } from '../../server/account/page-context';
+import { listCatalogWithPrices } from '../../server/account/overview';
 
 export const metadata: Metadata = { title: 'خدمات دیجیتال', robots: { index: false, follow: false } };
 
-async function getDbServices(): Promise<CatalogService[] | null> {
-  try {
-    const page = await listServices(50);
-    return page.items.length > 0 ? page.items : null;
-  } catch {
-    return null;
-  }
-}
-
 export default async function ServicesPage() {
-  const dbServices = await getDbServices();
+  const viewer = await optionalViewer();
+  const catalog = await listCatalogWithPrices().catch(() => []);
+  const live = new Set(catalog.filter(c => c.unitPriceMinor).map(c => c.productSlug));
   return (
-    <AppShell>
-      <main className="services-page">
-        <header className="page-header" style={{ marginBottom: 22 }}>
-          <div>
-            <span className="eyebrow">خدمات · کاتالوگ</span>
-            <h1>خدمات دیجیتال</h1>
-            <p>خدمات شبکه‌های اجتماعی، هوش مصنوعی و اتوماسیون با قیمت شفاف و پیگیری لحظه‌ای.</p>
-          </div>
-        </header>
-        <SystemStrip/>
-        <ServicesCatalog dbServices={dbServices} />
+    <AppShell title="همه‌ی خدمات" back="/dashboard" aside={viewer ? <ShellAside workspaceId={viewer.workspaceId} /> : undefined}>
+      <main className="zp-screen">
+        <SecHead title="دسته‌ها" note={`${new Intl.NumberFormat('fa-IR').format(catalog.length)} سرویس فعال`} />
+        <CategoryGrid live={live} />
       </main>
     </AppShell>
   );

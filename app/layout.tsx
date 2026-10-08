@@ -1,5 +1,6 @@
 import './fonts';
 import './globals.css';
+import './zohal.css';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { siteConfig } from '../lib/seo/site';

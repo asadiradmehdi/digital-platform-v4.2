@@ -35,3 +35,27 @@ export function formatQuantityWords(n: number) {
 export function formatTomanWordsFromIRR(minor: number) {
   return `${formatQuantityWords(Math.round(minor / 10))} تومان`;
 }
+
+/** Money amount in toman for display: IRT minor units are toman, IRR minor units are rial (÷10). */
+export function toToman(minor: number | string | bigint, currency: string) {
+  const n = Number(minor);
+  return currency.trim() === 'IRR' ? Math.round(n / 10) : Math.round(n);
+}
+
+/** «۱٬۲۴۸٬۰۰۰» — full toman figure with Persian digits and grouping. */
+export function formatTomanNumber(toman: number) {
+  return new Intl.NumberFormat('fa-IR').format(Math.round(toman));
+}
+
+/** Short customer-facing tracking code for an order id: «ZP-4A1C9E». */
+export function orderCode(id: string) {
+  return `ZP-${id.replace(/-/g, '').slice(0, 6).toUpperCase()}`;
+}
+
+/** «۱۴ مهر · ۱۰:۴۲» in the Persian calendar. */
+export function formatWhen(date: string | Date) {
+  const d = new Date(date);
+  const day = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { day: 'numeric', month: 'long', timeZone: 'Asia/Tehran' }).format(d);
+  const time = new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Asia/Tehran' }).format(d);
+  return `${day} · ${time}`;
+}

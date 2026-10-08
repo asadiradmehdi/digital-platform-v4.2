@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AlertCircle, ArrowLeft, Loader2, ShieldCheck } from 'lucide-react';
+import { Wordmark } from '../../components/zp/brand';
 
 type Mode = 'login' | 'register';
 type Status = 'idle' | 'loading' | 'error';
@@ -49,29 +50,7 @@ export default function AuthForm() {
     <main className="auth-shell">
       <section className="auth-card">
         {/* Brand */}
-        <Link href="/" className="auth-brand">
-          <span
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: 10,
-              background: 'var(--accent)',
-              color: '#fff',
-              display: 'grid',
-              placeItems: 'center',
-              fontSize: 16,
-              fontWeight: 900,
-              flex: 'none',
-            }}
-            aria-hidden="true"
-          >
-            ✦
-          </span>
-          <span>
-            <b>ZOHALPAY</b>
-            <small>خدمات دیجیتال</small>
-          </span>
-        </Link>
+        <Link href="/" className="auth-brand zp-root" aria-label="زُحل پی"><Wordmark id="auth-mark" /></Link>
 
         {/* Heading */}
         <span className="eyebrow" style={{ marginTop: 4 }}>

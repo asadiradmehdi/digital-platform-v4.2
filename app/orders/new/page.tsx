@@ -1,380 +1,55 @@
-'use client';
-import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import {
-  ArrowRight, ChevronLeft, Info, ShoppingBag, Zap, AlertCircle,
-  CheckCircle2, Wallet, Tag,
-} from 'lucide-react';
+import type { Metadata } from 'next';
 import { AppShell } from '../../../components/AppShell';
+import { ShellAside } from '../../../components/zp/ShellAside';
+import { EmptyState } from '../../../components/zp/cards';
+import { categoryMeta, KINDS, serviceKind, targetField } from '../../../lib/catalog-ui';
+import { toToman } from '../../../lib/format';
+import { requireViewer } from '../../../server/account/page-context';
+import { getWalletSummary, listCatalogWithPrices } from '../../../server/account/overview';
+import { PackagePicker } from './PackagePicker';
 
-const serviceRegistry: Record<string, {
-  id: string; title: string; description: string; category: string;
-  priceMinor: number; unitLabel: string; unitDivisor: number;
-  fields: Array<{ id: string; label: string; placeholder: string; type: 'text' | 'number' | 'url'; hint?: string }>;
-  quantities?: number[];
-}> = {
-  'ig-followers': {
-    id: 'ig-followers', title: 'فالوور اینستاگرام', description: 'افزایش فالوور واقعی با مسیردهی هوشمند تأمین‌کننده.',
-    category: 'اینستاگرام', priceMinor: 1_200_000, unitLabel: 'فالوور', unitDivisor: 1000,
-    fields: [{ id: 'target', label: 'نام کاربری اینستاگرام', placeholder: '@username', type: 'text', hint: 'پروفایل باید عمومی (Public) باشد.' }],
-    quantities: [500, 1000, 2000, 5000],
-  },
-  'ig-likes': {
-    id: 'ig-likes', title: 'لایک اینستاگرام', description: 'لایک ارگانیک با تحویل سریع.',
-    category: 'اینستاگرام', priceMinor: 350_000, unitLabel: 'لایک', unitDivisor: 1000,
-    fields: [{ id: 'target', label: 'لینک پست', placeholder: 'https://instagram.com/p/...', type: 'url', hint: 'لینک مستقیم پست اینستاگرام.' }],
-    quantities: [500, 1000, 2000, 5000],
-  },
-  'ig-views': {
-    id: 'ig-views', title: 'ویو Reel اینستاگرام', description: 'افزایش بازدید Reel با ماندگاری بالا.',
-    category: 'اینستاگرام', priceMinor: 180_000, unitLabel: 'ویو', unitDivisor: 1000,
-    fields: [{ id: 'target', label: 'لینک Reel', placeholder: 'https://instagram.com/reel/...', type: 'url' }],
-    quantities: [1000, 5000, 10000, 50000],
-  },
-  'ig-comments': {
-    id: 'ig-comments', title: 'کامنت اینستاگرام', description: 'کامنت‌های سفارشی فارسی و انگلیسی.',
-    category: 'اینستاگرام', priceMinor: 850_000, unitLabel: 'کامنت', unitDivisor: 100,
-    fields: [
-      { id: 'target', label: 'لینک پست', placeholder: 'https://instagram.com/p/...', type: 'url' },
-      { id: 'comment_text', label: 'متن کامنت‌ها (اختیاری)', placeholder: 'کامنت‌های دلخواه را وارد کنید...', type: 'text', hint: 'اگر خالی باشد از متون تولیدشده توسط AI استفاده می‌شود.' },
-    ],
-    quantities: [100, 200, 500],
-  },
-  'ai-writer': {
-    id: 'ai-writer', title: 'AI Writer Pro', description: 'تولید محتوای فارسی و انگلیسی با مدل‌های پیشرفته.',
-    category: 'هوش مصنوعی', priceMinor: 6_600_000, unitLabel: 'ماهانه', unitDivisor: 1,
-    fields: [{ id: 'workspace', label: 'فضای کاری', placeholder: 'Workspace اصلی', type: 'text' }],
-  },
-  'ai-image': {
-    id: 'ai-image', title: 'AI Image Studio', description: 'تولید تصویر حرفه‌ای با هوش مصنوعی.',
-    category: 'هوش مصنوعی', priceMinor: 4_200_000, unitLabel: 'ماهانه', unitDivisor: 1,
-    fields: [{ id: 'workspace', label: 'فضای کاری', placeholder: 'Workspace اصلی', type: 'text' }],
-  },
-  'automation-pro': {
-    id: 'automation-pro', title: 'Automation Pro', description: 'فرآیندهای خودکار با webhook و Agent.',
-    category: 'اتوماسیون', priceMinor: 8_900_000, unitLabel: 'ماهانه', unitDivisor: 1,
-    fields: [{ id: 'workspace', label: 'فضای کاری', placeholder: 'Workspace اصلی', type: 'text' }],
-  },
-  'tg-members': {
-    id: 'tg-members', title: 'ممبر تلگرام', description: 'افزایش ممبر کانال و گروه تلگرام.',
-    category: 'تلگرام', priceMinor: 980_000, unitLabel: 'ممبر', unitDivisor: 1000,
-    fields: [{ id: 'target', label: 'لینک کانال یا گروه', placeholder: 'https://t.me/channelname', type: 'url', hint: 'کانال یا گروه باید عمومی باشد.' }],
-    quantities: [500, 1000, 2000, 5000],
-  },
-  'tg-views': {
-    id: 'tg-views', title: 'ویو تلگرام', description: 'افزایش بازدید پست‌های تلگرام.',
-    category: 'تلگرام', priceMinor: 120_000, unitLabel: 'ویو', unitDivisor: 1000,
-    fields: [{ id: 'target', label: 'لینک پست', placeholder: 'https://t.me/channelname/123', type: 'url' }],
-    quantities: [1000, 5000, 10000, 50000],
-  },
-  'tt-followers': {
-    id: 'tt-followers', title: 'فالوور تیک‌تاک', description: 'رشد فالوور تیک‌تاک با تأمین‌کننده جهانی.',
-    category: 'تیک‌تاک', priceMinor: 1_450_000, unitLabel: 'فالوور', unitDivisor: 1000,
-    fields: [{ id: 'target', label: 'نام کاربری تیک‌تاک', placeholder: '@username', type: 'text', hint: 'پروفایل باید عمومی باشد.' }],
-    quantities: [500, 1000, 2000, 5000],
-  },
-  'yt-subscribers': {
-    id: 'yt-subscribers', title: 'ساب‌سکرایبر یوتیوب', description: 'افزایش ساب‌سکرایبر با رعایت سیاست‌های پلتفرم.',
-    category: 'یوتیوب', priceMinor: 2_800_000, unitLabel: 'ساب‌سکرایبر', unitDivisor: 1000,
-    fields: [{ id: 'target', label: 'لینک کانال یوتیوب', placeholder: 'https://youtube.com/@channel', type: 'url' }],
-    quantities: [500, 1000, 2000, 5000],
-  },
-  'growth-pack': {
-    id: 'growth-pack', title: 'پکیج رشد شبکه‌های اجتماعی', description: 'ترکیب فالوور، لایک و ویو با تخفیف پکیجی.',
-    category: 'اینستاگرام', priceMinor: 5_400_000, unitLabel: 'پکیج ماهانه', unitDivisor: 1,
-    fields: [{ id: 'target', label: 'نام کاربری اینستاگرام', placeholder: '@username', type: 'text' }],
-  },
-};
+export const metadata: Metadata = { title: 'سفارش جدید', robots: { index: false, follow: false } };
 
-function formatPrice(minor: number) {
-  return new Intl.NumberFormat('fa-IR').format(Math.round(minor / 10)) + ' تومان';
-}
+export default async function OrderNewPage({ searchParams }: { searchParams: Promise<{ service?: string }> }) {
+  const { service: slug = '' } = await searchParams;
+  const viewer = await requireViewer();
+  const [catalog, wallet] = await Promise.all([
+    listCatalogWithPrices().catch(() => []),
+    viewer.workspaceId ? getWalletSummary(viewer.workspaceId, 1) : null,
+  ]);
+  const item = catalog.find(c => c.slug === slug && c.unitPriceMinor);
+  const cat = item ? categoryMeta(item.productSlug) : undefined;
 
-function OrderNewForm() {
-  const params = useSearchParams();
-  const router = useRouter();
-  const serviceSlug = params.get('service') ?? '';
-  const service = serviceRegistry[serviceSlug];
-
-  const [qty, setQty] = useState<number>(service?.quantities?.[1] ?? 1);
-  const [fields, setFields] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
-  const [walletBalance, setWalletBalance] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch('/api/v1/wallet', { credentials: 'same-origin' })
-      .then(r => r.ok ? r.json() : null)
-      .then((data: { items?: Array<{ balanceMinor: string; currency: string }> } | null) => {
-        const item = data?.items?.[0];
-        if (item) {
-          const toman = Math.round(Number(item.balanceMinor) / 10);
-          setWalletBalance(new Intl.NumberFormat('fa-IR').format(toman) + ' تومان');
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  // Compute derived values safely before early return so hooks are not conditional.
-  const unitQty = service?.quantities ? qty : 1;
-  const unitsLabel = service?.quantities
-    ? `${new Intl.NumberFormat('fa-IR').format(unitQty)} ${service.unitLabel}`
-    : (service?.unitLabel ?? '');
-  const totalMinor = service?.quantities
-    ? Math.round((unitQty / service.unitDivisor) * service.priceMinor)
-    : (service?.priceMinor ?? 0);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!service) return;
-    setSubmitting(true);
-    setSubmitError(null);
-    try {
-      const wsRes = await fetch('/api/v1/workspaces');
-      if (!wsRes.ok) throw new Error('لطفاً ابتدا وارد حساب کاربری شوید.');
-      const wsData = await wsRes.json() as { items: Array<{ id: string }> };
-      const workspaceId = wsData.items[0]?.id;
-      if (!workspaceId) throw new Error('فضای کاری یافت نشد. ابتدا یک workspace ایجاد کنید.');
-
-      const svcRes = await fetch(`/api/v1/services?slug=${encodeURIComponent(serviceSlug)}`);
-      if (!svcRes.ok) throw new Error('سرویس مورد نظر در سیستم یافت نشد.');
-      const svcData = await svcRes.json() as { item?: { id: string } };
-      const serviceId = svcData.item?.id;
-      if (!serviceId) throw new Error('سرویس مورد نظر در سیستم یافت نشد.');
-
-      const idempotencyKey = crypto.randomUUID();
-      const orderRes = await fetch('/api/v1/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
-        body: JSON.stringify({ workspaceId, serviceId, quantity: unitQty, parameters: fields }),
-      });
-      if (!orderRes.ok) {
-        const errData = await orderRes.json() as { error?: { message?: string } };
-        throw new Error(errData.error?.message ?? 'خطا در ثبت سفارش. لطفاً دوباره تلاش کنید.');
-      }
-      setSubmitted(true);
-      setTimeout(() => router.push('/orders'), 2000);
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'خطا در ثبت سفارش.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  if (!service) {
+  if (!item) {
     return (
-      <main className="workspace-page-content">
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 24px', textAlign: 'center', gap: 16 }}>
-          <div style={{ width: 64, height: 64, borderRadius: 20, background: 'var(--accent-soft)', display: 'grid', placeItems: 'center', color: 'var(--accent)' }}>
-            <ShoppingBag size={28} />
-          </div>
-          <div>
-            <h3 style={{ margin: '0 0 6px', fontSize: 17, letterSpacing: '-.03em' }}>سرویس انتخاب نشده</h3>
-            <p style={{ margin: 0, color: 'var(--muted)', fontSize: 12, lineHeight: 1.8, maxWidth: 340 }}>
-              لطفاً از کاتالوگ خدمات، سرویس موردنظر را انتخاب کنید.
-            </p>
-          </div>
-          <Link href="/services" className="button primary" style={{ textDecoration: 'none' }}>
-            مشاهده خدمات
-          </Link>
-        </div>
-      </main>
-    );
-  }
-
-  if (submitted) {
-    return (
-      <main className="workspace-page-content">
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 24px', textAlign: 'center', gap: 16 }}>
-          <div style={{ width: 72, height: 72, borderRadius: 22, background: 'var(--success-soft)', display: 'grid', placeItems: 'center', color: 'var(--success)' }}>
-            <CheckCircle2 size={34} />
-          </div>
-          <div>
-            <h3 style={{ margin: '0 0 8px', fontSize: 20, letterSpacing: '-.04em' }}>سفارش با موفقیت ثبت شد</h3>
-            <p style={{ margin: 0, color: 'var(--muted)', fontSize: 12, lineHeight: 1.9, maxWidth: 360 }}>
-              سفارش شما در صف پردازش قرار گرفت. پس از تأیید پرداخت، اجرا آغاز می‌شود.
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
-            <Link href="/orders" className="button primary" style={{ textDecoration: 'none' }}>مشاهده سفارش‌ها</Link>
-            <Link href="/services" className="button secondary" style={{ textDecoration: 'none' }}>سرویس جدید</Link>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  return (
-    <main className="workspace-page-content">
-      {/* Page header */}
-      <header style={{ marginBottom: 28 }}>
-        <Link
-          href="/services"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--muted)', fontSize: 11, textDecoration: 'none', marginBottom: 10 }}
-        >
-          <ArrowRight size={13} />بازگشت به خدمات
-        </Link>
-        <span className="eyebrow">{service.category} · سفارش جدید</span>
-        <h1 style={{ margin: '4px 0 6px', fontSize: 'clamp(20px,3vw,28px)', letterSpacing: '-.04em' }}>{service.title}</h1>
-        <p style={{ margin: 0, color: 'var(--muted)', fontSize: 12 }}>{service.description}</p>
-      </header>
-
-      <form className="order-new-layout" onSubmit={handleSubmit}>
-        {/* Configuration panel */}
-        <article className="surface-panel">
-          <div className="panel-head" style={{ marginBottom: 20 }}>
-            <div>
-              <p className="panel-kicker" style={{ margin: '0 0 2px' }}>تنظیمات</p>
-              <h2 style={{ margin: 0 }}>پیکربندی سفارش</h2>
-            </div>
-          </div>
-
-          {service.quantities && (
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.04em', marginBottom: 10 }}>
-                <Tag size={11} style={{ display: 'inline', marginLeft: 5 }} />
-                مقدار ({service.unitLabel})
-              </label>
-              <div className="qty-grid">
-                {service.quantities.map(q => (
-                  <button
-                    key={q}
-                    type="button"
-                    className={`qty-btn${qty === q ? ' active' : ''}`}
-                    onClick={() => setQty(q)}
-                  >
-                    {new Intl.NumberFormat('fa-IR').format(q)}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="settings-form" style={{ gap: 18, marginTop: 0 }}>
-            {service.fields.map(f => (
-              <label key={f.id}>
-                <span style={{ fontSize: 12, fontWeight: 700 }}>{f.label}</span>
-                <input
-                  type={f.type}
-                  placeholder={f.placeholder}
-                  value={fields[f.id] ?? ''}
-                  onChange={e => setFields(prev => ({ ...prev, [f.id]: e.target.value }))}
-                  required={f.id === 'target'}
-                  dir={f.type === 'url' ? 'ltr' : undefined}
-                  style={{ marginTop: 0 }}
-                />
-                {f.hint && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--muted)', fontSize: 10, marginTop: 4 }}>
-                    <Info size={11} style={{ flexShrink: 0 }} />{f.hint}
-                  </span>
-                )}
-              </label>
-            ))}
-          </div>
-        </article>
-
-        {/* Summary sidebar */}
-        <aside style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {/* Order summary */}
-          <article className="surface-panel">
-            <div className="panel-head" style={{ marginBottom: 16 }}>
-              <div>
-                <p className="panel-kicker" style={{ margin: '0 0 2px' }}>خلاصه</p>
-                <h2 style={{ margin: 0 }}>خلاصه سفارش</h2>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gap: 8 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--surface-2)', borderRadius: 12, fontSize: 11 }}>
-                <span style={{ color: 'var(--muted)' }}>سرویس</span>
-                <strong style={{ fontSize: 12 }}>{service.title}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--surface-2)', borderRadius: 12, fontSize: 11 }}>
-                <span style={{ color: 'var(--muted)' }}>مقدار</span>
-                <strong style={{ fontSize: 12 }}>{unitsLabel}</strong>
-              </div>
-              <div style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '14px 16px', background: 'var(--accent-soft)',
-                border: '1px solid rgba(26,86,219,.15)', borderRadius: 14,
-              }}>
-                <span style={{ color: 'var(--accent-strong)', fontWeight: 700, fontSize: 12 }}>مبلغ نهایی</span>
-                <strong style={{ fontSize: 18, letterSpacing: '-.04em', color: 'var(--accent-strong)', fontVariantNumeric: 'tabular-nums' }}>
-                  {formatPrice(totalMinor)}
-                </strong>
-              </div>
-            </div>
-          </article>
-
-          {/* Payment panel */}
-          <article className="surface-panel">
-            <div className="panel-head" style={{ marginBottom: 14 }}>
-              <div>
-                <p className="panel-kicker" style={{ margin: '0 0 2px' }}>پرداخت</p>
-                <h2 style={{ margin: 0 }}>پرداخت از کیف پول</h2>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gap: 10 }}>
-              <div style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '10px 14px', background: 'var(--surface-2)', borderRadius: 12, fontSize: 11,
-              }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--muted)' }}>
-                  <Wallet size={12} />موجودی کیف پول
-                </span>
-                <span style={{ color: walletBalance ? 'var(--success)' : 'var(--subtle)', fontWeight: 700 }}>
-                  {walletBalance ?? '...'}
-                </span>
-              </div>
-
-              {submitError && (
-                <div style={{
-                  display: 'flex', alignItems: 'flex-start', gap: 8,
-                  padding: '10px 12px', background: 'var(--danger-soft)',
-                  border: '1px solid rgba(220,38,38,.2)', borderRadius: 12, fontSize: 11, color: 'var(--danger)',
-                }}>
-                  <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
-                  <span>{submitError}</span>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                className="button primary"
-                style={{ width: '100%', justifyContent: 'center', marginTop: 2 }}
-                disabled={submitting}
-              >
-                <Zap size={14} />
-                {submitting ? 'در حال ثبت سفارش...' : 'ثبت و پرداخت سفارش'}
-              </button>
-              <Link
-                href="/services"
-                className="button secondary"
-                style={{ width: '100%', justifyContent: 'center', textDecoration: 'none' }}
-              >
-                <ChevronLeft size={14} />بازگشت به خدمات
-              </Link>
-            </div>
-          </article>
-        </aside>
-      </form>
-    </main>
-  );
-}
-
-export default function OrderNewPage() {
-  return (
-    <AppShell>
-      <Suspense fallback={
-        <main className="workspace-page-content">
-          <div style={{ marginTop: 40 }}>
-            <div className="skeleton skeleton-panel" style={{ width: '100%' }} />
-          </div>
+      <AppShell title="سفارش جدید" back="/dashboard" aside={<ShellAside workspaceId={viewer.workspaceId} />}>
+        <main className="zp-screen">
+          <EmptyState icon="box" title="سرویس پیدا نشد" text="این سرویس فعال نیست یا هنوز قیمت‌گذاری نشده است. از فهرست خدمات یک سرویس دیگر انتخاب کنید." action={{ href: '/services', label: 'مشاهده‌ی خدمات' }} />
         </main>
-      }>
-        <OrderNewForm />
-      </Suspense>
+      </AppShell>
+    );
+  }
+
+  const kindKey = serviceKind(item.slug);
+  const kind = KINDS[kindKey];
+  const min = item.minQuantity ? Number(item.minQuantity) : 1;
+  const max = item.maxQuantity ? Number(item.maxQuantity) : Number.MAX_SAFE_INTEGER;
+  const quantities = kind.quantities.filter(q => q >= min && q <= max);
+
+  return (
+    <AppShell title={item.name} back={cat ? `/services/${cat.key}` : '/services'} aside={<ShellAside workspaceId={viewer.workspaceId} />}>
+      <main className="zp-screen">
+        <PackagePicker
+          workspaceId={viewer.workspaceId}
+          walletToman={wallet ? toToman(wallet.balanceMinor, wallet.currency) : null}
+          service={{
+            id: item.id, slug: item.slug, name: item.name, note: item.description ?? (cat ? `خدمات ${cat.name}` : ''),
+            icon: kind.icon, unit: kind.unit, unitPriceToman: Number(item.unitPriceMinor),
+            quantities: quantities.length ? quantities : [min],
+            target: targetField(item.productSlug, kindKey),
+          }}
+        />
+      </main>
     </AppShell>
   );
 }

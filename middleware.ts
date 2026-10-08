@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-const PRIVATE_PREFIXES=['/dashboard','/workspace','/settings','/orders','/wallet','/analytics','/subscriptions','/referrals','/support'];
+const PRIVATE_PREFIXES=['/dashboard','/account','/workspace','/settings','/orders','/wallet','/analytics','/subscriptions','/referrals','/support'];
 
 function buildCsp(nonce: string) {
   return [
