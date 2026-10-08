@@ -65,4 +65,33 @@ CREATE POLICY tenant_isolation ON support_ticket_messages
   USING (workspace_id = app_workspace_id())
   WITH CHECK (workspace_id = app_workspace_id());
 
+-- Platform-level public support contacts (shown on /support and in the app). Managed later from the admin
+-- app through server/content/trust.ts; public data, so no workspace_id and no RLS. No phone rows are seeded:
+-- the UI shows hours + the ticket CTA until real numbers are entered.
+CREATE TABLE IF NOT EXISTS support_contacts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  label text NOT NULL CHECK (char_length(label) BETWEEN 1 AND 40),
+  phone text NOT NULL CHECK (phone ~ '^\+[1-9][0-9]{7,14}$'),
+  sort_order integer NOT NULL DEFAULT 0,
+  active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_support_contacts_phone ON support_contacts(phone);
+CREATE INDEX IF NOT EXISTS idx_support_contacts_active ON support_contacts(sort_order, created_at) WHERE active;
+DROP TRIGGER IF EXISTS trg_support_contacts_updated_at ON support_contacts;
+CREATE TRIGGER trg_support_contacts_updated_at BEFORE UPDATE ON support_contacts
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE TABLE IF NOT EXISTS support_settings (
+  id smallint PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+  hours_text text NOT NULL CHECK (char_length(hours_text) BETWEEN 1 AND 80),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+INSERT INTO support_settings(id, hours_text) VALUES (1, 'شنبه تا پنج‌شنبه، ۹ صبح تا ۹ شب')
+ON CONFLICT (id) DO NOTHING;
+DROP TRIGGER IF EXISTS trg_support_settings_updated_at ON support_settings;
+CREATE TRIGGER trg_support_settings_updated_at BEFORE UPDATE ON support_settings
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
 COMMIT;
