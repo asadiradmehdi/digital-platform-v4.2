@@ -3,6 +3,7 @@ import { AppError } from '../core/errors';
 import { requireIdempotencyKey } from '../core/idempotency';
 import type { PoolClient } from 'pg';
 import { debitWalletChecked, requireMainWalletAccount } from '../payments/wallet-ledger';
+import { issueSubscriptionInvoice } from '../payments/invoice';
 
 type Queryable = Pick<PoolClient, 'query'>;
 
@@ -50,6 +51,7 @@ export async function createSubscription(input: { workspaceId:string; planId:str
         label: 'خرید اشتراک',
       });
       await client.query(`INSERT INTO subscription_events(subscription_id,event_type,payload) VALUES($1,'CHARGED',$2)`,[subscription.id,{source:'wallet',amountMinor:priceMinor.toString(),currency:String(p.currency).trim()}]);
+      await issueSubscriptionInvoice(client, { workspaceId: input.workspaceId, subscriptionId: subscription.id, paidMinor: priceMinor, currency: String(p.currency).trim(), method: 'WALLET' });
     }
     return subscription;
   });

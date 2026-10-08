@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// Invoice issuing has its own tests (tests/payments/invoice.test.ts, tests/integration/invoices.pg.test.ts).
+vi.mock('../../server/payments/invoice', () => ({ issueOrderInvoice: vi.fn(), issueTopupReceipt: vi.fn(), issueSubscriptionInvoice: vi.fn() }));
 vi.mock('../../server/core/db', () => ({
   query: vi.fn(),
   withWorkspaceTransaction: vi.fn(),
@@ -208,6 +210,9 @@ describe('processSubscriptionRenewal', () => {
     const sqls = sqlCalls();
     expect(sqls.findIndex(sql => sql.includes('INSERT INTO ledger_entries'))).toBeLessThan(sqls.findIndex(sql => sql.includes("'RENEWED'")));
     expect(mockQuery).not.toHaveBeenCalled();
+    // One renewal invoice per charged period, keyed like the debit.
+    const { issueSubscriptionInvoice } = await import('../../server/payments/invoice');
+    expect(vi.mocked(issueSubscriptionInvoice)).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ subscriptionId: 'sub-1', paidMinor: 5000n, method: 'WALLET', renewal: true, sourceKey: expect.stringMatching(/^renewal:sub-1:/) }));
   });
 
   it('locks the MAIN account with FOR UPDATE OF la before summing the balance', async () => {

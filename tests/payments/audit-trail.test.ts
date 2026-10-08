@@ -5,6 +5,8 @@
  */
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 
+// Invoice issuing has its own tests (tests/payments/invoice.test.ts, tests/integration/invoices.pg.test.ts).
+vi.mock('../../server/payments/invoice', () => ({ issueOrderInvoice: vi.fn(), issueTopupReceipt: vi.fn(), issueSubscriptionInvoice: vi.fn() }));
 vi.mock('../../server/core/db', () => ({
   query: vi.fn(),
   withWorkspaceTransaction: vi.fn(),

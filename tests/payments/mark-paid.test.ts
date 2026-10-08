@@ -9,6 +9,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 let inTx = false;
+// Invoice issuing has its own tests (tests/payments/invoice.test.ts, tests/integration/invoices.pg.test.ts).
+vi.mock('../../server/payments/invoice', () => ({ issueOrderInvoice: vi.fn(), issueTopupReceipt: vi.fn(), issueSubscriptionInvoice: vi.fn() }));
 vi.mock('../../server/core/db', () => ({ withWorkspaceTransaction: vi.fn(), query: vi.fn() }));
 vi.mock('../../server/core/audit', () => ({ writeAudit: vi.fn() }));
 vi.mock('../../server/commerce/checkout', () => ({ fulfilPaidCheckout: vi.fn() }));
@@ -17,6 +19,8 @@ vi.mock('../../server/payments/hooks', () => ({ onVerifiedGatewayPayment: vi.fn(
 import { withWorkspaceTransaction } from '../../server/core/db';
 import { markPaymentPaid } from '../../server/payments/service';
 import { onVerifiedGatewayPayment } from '../../server/payments/hooks';
+import { fulfilPaidCheckout } from '../../server/commerce/checkout';
+import { issueOrderInvoice, issueSubscriptionInvoice, issueTopupReceipt } from '../../server/payments/invoice';
 
 const mockTx = vi.mocked(withWorkspaceTransaction);
 const mockHook = vi.mocked(onVerifiedGatewayPayment);
@@ -84,3 +88,58 @@ describe('markPaymentPaid', () => {
     await expect(markPaymentPaid({ paymentId: 'pay-1', workspaceId: 'ws-1', gatewayReference: 'ref-1' })).rejects.toMatchObject({ code: 'CONFLICT' });
   });
 });
+
+describe('markPaymentPaid issues the payment document on the same transaction', () => {
+  const orderInvoice = vi.mocked(issueOrderInvoice);
+  const receipt = vi.mocked(issueTopupReceipt);
+  const subInvoice = vi.mocked(issueSubscriptionInvoice);
+
+  it('a paid order gets one sale invoice (gateway method + reference), no receipt', async () => {
+    setup(base, { id: 'ord-1', status: 'PAYMENT_PENDING', total_minor: '120000', currency: 'IRT' });
+    await markPaymentPaid({ paymentId: 'pay-1', workspaceId: 'ws-1', gatewayReference: 'ref-1' });
+    expect(orderInvoice).toHaveBeenCalledTimes(1);
+    expect(orderInvoice).toHaveBeenCalledWith(expect.objectContaining({ query: expect.any(Function) }), { workspaceId: 'ws-1', orderId: 'ord-1', paymentId: 'pay-1', method: 'GATEWAY', reference: 'ref-1' });
+    expect(receipt).not.toHaveBeenCalled();
+  });
+
+  it('a top-up gets a «رسید شارژ کیف پول» (TOPUP_RECEIPT), never a sale invoice', async () => {
+    setup({ ...base, order_id: null, purpose: 'TOPUP', amount_minor: '50000' });
+    await markPaymentPaid({ paymentId: 'pay-1', workspaceId: 'ws-1', gatewayReference: 'ref-9' });
+    expect(receipt).toHaveBeenCalledWith(expect.anything(), { workspaceId: 'ws-1', paymentId: 'pay-1', amountMinor: 50000n, currency: 'IRT', reference: 'ref-9', reason: 'TOPUP' });
+    expect(orderInvoice).not.toHaveBeenCalled();
+  });
+
+  it('money for an order that is no longer payable is receipted as a wallet top-up', async () => {
+    setup(base, { id: 'ord-1', status: 'CANCELLED', total_minor: '120000', currency: 'IRT' });
+    await markPaymentPaid({ paymentId: 'pay-1', workspaceId: 'ws-1', gatewayReference: 'ref-1' });
+    expect(receipt).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ reason: 'ORDER_NOT_PAYABLE', paymentId: 'pay-1' }));
+    expect(orderInvoice).not.toHaveBeenCalled();
+  });
+
+  it('a fulfilled checkout invoices its order or its subscription', async () => {
+    vi.mocked(fulfilPaidCheckout).mockResolvedValueOnce({ fulfilled: true, subscriptionId: 'sub-1' });
+    setup({ ...base, order_id: null, checkout_session_id: 'cs-1', purpose: 'CHECKOUT' });
+    await markPaymentPaid({ paymentId: 'pay-1', workspaceId: 'ws-1', gatewayReference: 'ref-1' });
+    expect(subInvoice).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ subscriptionId: 'sub-1', paidMinor: 120000n, currency: 'IRT', method: 'GATEWAY', paymentId: 'pay-1' }));
+
+    vi.clearAllMocks();
+    vi.mocked(fulfilPaidCheckout).mockResolvedValueOnce({ fulfilled: true, orderId: 'ord-9' });
+    setup({ ...base, order_id: null, checkout_session_id: 'cs-2', purpose: 'CHECKOUT' });
+    await markPaymentPaid({ paymentId: 'pay-1', workspaceId: 'ws-1', gatewayReference: 'ref-1' });
+    expect(orderInvoice).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ orderId: 'ord-9', method: 'GATEWAY' }));
+  });
+
+  it('a replayed verification of an already-paid payment issues nothing', async () => {
+    setup({ ...base, status: 'PAID' });
+    await markPaymentPaid({ paymentId: 'pay-1', workspaceId: 'ws-1', gatewayReference: 'ref-1' });
+    expect(orderInvoice).not.toHaveBeenCalled();
+    expect(receipt).not.toHaveBeenCalled();
+  });
+
+  it('an invoice failure fails the whole settlement (atomic: no paid payment without its document)', async () => {
+    setup(base, { id: 'ord-1', status: 'PAYMENT_PENDING', total_minor: '120000', currency: 'IRT' });
+    orderInvoice.mockRejectedValueOnce(new Error('db down'));
+    await expect(markPaymentPaid({ paymentId: 'pay-1', workspaceId: 'ws-1', gatewayReference: 'ref-1' })).rejects.toThrow('db down');
+  });
+});
+
