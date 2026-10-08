@@ -130,3 +130,5 @@ export const tokens = {
 } as const;
 
 export type DesignTokens = typeof tokens;
+
+export { ICONS, type IconName } from './icons';
