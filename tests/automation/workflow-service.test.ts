@@ -1,15 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../server/core/db', () => ({
-  query: vi.fn(),
-  withWorkspaceTransaction: vi.fn(),
-}));
+vi.mock('../../server/core/db', () => {
+  const query = vi.fn();
+  return { query, withWorkspaceTransaction: vi.fn(), withTenantTransaction: vi.fn(async (_ws: string, _u: string | undefined, fn: (c: { query: typeof query }) => unknown) => fn({ query })) };
+});
 
 vi.mock('../../server/automation/engine', () => ({
   validateWorkflowForExecution: vi.fn(),
 }));
 
-import { query } from '../../server/core/db';
+import { query, withTenantTransaction } from '../../server/core/db';
 import { validateWorkflowForExecution } from '../../server/automation/engine';
 import type { WorkflowDefinition } from '../../server/automation/contracts';
 import {
@@ -104,21 +104,21 @@ describe('startWorkflowRun', () => {
 describe('updateWorkflowRunStatus', () => {
   it('updates completed_at for terminal statuses', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
-    await updateWorkflowRunStatus('run-1', 'COMPLETED');
+    await updateWorkflowRunStatus('run-1', 'ws-1', 'COMPLETED');
     const [sql] = mockQuery.mock.calls[0] as [string, unknown[]];
     expect(sql).toContain('completed_at');
   });
 
   it('does NOT set completed_at for non-terminal statuses', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
-    await updateWorkflowRunStatus('run-1', 'RUNNING');
+    await updateWorkflowRunStatus('run-1', 'ws-1', 'RUNNING');
     const [sql] = mockQuery.mock.calls[0] as [string, unknown[]];
     expect(sql).not.toContain('completed_at');
   });
 
   it('passes error for FAILED status', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
-    await updateWorkflowRunStatus('run-1', 'FAILED', { reason: 'timeout' });
+    await updateWorkflowRunStatus('run-1', 'ws-1', 'FAILED', { reason: 'timeout' });
     const [_sql, params] = mockQuery.mock.calls[0] as [string, unknown[]];
     expect(params).toContain('FAILED');
     expect(params).toContainEqual({ reason: 'timeout' });
@@ -177,5 +177,20 @@ describe('listWorkflowRuns', () => {
     const [sql, params] = mockQuery.mock.calls[0] as [string, unknown[]];
     expect(sql).toContain('w.id=$2');
     expect(params).toEqual(['ws-1', 'wf-99']);
+  });
+});
+
+describe('workflow_runs RLS context', () => {
+  // Regression: workflow_runs has FORCE RLS; pool queries saw no runs and could not create or update them.
+  it('runs every workflow_runs statement inside the workspace transaction', async () => {
+    const mockTx = vi.mocked(withTenantTransaction);
+    mockQuery.mockResolvedValue({ rows: [{ id: 'run-1' }], rowCount: 1 } as never);
+    await startWorkflowRun({ workflowVersionId: 'v', workspaceId: 'ws-start', triggerInput: {} });
+    await updateWorkflowRunStatus('run-1', 'ws-update', 'RUNNING');
+    await cancelWorkflowRun('run-1', 'ws-cancel');
+    await getWorkflowRun('run-1', 'ws-get');
+    await listWorkflowRuns('ws-list');
+    expect(mockTx.mock.calls.map(c => c[0])).toEqual(['ws-start', 'ws-update', 'ws-cancel', 'ws-get', 'ws-list']);
+    mockQuery.mockReset();
   });
 });

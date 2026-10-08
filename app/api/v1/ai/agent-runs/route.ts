@@ -3,7 +3,7 @@ import { correlationId, handleRouteError, json } from '../../../../../server/cor
 import { requireRequestUser } from '../../../../../server/identity/request-user';
 import { requireWorkspacePermission } from '../../../../../server/identity/rbac';
 import { startAgentRun, getAgentRun, getAgentRunToolCalls } from '../../../../../server/ai/agent-run';
-import { query } from '../../../../../server/core/db';
+import { withTenantTransaction } from '../../../../../server/core/db';
 import { assertSameOrigin } from '../../../../../server/core/security-boundary';
 import { AppError } from '../../../../../server/core/errors';
 
@@ -25,11 +25,11 @@ export async function GET(request: NextRequest) {
       return json({ run, toolCalls }, { correlationId: id });
     }
 
-    const r = await query(
+    const r = await withTenantTransaction(workspaceId, userId, client => client.query(
       `SELECT id, status, input, output, error, started_at, completed_at
        FROM agent_runs WHERE workspace_id=$1 ORDER BY started_at DESC LIMIT 50`,
       [workspaceId]
-    );
+    ));
     return json({ items: r.rows }, { correlationId: id });
   } catch (e) {
     return handleRouteError(e, id);

@@ -1,4 +1,4 @@
-import { query } from '../core/db';
+import { query, withTenantTransaction } from '../core/db';
 import { AppError } from '../core/errors';
 import { validateWorkflowForExecution, type WorkflowRunState } from './engine';
 import type { WorkflowDefinition } from './contracts';
@@ -32,47 +32,49 @@ export async function getWorkflowWithLatestVersion(workflowId: string, workspace
 }
 
 export async function startWorkflowRun(input: { workflowVersionId: string; workspaceId: string; triggerInput: Record<string, unknown> }): Promise<string> {
-  const r = await query<{ id: string }>(
+  const r = await withTenantTransaction(input.workspaceId, undefined, client => client.query<{ id: string }>(
     `INSERT INTO workflow_runs(workflow_version_id, workspace_id, status) VALUES($1,$2,'QUEUED') RETURNING id`,
     [input.workflowVersionId, input.workspaceId]
-  );
+  ));
   return r.rows[0]?.id ?? '';
 }
 
-export async function updateWorkflowRunStatus(runId: string, status: WorkflowRunState, error?: Record<string, unknown>): Promise<void> {
-  if (status === 'COMPLETED' || status === 'FAILED' || status === 'CANCELLED') {
-    await query(
-      `UPDATE workflow_runs SET status=$2, completed_at=now(), error=$3 WHERE id=$1`,
-      [runId, status, error ?? null]
-    );
-  } else {
-    await query(`UPDATE workflow_runs SET status=$2 WHERE id=$1`, [runId, status]);
-  }
+export async function updateWorkflowRunStatus(runId: string, workspaceId: string, status: WorkflowRunState, error?: Record<string, unknown>): Promise<void> {
+  await withTenantTransaction(workspaceId, undefined, async client => {
+    if (status === 'COMPLETED' || status === 'FAILED' || status === 'CANCELLED') {
+      await client.query(
+        `UPDATE workflow_runs SET status=$2, completed_at=now(), error=$3 WHERE id=$1`,
+        [runId, status, error ?? null]
+      );
+    } else {
+      await client.query(`UPDATE workflow_runs SET status=$2 WHERE id=$1`, [runId, status]);
+    }
+  });
 }
 
 export async function cancelWorkflowRun(runId: string, workspaceId: string): Promise<boolean> {
-  const r = await query(
+  const r = await withTenantTransaction(workspaceId, undefined, client => client.query(
     `UPDATE workflow_runs SET status='CANCELLED', completed_at=now()
      WHERE id=$1 AND workspace_id=$2 AND status IN ('QUEUED','RUNNING','WAITING')`,
     [runId, workspaceId]
-  );
+  ));
   return (r.rowCount ?? 0) > 0;
 }
 
 export async function getWorkflowRun(runId: string, workspaceId: string) {
-  const r = await query(
+  const r = await withTenantTransaction(workspaceId, undefined, client => client.query(
     `SELECT wr.id, wr.status, wr.started_at, wr.completed_at, wr.error,
             wv.version, wv.definition
      FROM workflow_runs wr
      JOIN workflow_versions wv ON wv.id = wr.workflow_version_id
      WHERE wr.id=$1 AND wr.workspace_id=$2`,
     [runId, workspaceId]
-  );
+  ));
   return r.rows[0] ?? null;
 }
 
 export async function listWorkflowRuns(workspaceId: string, workflowId?: string): Promise<unknown[]> {
-  const r = await query(
+  const r = await withTenantTransaction(workspaceId, undefined, client => client.query(
     `SELECT wr.id, wr.status, wr.started_at, wr.completed_at, wv.version
      FROM workflow_runs wr
      JOIN workflow_versions wv ON wv.id = wr.workflow_version_id
@@ -80,6 +82,6 @@ export async function listWorkflowRuns(workspaceId: string, workflowId?: string)
      WHERE wr.workspace_id=$1 ${workflowId ? 'AND w.id=$2' : ''}
      ORDER BY wr.started_at DESC LIMIT 50`,
     workflowId ? [workspaceId, workflowId] : [workspaceId]
-  );
+  ));
   return r.rows;
 }

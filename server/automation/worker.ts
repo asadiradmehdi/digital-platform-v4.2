@@ -1,5 +1,5 @@
 import { jobQueue } from '../queue/db-queue';
-import { query } from '../core/db';
+import { query, withTenantTransaction } from '../core/db';
 import { executeWorkflow, type WorkflowRunContext } from './engine';
 import { updateWorkflowRunStatus } from './workflow-service';
 import type { WorkflowDefinition, WorkflowAction } from './contracts';
@@ -7,7 +7,8 @@ import { randomUUID } from 'node:crypto';
 
 const DEFAULT_MAX_STEPS = 100;
 
-async function defaultActionExecutor(action: WorkflowAction, input: Record<string, unknown>): Promise<Record<string, unknown>> {
+// workspaceId comes from the queued job (set server-side when the run was created), never from step input.
+async function defaultActionExecutor(action: WorkflowAction, input: Record<string, unknown>, workspaceId: string): Promise<Record<string, unknown>> {
   switch (action.type) {
     case 'branch': {
       const condition = action.config.condition as string | undefined;
@@ -20,10 +21,10 @@ async function defaultActionExecutor(action: WorkflowAction, input: Record<strin
       return input;
     }
     case 'notification': {
-      await query(
-        `INSERT INTO notifications(workspace_id, type, payload) VALUES($1,$2,$3)`,
-        [input.workspaceId, action.config.type ?? 'generic', action.config.payload ?? {}]
-      ).catch(() => undefined);
+      await withTenantTransaction(workspaceId, undefined, client => client.query(
+        `INSERT INTO notifications(workspace_id, notification_type, payload) VALUES($1,$2,$3)`,
+        [workspaceId, action.config.type ?? 'generic', action.config.payload ?? {}]
+      )).catch(() => undefined);
       return input;
     }
     case 'http': {
@@ -76,7 +77,7 @@ export async function enqueueWorkflowRun(payload: WorkflowJobPayload, delayMs?: 
 export async function processWorkflowJob(payload: WorkflowJobPayload): Promise<void> {
   const { runId, workspaceId, workflowVersionId, input } = payload;
 
-  await updateWorkflowRunStatus(runId, 'RUNNING');
+  await updateWorkflowRunStatus(runId, workspaceId, 'RUNNING');
 
   const r = await query<{ definition: WorkflowDefinition }>(
     `SELECT definition FROM workflow_versions WHERE id=$1`,
@@ -84,7 +85,7 @@ export async function processWorkflowJob(payload: WorkflowJobPayload): Promise<v
   );
   const definition = r.rows[0]?.definition;
   if (!definition) {
-    await updateWorkflowRunStatus(runId, 'FAILED', { message: 'Workflow version not found.' });
+    await updateWorkflowRunStatus(runId, workspaceId, 'FAILED', { message: 'Workflow version not found.' });
     return;
   }
 
@@ -97,10 +98,10 @@ export async function processWorkflowJob(payload: WorkflowJobPayload): Promise<v
   };
 
   try {
-    await executeWorkflow(definition, { ...input, workspaceId }, defaultActionExecutor, context);
-    await updateWorkflowRunStatus(runId, 'COMPLETED');
+    await executeWorkflow(definition, { ...input, workspaceId }, (action, stepInput) => defaultActionExecutor(action, stepInput, workspaceId), context);
+    await updateWorkflowRunStatus(runId, workspaceId, 'COMPLETED');
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Workflow execution failed.';
-    await updateWorkflowRunStatus(runId, 'FAILED', { message, runId: randomUUID() });
+    await updateWorkflowRunStatus(runId, workspaceId, 'FAILED', { message, runId: randomUUID() });
   }
 }

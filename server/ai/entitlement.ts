@@ -1,4 +1,4 @@
-import { query } from '../core/db';
+import { query, withTenantTransaction } from '../core/db';
 import { AppError } from '../core/errors';
 import { getModelPrice } from './model-catalog';
 
@@ -7,7 +7,7 @@ export function estimateAICost(inputUnits: bigint, outputUnits: bigint, pricePer
 }
 
 export async function checkAIEntitlement(workspaceId: string, modelId: string): Promise<void> {
-  const r = await query<{ has_access: boolean }>(
+  const r = await withTenantTransaction(workspaceId, undefined, client => client.query<{ has_access: boolean }>(
     `SELECT EXISTS(
        SELECT 1 FROM subscriptions s
        JOIN plans p ON p.id = s.plan_id
@@ -18,7 +18,7 @@ export async function checkAIEntitlement(workspaceId: string, modelId: string): 
          AND (pe.value->>'enabled')::boolean = true
      ) AS has_access`,
     [workspaceId]
-  );
+  ));
   const hasAccess = r.rows[0]?.has_access ?? false;
   if (!hasAccess) throw new AppError('PAYMENT_REQUIRED', 'Your plan does not include AI access. Please upgrade.');
 
@@ -45,23 +45,23 @@ export async function recordAIRequest(input: {
   requestType: string;
   idempotencyKey: string;
 }): Promise<string> {
-  const r = await query<{ id: string }>(
+  const r = await withTenantTransaction(input.workspaceId, undefined, client => client.query<{ id: string }>(
     `INSERT INTO ai_requests(workspace_id, ai_model_id, request_type, status, idempotency_key)
      VALUES($1,$2,$3,'PROCESSING',$4)
      ON CONFLICT(workspace_id, idempotency_key) DO UPDATE SET status='PROCESSING'
      RETURNING id`,
     [input.workspaceId, input.modelId, input.requestType, input.idempotencyKey]
-  );
+  ));
   return r.rows[0]?.id ?? '';
 }
 
-export async function completeAIRequest(aiRequestId: string, inputUnits: bigint, outputUnits: bigint, latencyMs: number): Promise<void> {
-  await query(
+export async function completeAIRequest(aiRequestId: string, workspaceId: string, inputUnits: bigint, outputUnits: bigint, latencyMs: number): Promise<void> {
+  await withTenantTransaction(workspaceId, undefined, client => client.query(
     `UPDATE ai_requests SET status='COMPLETED', input_units=$2, output_units=$3, latency_ms=$4, completed_at=now() WHERE id=$1`,
     [aiRequestId, inputUnits.toString(), outputUnits.toString(), latencyMs]
-  );
+  ));
 }
 
-export async function failAIRequest(aiRequestId: string): Promise<void> {
-  await query(`UPDATE ai_requests SET status='FAILED', completed_at=now() WHERE id=$1`, [aiRequestId]);
+export async function failAIRequest(aiRequestId: string, workspaceId: string): Promise<void> {
+  await withTenantTransaction(workspaceId, undefined, client => client.query(`UPDATE ai_requests SET status='FAILED', completed_at=now() WHERE id=$1`, [aiRequestId]));
 }

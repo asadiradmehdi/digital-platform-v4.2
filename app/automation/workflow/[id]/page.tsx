@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { AppShell } from '../../../../components/AppShell';
 import { requireCurrentUser } from '../../../../server/identity/request-user';
-import { query } from '../../../../server/core/db';
+import { query, withTenantTransaction } from '../../../../server/core/db';
 
 export const metadata: Metadata = { title: 'جزئیات Workflow', robots: { index: false, follow: false } };
 
@@ -28,24 +28,31 @@ export default async function WorkflowDetailPage({ params }: { params: Promise<{
   const workspaceId = memberships.rows[0]?.workspace_id ?? null;
   if (!workspaceId) redirect('/auth');
 
-  const wfRes = await query<{
-    id: string; name: string; active: boolean; triggerType: string | null; createdAt: string;
-  }>(
-    `SELECT id, name, active, trigger_type AS "triggerType", created_at AS "createdAt"
-     FROM workflows WHERE id=$1 AND workspace_id=$2`,
-    [id, workspaceId],
-  );
-  const wf = wfRes.rows[0];
+  // workflow_runs is RLS-protected: read it inside this workspace's tenant context. workflow_runs links to
+  // a workflow through workflow_versions, and has completed_at/error (jsonb) rather than finished_at/error_message.
+  const { wf, runs } = await withTenantTransaction(workspaceId, userId, async client => {
+    const wfRes = await client.query<{
+      id: string; name: string; active: boolean; triggerType: string | null; createdAt: string;
+    }>(
+      `SELECT id, name, active, NULL::text AS "triggerType", created_at AS "createdAt"
+       FROM workflows WHERE id=$1 AND workspace_id=$2`,
+      [id, workspaceId],
+    );
+    if (!wfRes.rows[0]) return { wf: undefined, runs: [] };
+    const runsRes = await client.query<{
+      id: string; status: string; startedAt: string; finishedAt: string | null; errorMessage: string | null;
+    }>(
+      `SELECT wr.id, wr.status, wr.started_at AS "startedAt", wr.completed_at AS "finishedAt",
+              wr.error->>'message' AS "errorMessage"
+       FROM workflow_runs wr
+       JOIN workflow_versions wv ON wv.id = wr.workflow_version_id
+       WHERE wv.workflow_id=$1 AND wr.workspace_id=$2
+       ORDER BY wr.started_at DESC LIMIT 20`,
+      [id, workspaceId],
+    );
+    return { wf: wfRes.rows[0], runs: runsRes.rows };
+  });
   if (!wf) notFound();
-
-  const runsRes = await query<{
-    id: string; status: string; startedAt: string; finishedAt: string | null; errorMessage: string | null;
-  }>(
-    `SELECT id, status, started_at AS "startedAt", finished_at AS "finishedAt", error_message AS "errorMessage"
-     FROM workflow_runs WHERE workflow_id=$1 ORDER BY started_at DESC LIMIT 20`,
-    [id],
-  );
-  const runs = runsRes.rows;
 
   const runStatusClass = (s: string) =>
     s === 'COMPLETED' ? 'success' : s === 'FAILED' ? 'danger' : s === 'RUNNING' ? 'info' : 'warning';

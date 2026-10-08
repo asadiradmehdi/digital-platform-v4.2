@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../server/core/db', () => ({ query: vi.fn() }));
+vi.mock('../../server/core/db', () => {
+  const query = vi.fn();
+  return { query, withWorkspaceTransaction: vi.fn(), withTenantTransaction: vi.fn(async (_ws: string, _u: string | undefined, fn: (c: { query: typeof query }) => unknown) => fn({ query })) };
+});
 vi.mock('../../server/queue/db-queue', () => ({ jobQueue: { enqueue: vi.fn().mockResolvedValue('job-1') } }));
 
 import { query } from '../../server/core/db';
@@ -15,7 +18,7 @@ beforeEach(() => vi.clearAllMocks());
 describe('workflow-service', () => {
   it('updateWorkflowRunStatus sets completed_at for terminal states', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
-    await updateWorkflowRunStatus('run-1', 'COMPLETED');
+    await updateWorkflowRunStatus('run-1', 'ws-1', 'COMPLETED');
     expect(mockQuery).toHaveBeenCalledWith(
       expect.stringContaining('completed_at=now()'),
       ['run-1', 'COMPLETED', null]
@@ -24,7 +27,7 @@ describe('workflow-service', () => {
 
   it('updateWorkflowRunStatus just updates status for non-terminal states', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
-    await updateWorkflowRunStatus('run-1', 'RUNNING');
+    await updateWorkflowRunStatus('run-1', 'ws-1', 'RUNNING');
     expect(mockQuery).toHaveBeenCalledWith(
       expect.stringContaining('SET status=$2'),
       ['run-1', 'RUNNING']

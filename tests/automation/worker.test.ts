@@ -4,9 +4,10 @@ vi.mock('../../server/queue/db-queue', () => ({
   jobQueue: { enqueue: vi.fn() },
 }));
 
-vi.mock('../../server/core/db', () => ({
-  query: vi.fn(),
-}));
+vi.mock('../../server/core/db', () => {
+  const query = vi.fn();
+  return { query, withWorkspaceTransaction: vi.fn(), withTenantTransaction: vi.fn(async (_ws: string, _u: string | undefined, fn: (c: { query: typeof query }) => unknown) => fn({ query })) };
+});
 
 vi.mock('../../server/automation/engine', () => ({
   executeWorkflow: vi.fn(),
@@ -17,7 +18,7 @@ vi.mock('../../server/automation/workflow-service', () => ({
 }));
 
 import { jobQueue } from '../../server/queue/db-queue';
-import { query } from '../../server/core/db';
+import { query, withTenantTransaction } from '../../server/core/db';
 import { executeWorkflow } from '../../server/automation/engine';
 import { updateWorkflowRunStatus } from '../../server/automation/workflow-service';
 import { enqueueWorkflowRun, processWorkflowJob } from '../../server/automation/worker';
@@ -61,9 +62,10 @@ describe('processWorkflowJob', () => {
     mockUpdateStatus.mockResolvedValue(undefined);
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as never);
     await processWorkflowJob(basePayload);
-    expect(mockUpdateStatus).toHaveBeenCalledWith('run-1', 'RUNNING');
+    expect(mockUpdateStatus).toHaveBeenCalledWith('run-1', 'ws-1', 'RUNNING');
     expect(mockUpdateStatus).toHaveBeenCalledWith(
       'run-1',
+      'ws-1',
       'FAILED',
       expect.objectContaining({ message: 'Workflow version not found.' }),
     );
@@ -78,8 +80,8 @@ describe('processWorkflowJob', () => {
     mockExecute.mockResolvedValueOnce({});
 
     await processWorkflowJob(basePayload);
-    expect(mockUpdateStatus).toHaveBeenCalledWith('run-1', 'RUNNING');
-    expect(mockUpdateStatus).toHaveBeenCalledWith('run-1', 'COMPLETED');
+    expect(mockUpdateStatus).toHaveBeenCalledWith('run-1', 'ws-1', 'RUNNING');
+    expect(mockUpdateStatus).toHaveBeenCalledWith('run-1', 'ws-1', 'COMPLETED');
   });
 
   it('marks run FAILED with message when execution throws', async () => {
@@ -93,6 +95,7 @@ describe('processWorkflowJob', () => {
     await processWorkflowJob(basePayload);
     expect(mockUpdateStatus).toHaveBeenCalledWith(
       'run-1',
+      'ws-1',
       'FAILED',
       expect.objectContaining({ message: 'Action failed' }),
     );
@@ -123,4 +126,20 @@ describe('processWorkflowJob', () => {
     );
   });
 
+  it('writes notification actions inside the job workspace RLS context with the real column name', async () => {
+    // Regression: the notification insert ran on the pool (rejected by RLS) and used a non-existent
+    // "type" column; both failures were swallowed, so no notification was ever stored.
+    mockUpdateStatus.mockResolvedValue(undefined);
+    mockQuery.mockResolvedValueOnce({ rows: [{ definition: { version: 1, triggers: [], steps: [] } }], rowCount: 1 } as never);
+    mockExecute.mockImplementationOnce(async (_def, _input, executor) => {
+      await executor({ type: 'notification', config: { type: 'welcome', payload: { a: 1 } } }, { workspaceId: 'ws-spoofed' });
+      return {};
+    });
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
+    await processWorkflowJob(basePayload);
+    expect(vi.mocked(withTenantTransaction)).toHaveBeenCalledWith('ws-1', undefined, expect.any(Function));
+    const [sql, params] = mockQuery.mock.calls[1] as [string, unknown[]];
+    expect(sql).toContain('INSERT INTO notifications(workspace_id, notification_type, payload)');
+    expect(params).toEqual(['ws-1', 'welcome', { a: 1 }]);
+  });
 });
