@@ -12,7 +12,13 @@ export type AppService = {
   /** Name inside its category («سیو» on the Instagram page); `brand` is set for AI plans. */
   short: string; brand: BrandLogo | null; perLabel: string;
   group: string; unit: string; icon: IconName; per: number; unitPriceToman: number; quantities: number[];
-  target: { label: string; placeholder: string; ltr: boolean };
+  /** `required` is false for optional targets (design / AI content: page or site is a hint). */
+  target: { label: string; placeholder: string; ltr: boolean; required?: boolean };
+  /** Team-fulfilled services (design, automation, AI content) ask for a written brief. */
+  brief?: { label: string; placeholder: string; min: number; max: number } | null;
+  /** Delivery terms shown above the packages (delivery days, revisions, no auto-renewal, refund). */
+  facts?: Array<{ icon: IconName; text: string }>;
+  refund?: string;
 };
 export type AppCatalog = { categories: AppCategory[]; services: AppService[] };
 
@@ -39,11 +45,11 @@ export const appApi = {
   orders: (workspaceId: string, page: number) =>
     apiFetch<{ items: AppOrderCard[]; page: number; hasMore: boolean }>(`${V}/app/orders?workspaceId=${encodeURIComponent(workspaceId)}&page=${page}`),
   /** Creates the order and pays it from the wallet in one server transaction flow. */
-  placeOrder: (body: { workspaceId: string; serviceId: string; quantity: number; target: string }, idempotencyKey: string) =>
+  placeOrder: (body: { workspaceId: string; serviceId: string; quantity: number; target: string; brief?: string }, idempotencyKey: string) =>
     apiFetch<{ id: string; status: string }>(`${V}/orders`, {
       method: 'POST',
       headers: { 'Idempotency-Key': idempotencyKey },
-      body: JSON.stringify({ workspaceId: body.workspaceId, serviceId: body.serviceId, quantity: body.quantity, parameters: { target: body.target } }),
+      body: JSON.stringify({ workspaceId: body.workspaceId, serviceId: body.serviceId, quantity: body.quantity, parameters: body.brief != null ? { ...(body.target ? { target: body.target } : {}), brief: body.brief } : { target: body.target } }),
     }),
   topUp: (body: { workspaceId: string; walletId: string; amountMinor: number; currency: string }, idempotencyKey: string) =>
     apiFetch<{ entryId: string }>(`${V}/wallet`, {
