@@ -5,7 +5,7 @@ import { ShellAside } from '../../components/zp/ShellAside';
 import { Tile } from '../../components/zp/brand';
 import { ZIcon } from '../../components/zp/ZIcon';
 import { optionalViewer } from '../../server/account/page-context';
-import { licensesView } from '../../server/content/trust';
+import { licensesView, loadLicenseUrls } from '../../server/content/trust';
 import { metadataForPage } from '../../lib/seo/site';
 
 export const metadata: Metadata = metadataForPage({
@@ -16,7 +16,7 @@ export const metadata: Metadata = metadataForPage({
 
 export default async function LicensesPage() {
   const viewer = await optionalViewer();
-  const licenses = licensesView();
+  const licenses = licensesView(process.env, await loadLicenseUrls());
   return (
     <AppShell title="مجوزها و نمادها" aside={viewer ? <ShellAside workspaceId={viewer.workspaceId} /> : undefined}>
       <main className="zp-screen">

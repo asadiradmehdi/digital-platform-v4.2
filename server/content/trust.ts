@@ -5,6 +5,7 @@ import type { IconName } from '../../packages/design-tokens/src/icons';
 import { query, withUserTransaction } from '../core/db';
 import { writeAudit } from '../core/audit';
 import { AppError } from '../core/errors';
+import { getPlatformSetting } from '../core/platform-settings';
 
 export type LicenseView = {
   key: 'enamad' | 'samandehi' | 'union';
@@ -31,11 +32,27 @@ function officialUrl(raw: string | undefined, hosts: string[]): string | null {
   } catch { return null; }
 }
 
-export function licensesView(env: Record<string, string | undefined> = process.env): LicenseView[] {
-  return LICENSES.map(({ env: key, hosts, ...l }) => {
-    const verifyUrl = officialUrl(env[key], hosts);
-    return { ...l, status: verifyUrl ? 'active' : 'pending', verifyUrl };
+/** Admin-panel overrides (platform setting 'site.licenses'), one verification URL per licence key. */
+export const LICENSES_SETTINGS_KEY = 'site.licenses';
+export type LicenseUrls = Partial<Record<LicenseView['key'], string>>;
+
+/** Validates one verification link against the issuer's own hosts; null when it is not an official https link. */
+export function officialLicenseUrl(key: LicenseView['key'], raw: string | undefined): string | null {
+  const l = LICENSES.find(x => x.key === key);
+  return l ? officialUrl(raw, l.hosts) : null;
+}
+
+/** `urls` (from the admin panel) win over the LICENSE_*_URL environment fallback. */
+export function licensesView(env: Record<string, string | undefined> = process.env, urls: LicenseUrls = {}): LicenseView[] {
+  return LICENSES.map(({ env: envKey, hosts, key, ...l }) => {
+    const verifyUrl = officialUrl(urls[key], hosts) ?? officialUrl(env[envKey], hosts);
+    return { ...l, key, status: verifyUrl ? 'active' : 'pending', verifyUrl };
   });
+}
+
+export async function loadLicenseUrls(): Promise<LicenseUrls> {
+  const s = await getPlatformSetting<LicenseUrls, never>(LICENSES_SETTINGS_KEY);
+  return s.value ?? {};
 }
 
 export type SupportPhone = { label: string; display: string; tel: string };

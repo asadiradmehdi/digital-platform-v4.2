@@ -92,3 +92,14 @@ describe('GET /api/v1/app/trust', () => {
     expect((await res.json()).error.code).toBe('INTERNAL_ERROR');
   });
 });
+
+describe('licensesView with admin-panel links', () => {
+  it('panel links win over the environment, and non-official hosts are ignored', async () => {
+    const { licensesView } = await import('../../server/content/trust');
+    const env = { LICENSE_ENAMAD_URL: 'https://trustseal.enamad.ir/?id=env' };
+    const view = licensesView(env, { enamad: 'https://trustseal.enamad.ir/?id=panel', samandehi: 'https://evil.example.com/x' });
+    expect(view.find(l => l.key === 'enamad')).toMatchObject({ status: 'active', verifyUrl: 'https://trustseal.enamad.ir/?id=panel' });
+    expect(view.find(l => l.key === 'samandehi')).toMatchObject({ status: 'pending', verifyUrl: null });
+    expect(licensesView(env).find(l => l.key === 'enamad')?.verifyUrl).toBe('https://trustseal.enamad.ir/?id=env');
+  });
+});
