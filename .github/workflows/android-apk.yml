@@ -1,0 +1,58 @@
+name: android-apk
+
+# Builds an installable Android APK of apps/mobile on GitHub's runners (no Expo account needed) and
+# publishes it as the «android-latest» release, so the newest app is always at one download link:
+# https://github.com/<owner>/<repo>/releases/download/android-latest/zohalpay.apk
+on:
+  push:
+    branches: [master]
+    paths: ['apps/mobile/**', 'packages/**', '.github/workflows/android-apk.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      # The live server the app talks to (same host as the website).
+      EXPO_PUBLIC_API_BASE_URL: ${{ vars.MOBILE_API_BASE_URL || 'https://46-249-101-76.sslip.io' }}
+      NODE_OPTIONS: --max-old-space-size=6144
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: pnpm install --frozen-lockfile
+      - name: Generate the native Android project
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform android --no-install --clean
+      - name: Build the release APK
+        working-directory: apps/mobile/android
+        # Signed with the generated debug key: installable by direct download. Store releases
+        # (Cafe Bazaar / Myket) will use a private upload key kept in GitHub secrets.
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+      - name: Publish as the android-latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk zohalpay.apk
+          gh release delete android-latest --yes --cleanup-tag || true
+          gh release create android-latest zohalpay.apk \
+            --title "اپ اندروید زُحل پی (آخرین نسخه)" \
+            --notes "ساخته‌شده از ${GITHUB_SHA::7}. برای نصب، فایل zohalpay.apk را روی گوشی باز کنید." \
+            --target "$GITHUB_SHA"
