@@ -5,22 +5,18 @@ import { requirePlatformAdmin } from '../../../../../../../server/identity/platf
 import { assertSameOrigin } from '../../../../../../../server/core/security-boundary';
 import { requireUuid } from '../../../../../../../server/core/validation';
 import { AppError } from '../../../../../../../server/core/errors';
-import { revertPrice, setServiceActive } from '../../../../../../../server/admin/catalog';
+import { setPriceNow } from '../../../../../../../server/admin/catalog';
 
-type Params = { params: Promise<{ id: string }> };
-
-/** Body {active:boolean} shows/hides a service; {action:'revert'} re-inserts the previous price as a new row. */
-export async function POST(request: NextRequest, { params }: Params) {
+/** One-tap price change: the new price goes live at once as a new row (history is kept). */
+export async function POST(request: NextRequest) {
   const id = correlationId(request);
   try {
     assertSameOrigin(request);
-    const serviceId = requireUuid((await params).id, 'serviceId');
     const actorUserId = await requireRequestUser(request);
     await requirePlatformAdmin(actorUserId);
     const body = await request.json().catch(() => ({})) as Record<string, unknown>;
-    if (body.action === 'revert') return json(await revertPrice({ actorUserId, serviceId }), { correlationId: id });
-    if (typeof body.active !== 'boolean') throw new AppError('VALIDATION_ERROR', 'active باید true یا false باشد.');
-    return json(await setServiceActive({ actorUserId, serviceId, active: body.active }), { correlationId: id });
+    const serviceId = requireUuid(body.serviceId, 'serviceId');
+    return json(await setPriceNow({ actorUserId, serviceId, unitToman: body.unitToman, min: body.min, max: body.max }), { status: 201, correlationId: id });
   } catch (e) {
     return handleRouteError(e, id);
   }
