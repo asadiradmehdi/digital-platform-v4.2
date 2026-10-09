@@ -2,7 +2,7 @@ import { useWindowDimensions } from 'react-native';
 import { appApi } from '../../api/app';
 import { useRemote } from '../../hooks/useRemote';
 import { faNum } from '../../zp/base';
-import { CategoryGrid } from '../../zp/cards';
+import { CategoryGrid, WalletStrip } from '../../zp/cards';
 import { Promo, type PromoSlide } from '../../zp/Promo';
 import { AppScreen } from '../../zp/Shell';
 import { Async, SecHead } from '../../zp/ui';
@@ -16,14 +16,20 @@ const SLIDES: PromoSlide[] = [
 export function HomeScreen() {
   const { height } = useWindowDimensions();
   const catalog = useRemote(appApi.catalog);
+  const overview = useRemote(appApi.overview);
+  const o = overview.data;
+  // Fixed, no-scroll screen: what is left under header, promo, wallet strip, title and tab bar is shared by the grid rows.
+  const promoH = Math.round(Math.max(104, Math.min(150, height * 0.165)));
+  const gridH = Math.max(210, height - (118 + promoH + 84 + 44 + 118 + 40));
   return (
     <AppScreen>
-      <Promo slides={SLIDES} height={Math.round(Math.max(122, Math.min(162, height * 0.2)))} />
+      <Promo slides={SLIDES} height={promoH} />
+      <WalletStrip balanceToman={o?.wallet?.balanceToman ?? null} tierName={o?.tier.name ?? null} />
       <Async state={catalog} retry={catalog.retry}>
         {c => (
           <>
             <SecHead title="خدمات" note={`${faNum(c.categories.length)} دسته · ${faNum(c.services.length)} سرویس فعال`} />
-            <CategoryGrid categories={c.categories} />
+            <CategoryGrid categories={c.categories} height={gridH} />
           </>
         )}
       </Async>
