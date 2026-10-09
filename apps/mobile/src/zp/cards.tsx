@@ -3,8 +3,8 @@ import { useWindowDimensions, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { AppCategory, AppOrderCard } from '../api/app';
 import { formatTomanNumber } from '../format';
-import { C, card, right, row } from './base';
-import { Enamel, Ornament, Tile } from './brand';
+import { C, G, card, right, row } from './base';
+import { Enamel, Fill, Ornament, Tile } from './brand';
 import { Cta, Press, Progress, Star, StatusPill, T } from './ui';
 
 /** 12-category grid; categories without priced services show «به‌زودی». */
@@ -29,6 +29,7 @@ export function CategoryGrid({ categories }: { categories: AppCategory[] }) {
 }
 
 export function OrderCard({ order }: { order: AppOrderCard }) {
+  const router = useRouter();
   const s = order.stage;
   return (
     <View accessible accessibilityLabel={`${order.title}، ${s.label}، ${formatTomanNumber(order.amountToman)} تومان`}
@@ -44,6 +45,14 @@ export function OrderCard({ order }: { order: AppOrderCard }) {
       <View style={{ flexDirection: row, alignItems: 'center', gap: 10 }}>
         <Progress steps={s.steps} tone={s.tone} />
         <T w="sb" size={10.5} color={C.muted}>{formatTomanNumber(order.amountToman)} تومان</T>
+        {order.reorder ? (
+          <Press accessibilityRole="button" accessibilityLabel={`سفارش دوباره‌ی ${order.title}`}
+            onPress={() => router.navigate({ pathname: '/order/[service]', params: { service: order.reorder!.service, ...(order.reorder!.qty ? { qty: String(order.reorder!.qty) } : {}) } })}
+            style={{ paddingVertical: 5, paddingHorizontal: 11, borderRadius: 999, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.55)', backgroundColor: G.metal[G.metal.length - 1] }}>
+            <Fill kind="metal" vertical />
+            <T w="b" size={11.5} color={C.onGold} numberOfLines={1}>سفارش دوباره</T>
+          </Press>
+        ) : null}
       </View>
     </View>
   );

@@ -48,12 +48,12 @@ function Done({ done, onHome, onOrders }: { done: { id: string; label: string; a
   );
 }
 
-function Picker({ service, workspaceId, walletToman, reload }: { service: AppService; workspaceId: string | null; walletToman: number | null; reload: () => void }) {
+function Picker({ service, workspaceId, walletToman, reload, initialQty }: { initialQty: number | null; service: AppService; workspaceId: string | null; walletToman: number | null; reload: () => void }) {
   const router = useRouter();
   const toast = useToast();
   const pages = Math.max(1, Math.ceil(service.quantities.length / PER_PAGE));
   const [page, setPage] = useState(0);
-  const [qty, setQty] = useState<number | null>(null);
+  const [qty, setQty] = useState<number | null>(initialQty && service.quantities.includes(initialQty) ? initialQty : null);
   const [sheet, setSheet] = useState(false);
   const [target, setTarget] = useState('');
   const [brief, setBrief] = useState('');
@@ -275,7 +275,7 @@ function Picker({ service, workspaceId, walletToman, reload }: { service: AppSer
 
 export function PackageScreen() {
   const router = useRouter();
-  const { service: slug } = useLocalSearchParams<{ service: string }>();
+  const { service: slug, qty: qtyParam } = useLocalSearchParams<{ service: string; qty?: string }>();
   const catalog = useRemote(appApi.catalog);
   const overview = useRemote(appApi.overview);
   const service = catalog.data?.services.find(s => s.slug === slug);
@@ -283,7 +283,7 @@ export function PackageScreen() {
     <SubScreen title={service?.name ?? 'سفارش جدید'}>
       <Async state={catalog} retry={catalog.retry}>
         {() => service
-          ? <Picker service={service} workspaceId={overview.data?.workspaceId ?? null} walletToman={overview.data?.wallet?.balanceToman ?? null} reload={overview.reload} />
+          ? <Picker initialQty={Number(qtyParam) || null} service={service} workspaceId={overview.data?.workspaceId ?? null} walletToman={overview.data?.wallet?.balanceToman ?? null} reload={overview.reload} />
           : <EmptyState icon="box" title="سرویس پیدا نشد" text="این سرویس فعال نیست یا هنوز قیمت‌گذاری نشده است. از فهرست خدمات یک سرویس دیگر انتخاب کنید." action={{ label: 'مشاهده‌ی خدمات', onPress: () => router.navigate('/services') }} />}
       </Async>
     </SubScreen>

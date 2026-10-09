@@ -1,6 +1,6 @@
 // View models for the native app: the server owns pricing, stages, loyalty level and wording,
 // so the mobile client only renders (no domain logic is duplicated in React Native).
-import { CATEGORIES, categoryMeta, isTeamFulfilled, orderForm, perLabel, serviceBrand, serviceIcon, serviceMeta, shortServiceName, sortServices } from '../../lib/catalog-ui';
+import { CATEGORIES, categoryMeta, isHiddenCategory, isTeamFulfilled, orderForm, perLabel, serviceBrand, serviceIcon, serviceMeta, shortServiceName, sortServices } from '../../lib/catalog-ui';
 import { formatQuantityWords, formatWhen, orderCode, toToman } from '../../lib/format';
 import { orderStage } from '../../lib/order-progress';
 import { tierFor } from '../../lib/tiers';
@@ -38,6 +38,8 @@ export function orderCardView(o: OrderCard) {
     icon: serviceIcon(o.serviceSlug ?? ''),
     stage: orderStage(o.status, isTeamFulfilled(o.productSlug)),
     amountToman: toToman(o.totalMinor, o.currency),
+    // Reorder link target; null for hidden sections or orders without a service.
+    reorder: o.serviceSlug && !isHiddenCategory(o.productSlug) ? { service: o.serviceSlug, qty: o.quantity ? Number(o.quantity) : null } : null,
   };
 }
 

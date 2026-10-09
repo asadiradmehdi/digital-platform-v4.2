@@ -10,8 +10,8 @@ import { PackagePicker } from './PackagePicker';
 
 export const metadata: Metadata = { title: 'سفارش جدید', robots: { index: false, follow: false } };
 
-export default async function OrderNewPage({ searchParams }: { searchParams: Promise<{ service?: string }> }) {
-  const { service: slug = '' } = await searchParams;
+export default async function OrderNewPage({ searchParams }: { searchParams: Promise<{ service?: string; qty?: string; target?: string }> }) {
+  const { service: slug = '', qty: qtyParam, target: targetParam } = await searchParams;
   const viewer = await requireViewer();
   const [catalog, wallet] = await Promise.all([
     listCatalogWithPrices().catch(() => []),
@@ -41,6 +41,8 @@ export default async function OrderNewPage({ searchParams }: { searchParams: Pro
       <main className="zp-screen">
         <PackagePicker
           workspaceId={viewer.workspaceId}
+          initialQty={qtyParam && quantities.includes(Number(qtyParam)) ? Number(qtyParam) : null}
+          initialTarget={targetParam ? targetParam.slice(0, 500) : ''}
           walletToman={wallet ? toToman(wallet.balanceMinor, wallet.currency) : null}
           service={{
             id: item.id, slug: item.slug, name: item.name, note: item.description ?? (cat ? `خدمات ${cat.name}` : ''),

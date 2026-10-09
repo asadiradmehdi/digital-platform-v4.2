@@ -21,13 +21,13 @@ export type PickerService = {
 const PER_PAGE = 9;
 
 /** Package grid → buy bar → checkout sheet → receipt. Prices shown are the server's active unit price × quantity. */
-export function PackagePicker({ service, workspaceId, walletToman }: { service: PickerService; workspaceId: string | null; walletToman: number | null }) {
+export function PackagePicker({ service, workspaceId, walletToman, initialQty = null, initialTarget = '' }: { service: PickerService; workspaceId: string | null; walletToman: number | null; initialQty?: number | null; initialTarget?: string }) {
   const router = useRouter();
   const pages = Math.max(1, Math.ceil(service.quantities.length / PER_PAGE));
   const [page, setPage] = useState(0);
-  const [qty, setQty] = useState<number | null>(null);
+  const [qty, setQty] = useState<number | null>(initialQty);
   const [sheet, setSheet] = useState(false);
-  const [target, setTarget] = useState('');
+  const [target, setTarget] = useState(initialTarget);
   const [brief, setBrief] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

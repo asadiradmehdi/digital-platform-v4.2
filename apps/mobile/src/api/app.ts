@@ -25,6 +25,7 @@ export type AppCatalog = { categories: AppCategory[]; services: AppService[] };
 export type AppOrderCard = {
   id: string; code: string; title: string; subtitle: string; icon: IconName;
   stage: { label: string; steps: number; tone: Tone }; amountToman: number;
+  reorder: { service: string; qty: number | null } | null;
 };
 export type AppWalletEntry = { id: string; title: string; when: string; amountToman: number; credit: boolean; icon: IconName };
 export type AppOverview = {
