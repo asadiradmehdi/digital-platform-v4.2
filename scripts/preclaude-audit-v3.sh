@@ -13,7 +13,7 @@ bash -n scripts/*.sh
 python - <<'PY'
 import json, glob
 for p in glob.glob('**/package.json', recursive=True): json.load(open(p))
-json.load(open('apps/mobile/app.json'))
+json.load(open('apps/mobile/app.base.json'))
 PY
 
 python - <<'PY'

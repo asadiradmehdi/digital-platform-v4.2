@@ -10,6 +10,7 @@ import { Kufam_700Bold } from '@expo-google-fonts/kufam/700Bold';
 import { Kufam_800ExtraBold } from '@expo-google-fonts/kufam/800ExtraBold';
 import { AuthProvider, useAuth } from '../src/auth/AuthProvider';
 import { C } from '../src/zp/base';
+import { AdminShell } from '../src/AdminShell';
 
 /** Every screen except login (and the Google return link) needs a session; the server still authorizes each request. */
 function SessionGate() {
@@ -31,6 +32,7 @@ export default function Layout() {
     Kufam_700Bold, Kufam_800ExtraBold,
   });
   if (!fontsReady) return null;
+  if (process.env.EXPO_PUBLIC_APP_VARIANT === 'admin') return <AdminShell />;
   return (
     <AuthProvider>
       <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
