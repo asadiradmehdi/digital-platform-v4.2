@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Bell, CreditCard, KeyRound, ShieldCheck, UserRound } from 'lucide-react';
+import { Bell, CreditCard, ShieldCheck, UserRound } from 'lucide-react';
 import { AppShell } from '../../components/AppShell';
 
 export const metadata = { title: 'تنظیمات', robots: { index: false, follow: false } };
@@ -22,7 +22,7 @@ const sections = [
   {
     icon: Bell,
     title: 'اعلان‌ها',
-    description: 'تعیین کنید چه رویدادهایی را از طریق ایمیل، Push یا پیامک دریافت کنید.',
+    description: 'تعیین کنید چه رویدادهایی را از طریق ایمیل، اعلان فوری یا پیامک دریافت کنید.',
     href: '/settings/notifications',
     cta: 'تنظیم اعلان‌ها',
   },
@@ -32,13 +32,6 @@ const sections = [
     description: 'وضعیت اشتراک، موجودی کیف پول، تاریخچه فاکتورها و تمدید خودکار.',
     href: '/settings/billing',
     cta: 'مشاهده صورتحساب',
-  },
-  {
-    icon: KeyRound,
-    title: 'API و دسترسی‌ها',
-    description: 'ایجاد و مدیریت کلیدهای API برای اتصال سرویس‌های خارجی به فضای کاری.',
-    href: '/settings/api-keys',
-    cta: 'مدیریت کلیدها',
   },
 ] as const;
 
