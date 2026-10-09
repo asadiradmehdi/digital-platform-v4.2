@@ -247,7 +247,7 @@ export default async function AdminPage() {
         </div>
 
         {/* ── Main two-column grid ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.4fr) minmax(300px,.6fr)', gap: 14, alignItems: 'start' }}>
+        <div data-stack style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.4fr) minmax(300px,.6fr)', gap: 14, alignItems: 'start' }}>
 
           {/* LEFT COLUMN */}
           <div style={{ display: 'grid', gap: 14 }}>

@@ -27,3 +27,9 @@ export function topupAmountProblem(toman: number): string | null {
 
 /** Rial charged by the gateway for a toman amount. */
 export const tomanToRial = (toman: number) => toman * 10;
+
+/** Top-up to suggest for a shortfall: rounded up to the next ۱۰ هزار, never below the minimum. */
+export function suggestedTopupToman(shortfallToman: number): number {
+  const rounded = Math.ceil(Math.max(shortfallToman, 0) / 10_000) * 10_000;
+  return Math.min(Math.max(rounded, TOPUP_MIN_TOMAN), TOPUP_MAX_TOMAN);
+}

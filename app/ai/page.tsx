@@ -142,7 +142,7 @@ export default function AI() {
           </div>
         </section>
 
-        <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+        <section data-stack style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
           <article
             style={{
               background: 'var(--surface)',

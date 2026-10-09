@@ -6,6 +6,7 @@ import { tierFor } from '../../lib/tiers';
 import { requireViewer } from '../../server/account/page-context';
 import { getAccountStats, getWalletSummary, listOrderCards, type WalletEntry } from '../../server/account/overview';
 import { WalletPanel, type TxView } from './WalletPanel';
+import { parseTomanInput, topupAmountProblem } from '../../packages/api-contracts/src/topup';
 
 export const metadata: Metadata = { title: 'کیف پول', robots: { index: false, follow: false } };
 
@@ -27,7 +28,9 @@ function txView(e: WalletEntry): TxView {
   };
 }
 
-export default async function Wallet() {
+export default async function Wallet({ searchParams }: { searchParams: Promise<{ amount?: string }> }) {
+  const asked = parseTomanInput((await searchParams).amount ?? '');
+  const initialAmount = asked && !topupAmountProblem(asked) ? asked : null;
   const viewer = await requireViewer();
   const ws = viewer.workspaceId;
   const [wallet, stats, live] = ws
@@ -49,7 +52,7 @@ export default async function Wallet() {
         {wallet && ws ? (
           <>
             <WalletCard balanceToman={toToman(wallet.balanceMinor, wallet.currency)} tierName={tier} tail={wallet.walletId.slice(-4).toUpperCase()} />
-            <WalletPanel workspaceId={ws} tx={wallet.entries.map(txView)} />
+            <WalletPanel workspaceId={ws} tx={wallet.entries.map(txView)} initialAmount={initialAmount} />
           </>
         ) : (
           <EmptyState icon="wallet" title="کیف پولی پیدا نشد" text="برای این حساب هنوز کیف پول ساخته نشده است. با پشتیبانی در تماس باشید." action={{ href: '/support', label: 'پشتیبانی' }} />

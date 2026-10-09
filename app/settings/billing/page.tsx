@@ -204,6 +204,7 @@ export default async function BillingSettings() {
             </div>
 
             <div
+              data-stack
               style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr',

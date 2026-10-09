@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { Linking, Modal, PanResponder, Pressable, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { suggestedTopupToman } from '@digital-platform/api-contracts';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Ellipse, Path } from 'react-native-svg';
 import { appApi, errorText, newIdempotencyKey, siteUrl, type AppService } from '../../api/app';
@@ -69,6 +70,7 @@ function Picker({ service, workspaceId, walletToman, reload }: { service: AppSer
   const price = qty ? qty * service.unitPriceToman : 0;
   const label = qty ? `${formatQuantityWords(qty)} ${service.unit} · ${service.name}` : '';
   const short = walletToman != null && qty != null && walletToman < price;
+  const shortfall = short ? suggestedTopupToman(price - (walletToman ?? 0)) : 0;
 
   const [pan] = useState(() => PanResponder.create({
     onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 14 && Math.abs(g.dx) > Math.abs(g.dy),
@@ -237,9 +239,28 @@ function Picker({ service, workspaceId, walletToman, reload }: { service: AppSer
             );
           })}
         </View>
-        {method === 'wallet' && short && !error ? <ErrorBox text="موجودی کافی نیست. پرداخت آنلاین را انتخاب کنید یا موجودی را افزایش دهید." action={{ label: 'افزایش موجودی', onPress: () => { setSheet(false); router.navigate('/wallet'); } }} /> : null}
+        {method === 'wallet' && short && !error ? (
+          <Enamel radius={18} style={{ padding: 14, gap: 12 }}>
+            <View accessibilityRole="text" style={{ flexDirection: row, alignItems: 'center', gap: 12 }}>
+              <View style={{ width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(242,211,144,0.14)', borderWidth: 1, borderColor: 'rgba(242,211,144,0.28)' }}>
+                <Icon name="wallet" size={22} color={C.gold1} />
+              </View>
+              <View style={{ gap: 2, flexShrink: 1 }}>
+                <T size={11.5} color="rgba(255,255,255,0.72)">برای این سفارش کم دارید</T>
+                <T w="b" size={20} color="#fff">{formatTomanNumber(price - (walletToman ?? 0))} <T w="b" size={12} color={C.gold1}>تومان</T></T>
+              </View>
+            </View>
+            <View style={{ flexDirection: row, gap: 8 }}>
+              <View style={{ flex: 1.4 }}><Cta label={`شارژ ${formatQuantityWords(shortfall)} تومان`} onPress={() => { setSheet(false); router.navigate({ pathname: '/wallet', params: { amount: String(shortfall) } }); }} /></View>
+              <Press accessibilityRole="button" onPress={() => setMethod('gateway')}
+                style={{ flex: 1, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' }}>
+                <T w="b" size={13} color="#fff">پرداخت آنلاین</T>
+              </Press>
+            </View>
+          </Enamel>
+        ) : null}
         {error ? <ErrorBox text={error} /> : null}
-        <Cta full label={busy ? (method === 'gateway' ? 'در حال اتصال به درگاه…' : 'در حال ثبت…') : method === 'gateway' ? 'پرداخت آنلاین و ثبت سفارش' : 'پرداخت از کیف پول و ثبت سفارش'} busy={busy} disabled={!workspaceId || (method === 'wallet' && short)} onPress={pay} />
+        {method === 'wallet' && short ? null : <Cta full label={busy ? (method === 'gateway' ? 'در حال اتصال به درگاه…' : 'در حال ثبت…') : method === 'gateway' ? 'پرداخت آنلاین و ثبت سفارش' : 'پرداخت از کیف پول و ثبت سفارش'} busy={busy} disabled={!workspaceId} onPress={pay} />}
         <View style={{ flexDirection: row, alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: -4 }}>
           <Icon name="shieldS" size={14} color={C.turquoiseInk} />
           <T size={11} color={C.muted} style={{ textAlign: 'center', flexShrink: 1 }}>{`${method === 'gateway' ? 'پرداخت امن با درگاه بانکی · ثبت سفارش پس از تأیید بانک' : 'پرداخت امن از کیف پول'} · ${service.refund ?? 'بازگشت وجه در صورت لغو'}`}</T>

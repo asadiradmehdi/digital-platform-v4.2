@@ -177,6 +177,7 @@ export default async function WorkflowDetailPage({ params }: { params: Promise<{
         {/* ── Stats row ──────────────────────────────────────────── */}
         {runs.length > 0 && (
           <div
+            data-stack="2"
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(4, 1fr)',

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Check, Minus, Sparkles, Zap, Building2, ArrowLeft, HelpCircle, Info } from 'lucide-react';
+import { Check, Minus, Sparkles, Zap, Building2, ArrowLeft, HelpCircle } from 'lucide-react';
 import { PublicPage } from '../../components/seo/PublicPage';
 import { formatTomanNumber, toToman } from '../../lib/format';
 
@@ -81,7 +81,7 @@ const plans = [
     features: [
       { label: 'همه چیز در Pro', available: true },
       { label: 'تأمین‌کننده اختصاصی', available: true },
-      { label: 'SLA اختصاصی', available: true },
+      { label: 'تضمین کیفیت اختصاصی', available: true },
       { label: 'مدیریت چند workspace', available: true },
       { label: 'گزارش سازمانی', available: true },
       { label: 'SSO و SAML', available: true },
@@ -100,7 +100,7 @@ const faqs = [
   },
   {
     q: 'قیمت سفارش‌های شبکه اجتماعی چگونه محاسبه می‌شود؟',
-    a: 'قیمت‌ها از Pricing Engine سمت سرور محاسبه می‌شوند و از کیف پول کسر می‌گردند. هیچ محاسبه‌ای سمت کلاینت انجام نمی‌شود.',
+    a: 'قیمت هر بسته پیش از پرداخت به شما نشان داده می‌شود و همان مبلغ از کیف پول یا درگاه پرداخت می‌شود. هیچ هزینه‌ی پنهانی وجود ندارد.',
   },
   {
     q: 'آیا استرداد وجه امکان‌پذیر است؟',
@@ -195,37 +195,16 @@ export default function Pricing() {
       </div>
 
       {/* Service pricing note */}
-      <div className="pricing-note" style={{ marginBottom: 48 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 20, alignItems: 'start' }}>
-          <div>
-            <p className="panel-kicker" style={{ marginBottom: 6 }}>خدمات دیجیتال</p>
-            <h2 style={{ margin: '0 0 10px', fontSize: 18, letterSpacing: '-.03em' }}>قیمت سفارش‌های شبکه‌های اجتماعی</h2>
-            <p style={{ margin: '0 0 16px', lineHeight: 2, fontSize: 12, color: 'var(--muted)' }}>
-              قیمت فالوور، لایک، ویو و ممبر از کاتالوگ خدمات به‌صورت لحظه‌ای محاسبه می‌شود و با کیف پول پرداخت می‌گردد.
-              تمام قیمت‌ها از Pricing Engine سمت سرور تأمین می‌شوند و هیچ محاسبه‌ای سمت کلاینت انجام نمی‌شود.
-            </p>
-            <Link href="/services" className="button primary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              مشاهده کاتالوگ خدمات
-              <ArrowLeft size={13} />
-            </Link>
-          </div>
-          <div style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 10,
-            padding: '14px 16px',
-            background: 'var(--accent-soft)',
-            border: '1px solid rgba(20,34,87,.12)',
-            borderRadius: 14,
-            maxWidth: 280,
-            flexShrink: 0,
-          }}>
-            <span style={{ marginTop: 2, color: 'var(--accent)', flexShrink: 0 }}><Info size={14} /></span>
-            <p style={{ margin: 0, fontSize: 11, color: 'var(--muted)', lineHeight: 1.8 }}>
-              قیمت دقیق هر خدمت از کاتالوگ زنده محاسبه می‌شود و پیش از ثبت سفارش به شما نشان داده می‌شود.
-            </p>
-          </div>
-        </div>
+      <div className="pricing-note" style={{ marginBottom: 48, display: 'grid', gap: 12 }}>
+        <p className="panel-kicker" style={{ margin: 0 }}>خدمات دیجیتال</p>
+        <h2 style={{ margin: 0, fontSize: 18, letterSpacing: '-.03em' }}>قیمت فالوور، لایک، ویو و ممبر</h2>
+        <p style={{ margin: 0, lineHeight: 2, fontSize: 13, color: 'var(--muted)', maxWidth: '60ch' }}>
+          قیمت هر بسته در صفحه‌ی همان خدمت دیده می‌شود و پیش از پرداخت، مبلغ دقیق را می‌بینید. پرداخت از کیف پول یا درگاه بانکی انجام می‌شود.
+        </p>
+        <Link href="/services" className="button primary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, justifySelf: 'start' }}>
+          مشاهده‌ی خدمات و قیمت‌ها
+          <ArrowLeft size={13} />
+        </Link>
       </div>
 
       {/* FAQ section */}

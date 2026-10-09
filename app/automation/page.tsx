@@ -58,6 +58,7 @@ export default async function Automation() {
         {/* ── Summary strip ─────────────────────────────────────── */}
         {workflows.length > 0 && (
           <div
+            data-stack
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(3, 1fr)',

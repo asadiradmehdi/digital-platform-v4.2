@@ -9,9 +9,10 @@ import { TOPUP_PRESETS_TOMAN, parseTomanInput, tomanToRial, topupAmountProblem }
 export type TxView = { id: string; title: string; when: string; amount: string; credit: boolean; icon: IconName };
 
 
-export function WalletPanel({ workspaceId, tx }: { workspaceId: string; tx: TxView[] }) {
-  const [toman, setToman] = useState<number | null>(1_000_000);
-  const [text, setText] = useState('');
+export function WalletPanel({ workspaceId, tx, initialAmount }: { workspaceId: string; tx: TxView[]; initialAmount?: number | null }) {
+  const [toman, setToman] = useState<number | null>(initialAmount ?? 1_000_000);
+  // Arriving from a short-balance order (/wallet?amount=…) prefills the exact amount needed.
+  const [text, setText] = useState(initialAmount ? formatTomanNumber(initialAmount) : '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hist, setHist] = useState(false);

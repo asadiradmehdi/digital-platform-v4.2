@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  TOPUP_PRESETS_TOMAN, parseTomanInput, tomanToRial, topupAmountProblem,
+  TOPUP_PRESETS_TOMAN, parseTomanInput, suggestedTopupToman, tomanToRial, topupAmountProblem,
 } from '../../packages/api-contracts/src/topup';
 
 describe('wallet top-up amounts', () => {
@@ -29,5 +29,12 @@ describe('wallet top-up amounts', () => {
 
   it('charges the gateway in rial (toman × 10)', () => {
     expect(tomanToRial(1_250_000)).toBe(12_500_000);
+  });
+
+  it('suggests a top-up that covers a shortfall, rounded up to ۱۰ هزار', () => {
+    expect(suggestedTopupToman(1_800_000)).toBe(1_800_000);
+    expect(suggestedTopupToman(123_456)).toBe(130_000);
+    expect(suggestedTopupToman(2_000)).toBe(10_000);
+    expect(suggestedTopupToman(80_000_000)).toBe(50_000_000);
   });
 });

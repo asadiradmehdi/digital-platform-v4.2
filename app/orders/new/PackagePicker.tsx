@@ -8,6 +8,7 @@ import type { BrandLogo } from '../../../packages/design-tokens/src/brand-logos'
 import { apiErrorMessage } from '../../../lib/api-error';
 import type { BriefSpec, OrderFact, TargetSpec } from '../../../lib/catalog-ui';
 import { formatQuantityWords, formatTomanNumber, magnitudeParts, orderCode } from '../../../lib/format';
+import { suggestedTopupToman } from '../../../packages/api-contracts/src/topup';
 
 export type PickerService = {
   id: string; slug: string; name: string; note: string; icon: IconName; brand?: BrandLogo; unit: string;
@@ -47,6 +48,7 @@ export function PackagePicker({ service, workspaceId, walletToman }: { service: 
   const price = qty ? qty * service.unitPriceToman : 0;
   const label = qty ? `${formatQuantityWords(qty)} ${service.unit} · ${service.name}` : '';
   const short = walletToman != null && qty != null && walletToman < price;
+  const shortfall = short ? suggestedTopupToman(price - (walletToman ?? 0)) : 0;
 
   const openSheet = () => {
     if (!qty) { setToast('اول یک بسته انتخاب کنید'); return; }
@@ -177,12 +179,21 @@ export function PackagePicker({ service, workspaceId, walletToman }: { service: 
           <button type="button" aria-pressed={method === 'wallet'} onClick={() => { setMethod('wallet'); setError(null); }} disabled={busy} tabIndex={sheet ? 0 : -1}>از کیف پول</button>
         </div>
         {method === 'wallet' && short && !error && (
-          <div className="zp-err" role="status">موجودی کافی نیست. پرداخت آنلاین را انتخاب کنید یا <Link href="/wallet" tabIndex={sheet ? 0 : -1}>موجودی را افزایش دهید</Link>.</div>
+          <div className="zp-short" role="status">
+            <div className="hd">
+              <span className="ic" aria-hidden="true"><ZIcon name="wallet" /></span>
+              <span className="t"><small>برای این سفارش کم دارید</small><b>{formatTomanNumber(price - (walletToman ?? 0))} <i>تومان</i></b></span>
+            </div>
+            <div className="acts">
+              <Link className="go zp-press" href={`/wallet?amount=${shortfall}`} tabIndex={sheet ? 0 : -1}>شارژ {formatQuantityWords(shortfall)} تومان</Link>
+              <button type="button" className="alt zp-press" onClick={() => setMethod('gateway')} tabIndex={sheet ? 0 : -1}>پرداخت آنلاین</button>
+            </div>
+          </div>
         )}
         {error && <div className="zp-err" role="alert">{error}</div>}
-        <button type="button" className="zp-cta full zp-press" onClick={pay} disabled={busy || redirecting || !workspaceId || (method === 'wallet' && short)} tabIndex={sheet ? 0 : -1}>
+        {!(method === 'wallet' && short) && <button type="button" className="zp-cta full zp-press" onClick={pay} disabled={busy || redirecting || !workspaceId || (method === 'wallet' && short)} tabIndex={sheet ? 0 : -1}>
           {redirecting ? 'در حال انتقال به درگاه…' : busy ? 'در حال ثبت…' : method === 'gateway' ? 'پرداخت آنلاین و ثبت سفارش' : 'پرداخت از کیف پول و ثبت سفارش'}
-        </button>
+        </button>}
         <div className="zp-secure"><ZIcon name="shieldS" />{method === 'gateway' ? 'پرداخت امن با درگاه بانکی · ثبت سفارش پس از تأیید بانک' : 'پرداخت امن از کیف پول'} · {service.refund}</div>
       </div>
 

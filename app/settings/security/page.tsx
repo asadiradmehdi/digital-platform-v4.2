@@ -53,7 +53,7 @@ export default async function SecuritySettings() {
           <div>
             <span className="eyebrow">حساب کاربری · امنیت</span>
             <h1>امنیت حساب</h1>
-            <p>رمز عبور، MFA، Passkey، دستگاه‌های واردشده و دستگاه‌های مورد اعتماد. هر ورود پس از ۷ روز بی‌استفادگی و حداکثر ۳۰ روز پس از ورود بسته می‌شود.</p>
+            <p>رمز عبور، ورود دومرحله‌ای، ورود با اثر انگشت، دستگاه‌های واردشده و دستگاه‌های مورد اعتماد. هر ورود پس از ۷ روز بی‌استفادگی و حداکثر ۳۰ روز پس از ورود بسته می‌شود.</p>
           </div>
           <Link className="button secondary" href="/settings">
             <ArrowRight size={15} />
@@ -82,7 +82,7 @@ export default async function SecuritySettings() {
                   احراز هویت دومرحله‌ای فعال نیست
                 </strong>
                 <span style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.7 }}>
-                  برای حفاظت بیشتر از حساب، MFA را فعال کنید.
+                  برای حفاظت بیشتر از حساب، ورود دومرحله‌ای را فعال کنید.
                 </span>
               </div>
               <Link
@@ -143,12 +143,12 @@ export default async function SecuritySettings() {
             </div>
             <p style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 2, margin: '0 0 20px' }}>
               {hasMfa
-                ? 'TOTP با یک اپ احراز هویت مانند Google Authenticator فعال است. ورود به حساب علاوه بر رمز عبور به یک کد ۶ رقمی نیاز دارد.'
-                : 'با فعال‌سازی MFA، حتی در صورت لو رفتن رمز عبور، حساب شما محافظت می‌شود.'}
+                ? 'ورود دومرحله‌ای با یک اپ احراز هویت مانند Google Authenticator فعال است. ورود به حساب علاوه بر رمز عبور به یک کد ۶ رقمی نیاز دارد.'
+                : 'با فعال‌سازی ورود دومرحله‌ای، حتی در صورت لو رفتن رمز عبور، حساب شما محافظت می‌شود.'}
             </p>
             <div style={{ display: 'flex', gap: 10 }}>
               <Link className="button secondary" href="/api/v1/auth/mfa/totp/begin">
-                {hasMfa ? 'مجدد پیکربندی TOTP' : 'فعال‌سازی TOTP'}
+                {hasMfa ? 'تنظیم دوباره' : 'فعال‌سازی ورود دومرحله‌ای'}
               </Link>
               {hasMfa && (
                 <Link className="button secondary" href="/api/v1/auth/recovery-codes">
@@ -175,7 +175,7 @@ export default async function SecuritySettings() {
                 >
                   PASSKEY
                 </span>
-                <h2>Passkey</h2>
+                <h2>ورود با اثر انگشت یا چهره</h2>
               </div>
               <span className={`status-pill ${passkeys.length > 0 ? 'success' : 'neutral'}`}>
                 {passkeys.length > 0 ? `${passkeys.length} ثبت‌شده` : 'ثبت‌نشده'}
@@ -197,7 +197,7 @@ export default async function SecuritySettings() {
                   style={{ color: 'var(--subtle)', margin: '0 auto 10px', display: 'block' }}
                 />
                 <p style={{ margin: 0, fontSize: 12, color: 'var(--muted)', lineHeight: 1.8 }}>
-                  Passkey ثبت نشده. با افزودن Passkey می‌توانید بدون رمز عبور وارد شوید.
+                  هنوز ثبت نشده. با افزودن آن، بدون رمز عبور و فقط با اثر انگشت یا چهره وارد می‌شوید.
                 </p>
               </div>
             ) : (
@@ -223,7 +223,7 @@ export default async function SecuritySettings() {
                   >
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>
-                        {pk.label ?? 'Passkey'}
+                        {pk.label ?? 'دستگاه من'}
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--subtle)', marginTop: 2 }}>
                         {pk.lastUsedAt
@@ -239,7 +239,7 @@ export default async function SecuritySettings() {
 
             <button className="button primary" type="button">
               <KeyRound size={15} />
-              افزودن Passkey
+              افزودن اثر انگشت یا چهره
             </button>
           </article>
 

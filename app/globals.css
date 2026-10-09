@@ -1221,3 +1221,6 @@ h1,h2,h3,h4{letter-spacing:-.02em;line-height:1.25}
   .auth-card,.workspace-card{padding:24px}
   .hero-copy h1{font-size:36px}
 }
+
+/* Fixed multi-column layouts written inline collapse on phones: one column (or two for data-stack="2"). */
+@media (max-width:900px){[data-stack]{grid-template-columns:minmax(0,1fr)!important}[data-stack="2"]{grid-template-columns:repeat(2,minmax(0,1fr))!important}}

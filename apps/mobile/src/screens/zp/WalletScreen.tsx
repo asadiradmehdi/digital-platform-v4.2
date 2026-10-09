@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Linking, ScrollView, TextInput, View } from 'react-native';
 import { TOPUP_PRESETS_TOMAN, parseTomanInput, tomanToRial, topupAmountProblem } from '@digital-platform/api-contracts';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { appApi, errorText, newIdempotencyKey, siteUrl, type AppOverview, type AppWalletEntry } from '../../api/app';
 import { formatQuantityWords, formatTomanNumber, magnitudeParts } from '../../format';
 import { useRemote } from '../../hooks/useRemote';
@@ -22,11 +22,12 @@ function TxIcon({ t }: { t: AppWalletEntry }) {
 
 const signed = (t: AppWalletEntry) => `${t.credit ? '+' : '−'} ${formatTomanNumber(t.amountToman)}`;
 
-function Panel({ o, reload }: { o: AppOverview; reload: () => void }) {
+function Panel({ o, reload, initialAmount }: { o: AppOverview; reload: () => void; initialAmount: number | null }) {
   const w = o.wallet!;
   const toast = useToast();
-  const [toman, setToman] = useState<number | null>(1_000_000);
-  const [text, setText] = useState('');
+  const [toman, setToman] = useState<number | null>(initialAmount ?? 1_000_000);
+  // Arriving from a short-balance order (wallet?amount=…) prefills the exact amount needed.
+  const [text, setText] = useState(initialAmount ? formatTomanNumber(initialAmount) : '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hist, setHist] = useState(false);
@@ -135,11 +136,14 @@ function Panel({ o, reload }: { o: AppOverview; reload: () => void }) {
 export function WalletScreen() {
   const router = useRouter();
   const overview = useRemote(appApi.overview);
+  const { amount } = useLocalSearchParams<{ amount?: string }>();
+  const asked = parseTomanInput(amount ?? '');
+  const initialAmount = asked && !topupAmountProblem(asked) ? asked : null;
   return (
     <AppScreen>
       <Async state={overview} retry={overview.retry}>
         {o => o.wallet && o.workspaceId
-          ? <Panel o={o} reload={overview.reload} />
+          ? <Panel key={initialAmount ?? 'none'} o={o} reload={overview.reload} initialAmount={initialAmount} />
           : <EmptyState icon="wallet" title="کیف پولی پیدا نشد" text="برای این حساب هنوز کیف پول ساخته نشده است. با پشتیبانی در تماس باشید." action={{ label: 'پشتیبانی', onPress: () => router.navigate('/support') }} />}
       </Async>
     </AppScreen>

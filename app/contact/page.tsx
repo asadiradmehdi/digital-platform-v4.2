@@ -47,7 +47,7 @@ export default function Contact() {
       title="از کجا می‌توان کمک گرفت؟"
       description="هر نوع درخواست یک مسیر مناسب دارد. از تیکت پشتیبانی تا گزارش امنیتی — راه درست را انتخاب کن."
     >
-      <div className="public-card-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', marginBottom: 40 }}>
+      <div data-stack className="public-card-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', marginBottom: 40 }}>
         {channels.map(({ icon: Icon, title, description, cta, href }) => (
           <article className="public-info-card" key={title}>
             <span className="marketing-icon"><Icon size={18} /></span>

@@ -187,6 +187,7 @@ export default function NewWorkflow() {
         </header>
 
         <div
+          data-stack
           style={{
             display: 'grid',
             gridTemplateColumns: '1fr 300px',
