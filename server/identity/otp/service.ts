@@ -13,7 +13,7 @@ import { maskIranMobile, normalizeIranMobile, toAsciiDigits } from '../../../pac
 import { getSmsProvider } from '../../notifications/sms/config';
 import { smsErrorMessage, SmsProviderError } from '../../notifications/sms/types';
 
-export type OtpPurpose = 'LOGIN' | 'REAUTH' | 'PHONE_CHANGE';
+export type OtpPurpose = 'LOGIN' | 'REAUTH' | 'PHONE_CHANGE' | 'PASSWORD_RESET';
 export const OTP_LENGTH = 6;
 export const OTP_TTL_SECONDS = 120;
 export const OTP_MAX_ATTEMPTS = 5;

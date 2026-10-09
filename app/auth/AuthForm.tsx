@@ -10,7 +10,7 @@ import { apiErrorMessage } from '../../lib/api-error';
 import { normalizeIranMobile, toAsciiDigits } from '../../packages/api-contracts/src/phone';
 
 type Mode = 'login' | 'register';
-type Step = 'phone' | 'code' | 'password' | 'mfa';
+type Step = 'phone' | 'code' | 'password' | 'mfa' | 'forgot' | 'reset';
 export type Invite = { code: string; welcomePercent: number };
 
 const faNum = (n: number) => n.toLocaleString('fa-IR');
@@ -45,6 +45,11 @@ export default function AuthForm({ initialMode = 'login', invite = null, otpEnab
   const [expiresIn, setExpiresIn] = useState(0);
   const [mfaToken, setMfaToken] = useState('');
   const [mfaCode, setMfaCode] = useState('');
+  const [notice, setNotice] = useState<string | null>(null);
+  const [resetId, setResetId] = useState('');
+  const [resetCode, setResetCode] = useState('');
+  const [resetResend, setResetResend] = useState(0);
+  const [identifier, setIdentifier] = useState('');
   const verifying = useRef(false);
 
   // A Google sign-in that needs the second factor comes back with #mfa=<token> (never sent to a server).
@@ -58,6 +63,12 @@ export default function AuthForm({ initialMode = 'login', invite = null, otpEnab
     }, 0);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    if (step !== 'reset') return;
+    const t = setInterval(() => setResetResend(s => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [step]);
 
   useEffect(() => {
     if (step !== 'code') return;
@@ -145,13 +156,42 @@ export default function AuthForm({ initialMode = 'login', invite = null, otpEnab
     } catch { setError('خطا در اتصال به سرور.'); setBusy(false); }
   };
 
-  const go = (s: Step) => { setStep(s); setError(null); setBusy(false); };
+  const sendReset = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!identifier.trim()) { setError('ایمیل یا شماره موبایل را وارد کنید.'); return; }
+    setBusy(true); setError(null);
+    try {
+      const res = await fetch('/api/v1/auth/password/forgot', { method: 'POST', headers: headers(), body: JSON.stringify({ identifier: identifier.trim() }) });
+      if (!res.ok) { setError(await apiErrorMessage(res, 'ارسال کد انجام نشد. کمی بعد دوباره تلاش کنید.')); return; }
+      const data = await res.json() as { challengeId: string; resendIn: number; notice: string };
+      setResetId(data.challengeId); setResetResend(data.resendIn); setResetCode(''); setNotice(data.notice); setStep('reset');
+    } catch { setError('خطا در اتصال به سرور. اتصال اینترنت را بررسی کنید.'); }
+    finally { setBusy(false); }
+  };
+
+  const submitReset = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const newPassword = String(new FormData(e.currentTarget).get('newPassword') ?? '');
+    if (resetCode.length !== 6) { setError('کد ۶ رقمی را کامل وارد کنید.'); return; }
+    if ([...newPassword].length < 14) { setError('رمز عبور جدید باید دست‌کم ۱۴ کاراکتر باشد؛ یک عبارت ساده و به‌یادماندنی کافی است.'); return; }
+    setBusy(true); setError(null);
+    try {
+      const res = await fetch('/api/v1/auth/password/reset', { method: 'POST', headers: headers(), body: JSON.stringify({ challengeId: resetId, code: resetCode, newPassword }) });
+      if (!res.ok) { setError(await apiErrorMessage(res, 'تغییر رمز انجام نشد. دوباره تلاش کنید.')); setResetCode(''); return; }
+      setMode('login'); setStep('password'); setNotice('رمز عبور تازه ثبت شد. با رمز جدید وارد شوید.'); setError(null);
+    } catch { setError('خطا در اتصال به سرور. دوباره تلاش کنید.'); }
+    finally { setBusy(false); }
+  };
+
+  const go = (s: Step) => { setStep(s); setError(null); setBusy(false); if (s !== 'reset' && s !== 'password') setNotice(null); };
   const googleHref = `/api/v1/auth/google/start?client=web&next=${encodeURIComponent(next)}${invite ? `&ref=${invite.code}` : ''}`;
 
   const heading = {
     phone: { eyebrow: 'ورود یا ثبت‌نام', title: 'به زُحل پی خوش آمدید', text: 'با شماره موبایل وارد شوید؛ اگر حساب ندارید، همین‌جا ساخته می‌شود.' },
     code: { eyebrow: 'تأیید شماره', title: 'کد تأیید را وارد کنید', text: '' },
     password: { eyebrow: mode === 'login' ? 'ورود با ایمیل' : 'ثبت‌نام با ایمیل', title: mode === 'login' ? 'ورود با رمز عبور' : 'ساخت حساب با ایمیل', text: mode === 'login' ? 'با ایمیل و رمز عبور حساب خود وارد شوید.' : 'یک حساب رایگان با ایمیل و رمز عبور بسازید.' },
+    forgot: { eyebrow: 'بازیابی حساب', title: 'رمز عبور را فراموش کرده‌اید؟', text: 'ایمیل یا شماره موبایل حسابتان را بنویسید؛ کد تأیید به شماره‌ی تأییدشده‌ی همان حساب پیامک می‌شود.' },
+    reset: { eyebrow: 'بازیابی حساب', title: 'رمز عبور تازه بسازید', text: '' },
     mfa: { eyebrow: 'تأیید دومرحله‌ای', title: 'کد اپ احراز هویت', text: 'کد ۶ رقمی اپ احراز هویت (مثل Google Authenticator) را وارد کنید.' },
   }[step];
 
@@ -182,7 +222,11 @@ export default function AuthForm({ initialMode = 'login', invite = null, otpEnab
               <PencilLine size={13} aria-hidden /> ویرایش شماره
             </button>
           </p>
-        ) : <p>{heading.text}</p>}
+        ) : step === 'reset' ? null : <p>{heading.text}</p>}
+
+        {notice && !error && (
+          <div className="auth-invite" role="status"><ShieldCheck size={18} aria-hidden /><div><span>{notice}</span></div></div>
+        )}
 
         {error && (
           <div className="auth-error" role="alert"><AlertCircle size={15} /><span>{error}</span></div>
@@ -258,6 +302,9 @@ export default function AuthForm({ initialMode = 'login', invite = null, otpEnab
                 <input name="password" type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required minLength={mode === 'register' ? 14 : 8} />
                 {mode === 'register' && <span className="auth-hint">حداقل ۱۴ کاراکتر. می‌تواند یک عبارت ساده و به‌یادماندنی باشد.</span>}
               </label>
+              {mode === 'login' && (
+                <button type="button" className="auth-inline" style={{ justifySelf: 'start' }} onClick={() => { setIdentifier(''); go('forgot'); }}>رمز عبور را فراموش کرده‌اید؟</button>
+              )}
               {mode === 'register' && !invite && (
                 <label>
                   کد دعوت <span style={{ color: 'var(--subtle)', fontWeight: 400 }}>(اختیاری)</span>
@@ -280,6 +327,39 @@ export default function AuthForm({ initialMode = 'login', invite = null, otpEnab
               </button>
             )}
           </>
+        )}
+
+        {step === 'forgot' && (
+          <form className="auth-form" onSubmit={e => void sendReset(e)} noValidate>
+            <label>
+              ایمیل یا شماره موبایل
+              <input name="identifier" autoComplete="username" dir="ltr" required autoFocus value={identifier} onChange={e => { setIdentifier(e.target.value); setError(null); }} placeholder="email@example.com" />
+            </label>
+            <button className="auth-submit" type="submit" disabled={busy}>
+              {busy ? <><Loader2 size={16} className="spin-icon" /> در حال ارسال کد</> : <>دریافت کد بازیابی <ArrowLeft size={16} /></>}
+            </button>
+            <button type="button" className="auth-alt" onClick={() => go('password')}><ArrowRight size={14} aria-hidden /> بازگشت به ورود</button>
+          </form>
+        )}
+
+        {step === 'reset' && (
+          <form className="auth-form" onSubmit={e => void submitReset(e)} noValidate>
+            <CodeBoxes value={resetCode} disabled={busy} invalid={Boolean(error)} onChange={v => { setResetCode(v); setError(null); }} />
+            <label>
+              رمز عبور جدید
+              <input name="newPassword" type="password" autoComplete="new-password" required minLength={14} />
+              <span className="auth-hint">حداقل ۱۴ کاراکتر. می‌تواند یک عبارت ساده و به‌یادماندنی باشد.</span>
+            </label>
+            <div className="auth-timer" aria-live="polite">
+              {resetResend > 0
+                ? <span>ارسال دوباره تا <bdi dir="ltr">{clock(resetResend)}</bdi></span>
+                : <button type="button" className="auth-inline" disabled={busy} onClick={() => void sendReset()}>ارسال دوباره‌ی کد</button>}
+              <button type="button" className="auth-inline" onClick={() => go('forgot')}>ویرایش</button>
+            </div>
+            <button className="auth-submit" type="submit" disabled={busy || resetCode.length !== 6}>
+              {busy ? <><Loader2 size={16} className="spin-icon" /> در حال ثبت</> : <>ثبت رمز جدید <KeyRound size={16} /></>}
+            </button>
+          </form>
         )}
 
         {step === 'mfa' && (

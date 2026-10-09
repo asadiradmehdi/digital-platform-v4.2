@@ -18,7 +18,7 @@ import { CodeBoxes } from '../../zp/CodeBoxes';
 import { Cta, ErrorBox, Press, T } from '../../zp/ui';
 
 const ltrAlign = tRight === 'right' ? 'left' : 'right';
-type Step = 'phone' | 'code' | 'password' | 'register' | 'mfa';
+type Step = 'phone' | 'code' | 'password' | 'register' | 'mfa' | 'forgot' | 'reset';
 
 function Field({ label, focused, ltr = true, ...rest }: React.ComponentProps<typeof TextInput> & { label: string; focused: boolean; ltr?: boolean }) {
   return (
@@ -94,7 +94,12 @@ export function LoginScreen() {
   const [showPw, setShowPw] = useState(false);
   const [mfaToken, setMfaToken] = useState('');
   const [mfaCode, setMfaCode] = useState('');
-  const [busy, setBusy] = useState<null | 'send' | 'verify' | 'google' | 'password' | 'register' | 'mfa'>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [resetId, setResetId] = useState('');
+  const [resetCode, setResetCode] = useState('');
+  const [resetResend, setResetResend] = useState(0);
+  const [newPassword, setNewPassword] = useState('');
+  const [busy, setBusy] = useState<null | 'send' | 'verify' | 'google' | 'password' | 'register' | 'mfa' | 'forgot' | 'reset'>(null);
   const [error, setError] = useState<string | null>(null);
   const [focus, setFocus] = useState<string | null>(null);
   const verifying = useRef(false);
@@ -113,6 +118,12 @@ export function LoginScreen() {
     const t = setTimeout(() => setResendIn(s => s - 1), 1000);
     return () => clearTimeout(t);
   }, [step, resendIn]);
+
+  useEffect(() => {
+    if (step !== 'reset' || resetResend <= 0) return;
+    const t = setTimeout(() => setResetResend(n => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [step, resetResend]);
 
   const after = useCallback((r: SignInResult) => {
     if (r.kind === 'mfa') { setMfaToken(r.challengeToken); setMfaCode(''); setStep('mfa'); return; }
@@ -188,7 +199,31 @@ export function LoginScreen() {
     } finally { setBusy(null); }
   };
 
-  const go = (next: Step) => { setError(null); setStep(next); };
+  const sendReset = async () => {
+    if (!identifier.trim()) { setError('ایمیل یا شماره موبایل حسابتان را وارد کنید.'); return; }
+    setBusy('forgot'); setError(null);
+    try {
+      const r = await apiFetch<{ challengeId: string; resendIn: number; notice: string }>('/api/v1/auth/mobile/password/forgot', { method: 'POST', body: JSON.stringify({ identifier: identifier.trim() }) });
+      setResetId(r.challengeId); setResetResend(r.resendIn); setResetCode(''); setNewPassword(''); setNotice(r.notice); setStep('reset');
+    } catch (e) {
+      setError(errorText(e, 'ارسال کد انجام نشد. دوباره تلاش کنید.'));
+    } finally { setBusy(null); }
+  };
+
+  const submitReset = async () => {
+    if (resetCode.length !== 6) { setError('کد ۶ رقمی را کامل وارد کنید.'); return; }
+    if ([...newPassword].length < 14) { setError('رمز عبور جدید باید دست‌کم ۱۴ کاراکتر باشد؛ یک عبارت ساده و به‌یادماندنی کافی است.'); return; }
+    setBusy('reset'); setError(null);
+    try {
+      await apiFetch('/api/v1/auth/mobile/password/reset', { method: 'POST', body: JSON.stringify({ challengeId: resetId, code: resetCode, newPassword }) });
+      setPassword(''); setNewPassword(''); setResetCode(''); setStep('password'); setNotice('رمز عبور تازه ثبت شد. با رمز جدید وارد شوید.');
+    } catch (e) {
+      setResetCode('');
+      setError(errorText(e, 'تغییر رمز انجام نشد. دوباره تلاش کنید.').replace('نشست شما تمام شده است. دوباره وارد شوید.', 'کد درست نیست یا منقضی شده است.'));
+    } finally { setBusy(null); }
+  };
+
+  const go = (next: Step) => { setError(null); if (next !== 'reset' && next !== 'password') setNotice(null); setStep(next); };
   const anyBusy = busy !== null;
 
   const header = {
@@ -196,6 +231,8 @@ export function LoginScreen() {
     code: { title: 'کد تأیید را وارد کنید', sub: '' },
     password: { title: 'ورود به حساب', sub: 'با ایمیل و رمز عبور حسابتان وارد شوید.' },
     register: { title: 'ساخت حساب جدید', sub: 'در چند ثانیه حساب بسازید؛ همان ایمیل و رمز در سایت هم کار می‌کند.' },
+    forgot: { title: 'رمز عبور را فراموش کرده‌اید؟', sub: 'ایمیل یا شماره موبایل حسابتان را بنویسید؛ کد تأیید به شماره‌ی تأییدشده‌ی همان حساب پیامک می‌شود.' },
+    reset: { title: 'رمز عبور تازه بسازید', sub: 'کد پیامک‌شده و رمز جدید را وارد کنید.' },
     mfa: { title: 'تأیید دومرحله‌ای', sub: 'کد ۶ رقمی برنامه‌ی تأیید هویت (Authenticator) را وارد کنید.' },
   }[step];
 
@@ -239,6 +276,13 @@ export function LoginScreen() {
                 </T>
               ) : <T size={12.5} color={C.muted} style={{ lineHeight: 22 }}>{header.sub}</T>}
             </View>
+
+            {notice && !error ? (
+              <View accessibilityRole="alert" style={{ flexDirection: row, alignItems: 'center', gap: 8, padding: 12, borderRadius: 14, backgroundColor: C.turquoiseSoft }}>
+                <Icon name="shieldS" size={16} color={C.turquoiseInk} />
+                <T w="sb" size={12} color={C.turquoiseInk} style={{ flex: 1, lineHeight: 20 }}>{notice}</T>
+              </View>
+            ) : null}
 
             {step === 'phone' && (
               <>
@@ -291,6 +335,7 @@ export function LoginScreen() {
                 <Field label="رمز عبور" focused={focus === 'pw'} value={password} onChangeText={setPassword}
                   onFocus={() => setFocus('pw')} onBlur={() => setFocus(null)} secureTextEntry autoComplete="password" textContentType="password"
                   placeholder="••••••••••••" returnKeyType="go" onSubmitEditing={() => void submitPassword()} />
+                <View style={{ alignItems: right }}><Link label="رمز عبور را فراموش کرده‌اید؟" onPress={() => go('forgot')} /></View>
                 {error ? <ErrorBox text={error} /> : null}
                 <Cta full label={busy === 'password' ? 'در حال ورود…' : 'ورود'} busy={busy === 'password'} onPress={() => void submitPassword()} />
                 {providers?.otp ? <View style={{ alignItems: 'center' }}><Link label="ورود با شماره موبایل" onPress={() => go('phone')} /></View> : null}
@@ -313,6 +358,35 @@ export function LoginScreen() {
                 {error ? <ErrorBox text={error} /> : null}
                 <Cta full label={busy === 'register' ? 'در حال ساخت حساب…' : 'ساخت حساب'} busy={busy === 'register'} onPress={() => void submitRegister()} />
                 <T size={11.5} color={C.subtle} style={{ textAlign: 'center', lineHeight: 20 }}>ساخت حساب یعنی پذیرش قوانین و حریم خصوصی زُحل پی.</T>
+              </>
+            )}
+
+            {step === 'forgot' && (
+              <>
+                <Field label="ایمیل یا شماره موبایل" focused={focus === 'fid'} value={identifier} onChangeText={setIdentifier}
+                  onFocus={() => setFocus('fid')} onBlur={() => setFocus(null)} autoCapitalize="none" autoCorrect={false}
+                  keyboardType="email-address" autoComplete="username" textContentType="username" placeholder="email@example.com" returnKeyType="go" onSubmitEditing={() => void sendReset()} editable={!anyBusy} />
+                {error ? <ErrorBox text={error} /> : null}
+                <Cta full label={busy === 'forgot' ? 'در حال ارسال کد…' : 'دریافت کد بازیابی'} busy={busy === 'forgot'} onPress={() => void sendReset()} />
+                <View style={{ alignItems: 'center' }}><Link label="بازگشت به ورود" muted onPress={() => go('password')} /></View>
+              </>
+            )}
+
+            {step === 'reset' && (
+              <>
+                <CodeBoxes value={resetCode} disabled={busy === 'reset'} invalid={Boolean(error)} onChange={v => { setResetCode(v); setError(null); }} />
+                <Field label="رمز عبور جدید (دست‌کم ۱۴ کاراکتر)" focused={focus === 'np'} value={newPassword} onChangeText={setNewPassword}
+                  onFocus={() => setFocus('np')} onBlur={() => setFocus(null)} secureTextEntry={!showPw} autoComplete="new-password" textContentType="newPassword"
+                  placeholder="یک عبارت ساده و به‌یادماندنی" returnKeyType="go" onSubmitEditing={() => void submitReset()} />
+                <Press accessibilityRole="button" onPress={() => setShowPw(v => !v)} style={{ alignSelf: 'flex-end' }}>
+                  <T size={12} color={C.goldText} w="sb">{showPw ? 'پنهان‌کردن رمز' : 'نمایش رمز'}</T>
+                </Press>
+                {error ? <ErrorBox text={error} /> : null}
+                <Cta full label={busy === 'reset' ? 'در حال ثبت…' : 'ثبت رمز جدید'} busy={busy === 'reset'} disabled={resetCode.length !== 6 || newPassword.length === 0} onPress={() => void submitReset()} />
+                <View style={{ flexDirection: row, alignItems: 'center', justifyContent: 'space-between', minHeight: 30 }}>
+                  {resetResend > 0 ? <T size={12.5} color={C.muted}>ارسال دوباره تا {faNum(resetResend)} ثانیه</T> : <Link label="ارسال دوباره‌ی کد" onPress={() => void sendReset()} />}
+                  <Link label="ویرایش" muted onPress={() => go('forgot')} />
+                </View>
               </>
             )}
 
