@@ -126,7 +126,7 @@ export function Wordmark({ size = 24, latin = true, light }: { size?: number; la
     <View style={{ flexDirection: row, alignItems: 'center', gap: 10 }}>
       <BrandMark size={size * 1.55} />
       <View>
-        <Text style={{ fontFamily: F.dx, fontSize: size, color: light ? '#fff' : C.ink, lineHeight: size * 1.5 }}>
+        <Text style={{ fontFamily: F.brand, fontSize: size, color: light ? '#fff' : C.ink, lineHeight: size * 1.5 }}>
           زُحل <Text style={{ color: light ? C.gold1 : C.gold3 }}>پی</Text>
         </Text>
         {latin && <Text style={{ fontFamily: F.b, fontSize: 9, letterSpacing: 3, color: C.muted, marginTop: -4, textAlign: tRight }}>ZOHALPAY</Text>}

@@ -85,7 +85,9 @@
 
   /* Fonts — IBM Plex Sans Arabic for UI (crisp, Persian numerals); Kufam for display only (never digits) */
   --font-fa:      "IBM Plex Sans Arabic","Vazirmatn",Tahoma,"Segoe UI",Arial,sans-serif;
-  --font-display: "Kufam","IBM Plex Sans Arabic",sans-serif;
+  /* One type family across the product: headings are IBM Plex Sans Arabic bold. Kufam is the logotype only. */
+  --font-display: "IBM Plex Sans Arabic","Vazirmatn",Tahoma,sans-serif;
+  --font-brand:   "Kufam","IBM Plex Sans Arabic",sans-serif;
   --font-latin:   "IBM Plex Sans Arabic","Inter","Segoe UI",Arial,sans-serif;
 
   /* Motion */

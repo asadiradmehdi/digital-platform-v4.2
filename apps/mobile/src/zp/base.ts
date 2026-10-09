@@ -12,9 +12,11 @@ export const F = {
   m: 'IBMPlexSansArabic_500Medium',
   sb: 'IBMPlexSansArabic_600SemiBold',
   b: 'IBMPlexSansArabic_700Bold',
-  /** Display face (Kufam). Its digits are Arabic-style, so never use it for numbers. */
-  d: 'Kufam_700Bold',
-  dx: 'Kufam_800ExtraBold',
+  /** Headings use the same family as the UI (one calm type system, same as the web). */
+  d: 'IBMPlexSansArabic_700Bold',
+  dx: 'IBMPlexSansArabic_700Bold',
+  /** Logotype face, for the «زُحل پی» wordmark only. Its digits are Arabic-style. */
+  brand: 'Kufam_800ExtraBold',
 } as const;
 
 /**
