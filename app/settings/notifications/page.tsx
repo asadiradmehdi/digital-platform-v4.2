@@ -14,7 +14,7 @@ const CATEGORIES: Array<{ key: string; label: string; desc: string; alwaysOn?: b
   { key: 'payments', label: 'پرداخت و کیف پول', desc: 'واریز، برداشت، تمدید اشتراک' },
   { key: 'security', label: 'امنیت', desc: 'ورود جدید، تغییر رمز، رویدادهای حساس', alwaysOn: true },
   { key: 'ai', label: 'هوش مصنوعی', desc: 'اتمام اعتبار، خطاهای مدل' },
-  { key: 'automation', label: 'اتوماسیون', desc: 'Workflow تکمیل‌شده یا متوقف‌شده' },
+  { key: 'automation', label: 'اتوماسیون', desc: 'فرآیند تکمیل‌شده یا متوقف‌شده' },
   { key: 'updates', label: 'اخبار و به‌روزرسانی', desc: 'قابلیت‌های جدید و تغییرات مهم' },
 ];
 
@@ -114,19 +114,6 @@ export default function NotificationSettings() {
           <article className="surface-panel" style={{ padding: 28 }}>
             <div className="panel-head">
               <div>
-                <span
-                  style={{
-                    display: 'block',
-                    fontSize: 11,
-                    fontWeight: 800,
-                    letterSpacing: '.07em',
-                    color: 'var(--accent)',
-                    marginBottom: 4,
-                    fontFamily: 'var(--font-latin)',
-                  }}
-                >
-                  CHANNELS
-                </span>
                 <h2>کانال‌های اطلاع‌رسانی</h2>
               </div>
             </div>
@@ -175,9 +162,6 @@ export default function NotificationSettings() {
           <article className="surface-panel" style={{ padding: 28 }}>
             <div className="panel-head">
               <div>
-                <span style={{ display: 'block', fontSize: 11, fontWeight: 800, letterSpacing: '.07em', color: 'var(--accent)', marginBottom: 4, fontFamily: 'var(--font-latin)' }}>
-                  SMS
-                </span>
                 <h2>پیامک</h2>
               </div>
               <MessageSquareText size={18} style={{ color: 'var(--subtle)' }} aria-hidden />
@@ -217,19 +201,6 @@ export default function NotificationSettings() {
           <article className="surface-panel" style={{ padding: 28 }}>
             <div className="panel-head">
               <div>
-                <span
-                  style={{
-                    display: 'block',
-                    fontSize: 11,
-                    fontWeight: 800,
-                    letterSpacing: '.07em',
-                    color: 'var(--accent)',
-                    marginBottom: 4,
-                    fontFamily: 'var(--font-latin)',
-                  }}
-                >
-                  CATEGORIES
-                </span>
                 <h2>دسته‌بندی رویدادها</h2>
               </div>
             </div>

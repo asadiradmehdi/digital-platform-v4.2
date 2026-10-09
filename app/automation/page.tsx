@@ -51,7 +51,7 @@ export default async function Automation() {
           </div>
           <Link className="button primary" href="/automation/new">
             <Plus size={15} />
-            Workflow جدید
+            فرآیند جدید
           </Link>
         </header>
 
@@ -128,7 +128,7 @@ export default async function Automation() {
           </div>
         )}
 
-        {/* ── Workflow list or empty state ───────────────────────── */}
+        {/* ── فرآیند list or empty state ───────────────────────── */}
         {workflows.length === 0 ? (
           <div
             style={{
@@ -178,7 +178,7 @@ export default async function Automation() {
               style={{ marginTop: 8, textDecoration: 'none' }}
             >
               <Plus size={14} />
-              ساخت اولین Workflow
+              ساخت اولین فرآیند
             </Link>
           </div>
         ) : (
@@ -319,7 +319,7 @@ export default async function Automation() {
             <article className="product-card">
               <div className="product-card-icon"><Play size={18} /></div>
               <div className="product-card-copy">
-                <div className="product-card-title"><h2>ساخت Workflow</h2></div>
+                <div className="product-card-title"><h2>ساخت فرآیند</h2></div>
                 <p>مراحل اجرا را تعریف کنید. هر تغییر نسخه‌بندی می‌شود و تاریخچه کامل نگه داشته می‌شود.</p>
                 <span>پیش‌نویس · منتشرشده · نسخه‌بندی‌شده</span>
               </div>

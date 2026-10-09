@@ -47,19 +47,6 @@ export default async function ProfileSettings() {
           <article className="surface-panel" style={{ padding: 28 }}>
             <div className="panel-head">
               <div>
-                <span
-                  style={{
-                    display: 'block',
-                    fontSize: 11,
-                    fontWeight: 800,
-                    letterSpacing: '.07em',
-                    color: 'var(--accent)',
-                    marginBottom: 4,
-                    fontFamily: 'var(--font-latin)',
-                  }}
-                >
-                  IDENTITY
-                </span>
                 <h2>اطلاعات شخصی</h2>
               </div>
             </div>
@@ -133,19 +120,6 @@ export default async function ProfileSettings() {
           >
             <div className="panel-head">
               <div>
-                <span
-                  style={{
-                    display: 'block',
-                    fontSize: 11,
-                    fontWeight: 800,
-                    letterSpacing: '.07em',
-                    color: 'var(--danger)',
-                    marginBottom: 4,
-                    fontFamily: 'var(--font-latin)',
-                  }}
-                >
-                  DANGER ZONE
-                </span>
                 <h2>حذف حساب</h2>
               </div>
             </div>
@@ -157,7 +131,7 @@ export default async function ProfileSettings() {
                 margin: '0 0 20px',
               }}
             >
-              حذف حساب یک عملیات برگشت‌ناپذیر است. تمام داده‌های workspace، سفارش‌ها، فاکتورها و
+              حذف حساب یک عملیات برگشت‌ناپذیر است. تمام داده‌های فضای کاری، سفارش‌ها، فاکتورها و
               تاریخچه‌ها به‌طور دائم پاک می‌شوند.
             </p>
             <button className="button danger" type="button">

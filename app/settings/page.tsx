@@ -7,7 +7,6 @@ export const metadata = { title: 'تنظیمات', robots: { index: false, follo
 const sections = [
   {
     icon: UserRound,
-    label: 'PROFILE',
     title: 'پروفایل',
     description: 'نام نمایشی، شماره موبایل و اطلاعات هویتی حساب را ویرایش کنید.',
     href: '/settings/profile',
@@ -15,15 +14,13 @@ const sections = [
   },
   {
     icon: ShieldCheck,
-    label: 'SECURITY',
     title: 'امنیت',
-    description: 'رمز عبور، احراز هویت دومرحله‌ای، Passkey، نشست‌های فعال و دستگاه‌های مورد اعتماد.',
+    description: 'رمز عبور، احراز هویت دومرحله‌ای، ورود با اثر انگشت، نشست‌های فعال و دستگاه‌های مورد اعتماد.',
     href: '/settings/security',
     cta: 'مدیریت امنیت',
   },
   {
     icon: Bell,
-    label: 'NOTIFICATIONS',
     title: 'اعلان‌ها',
     description: 'تعیین کنید چه رویدادهایی را از طریق ایمیل، Push یا پیامک دریافت کنید.',
     href: '/settings/notifications',
@@ -31,7 +28,6 @@ const sections = [
   },
   {
     icon: CreditCard,
-    label: 'BILLING',
     title: 'پرداخت و صورتحساب',
     description: 'وضعیت اشتراک، موجودی کیف پول، تاریخچه فاکتورها و تمدید خودکار.',
     href: '/settings/billing',
@@ -39,9 +35,8 @@ const sections = [
   },
   {
     icon: KeyRound,
-    label: 'API KEYS',
     title: 'API و دسترسی‌ها',
-    description: 'ایجاد و مدیریت کلیدهای API برای اتصال سرویس‌های خارجی به workspace.',
+    description: 'ایجاد و مدیریت کلیدهای API برای اتصال سرویس‌های خارجی به فضای کاری.',
     href: '/settings/api-keys',
     cta: 'مدیریت کلیدها',
   },
@@ -55,12 +50,12 @@ export default function Settings() {
           <div>
             <span className="eyebrow">حساب کاربری · تنظیمات</span>
             <h1>تنظیمات</h1>
-            <p>مدیریت پروفایل، امنیت، اعلان‌ها و دسترسی‌های فنی workspace.</p>
+            <p>مدیریت پروفایل، امنیت، اعلان‌ها و دسترسی‌های فنی فضای کاری.</p>
           </div>
         </div>
 
         <div style={{ display: 'grid', gap: 10 }}>
-          {sections.map(({ icon: Icon, label, title, description, href, cta }) => (
+          {sections.map(({ icon: Icon, title, description, href, cta }) => (
             <Link
               key={href}
               href={href}
@@ -92,19 +87,6 @@ export default function Settings() {
                   <Icon size={20} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <span
-                    style={{
-                      display: 'block',
-                      fontSize: 11,
-                      fontWeight: 800,
-                      letterSpacing: '.07em',
-                      color: 'var(--accent)',
-                      marginBottom: 3,
-                      fontFamily: 'var(--font-latin)',
-                    }}
-                  >
-                    {label}
-                  </span>
                   <strong style={{ display: 'block', fontSize: 14, color: 'var(--ink)', letterSpacing: '-.015em' }}>
                     {title}
                   </strong>

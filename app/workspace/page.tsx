@@ -49,7 +49,7 @@ export default async function WorkspacePage() {
     <AppShell>
       <main className="workspace-page-content">
         <header className="page-header">
-          <div><span className="eyebrow">WORKSPACE</span><h1>Workspaceها</h1><p>هر Workspace یک محیط جداگانه با wallet، اشتراک، سفارش و تنظیمات مستقل دارد.</p></div>
+          <div><h1>Workspaceها</h1><p>هر Workspace یک محیط جداگانه با wallet، اشتراک، سفارش و تنظیمات مستقل دارد.</p></div>
           <CreateWorkspaceButton/>
         </header>
         <div style={{ display: 'grid', gap: 14, maxWidth: 680 }}>

@@ -123,7 +123,7 @@ export default function PasswordForm({ hasPassword = true, phoneVerified = false
           </button>
         </div>
         <span style={{ fontSize: 10, color: 'var(--subtle)', lineHeight: 1.7, marginTop: -2 }}>
-          حداقل ۱۴ کاراکتر — ترکیب حروف بزرگ، کوچک، عدد و نماد توصیه می‌شود.
+          حداقل ۱۴ کاراکتر؛ یک عبارت ساده و به‌یادماندنی کافی است.
         </span>
       </label>
 

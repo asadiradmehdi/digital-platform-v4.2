@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { AppShell } from '../../components/AppShell';
 import { formatMoney } from '../../lib/format';
 import { requireCurrentUser } from '../../server/identity/request-user';
+import { isPlatformAdmin } from '../../server/identity/platform-admin';
 import { query, withWorkspaceTransaction } from '../../server/core/db';
 
 /** Every amount on this page is IRT (orders and plan prices are kept in toman). */
@@ -66,6 +67,8 @@ export default async function Analytics() {
   } catch {
     redirect('/auth');
   }
+  // Revenue, provider cost and margin are the business's own numbers: staff only, never customers.
+  if (!(await isPlatformAdmin(userId))) redirect('/dashboard');
 
   const memberships = await query<{ workspace_id: string }>(
     `SELECT workspace_id FROM workspace_members WHERE user_id=$1 AND status='ACTIVE' ORDER BY created_at LIMIT 1`,

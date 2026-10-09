@@ -95,7 +95,7 @@ function SubscriptionNewInner() {
   return (
     <div className="settings-layout">
       <article className="surface-panel" style={{ padding: 24 }}>
-        <div className="panel-head"><div><span className="panel-kicker">PLANS</span><h2>انتخاب پلن</h2></div></div>
+        <div className="panel-head"><div><h2>انتخاب پلن</h2></div></div>
         {loading ? (
           <p style={{ color: 'var(--muted)', fontSize: 12, marginTop: 16 }}>در حال بارگذاری...</p>
         ) : plans.length === 0 ? (
@@ -107,7 +107,7 @@ function SubscriptionNewInner() {
                 <input type="radio" name="plan" value={p.id} checked={selectedPlan === p.id} onChange={() => setSelectedPlan(p.id)} style={{ marginTop: 3 }}/>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                    <strong style={{ fontSize: 13 }}>{p.name}</strong>
+                    <strong style={{ fontSize: 13 }}>{p.name === 'Pro' ? 'حرفه‌ای' : p.name}</strong>
                     <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-strong)' }}>{formatPrice(p.price_minor, p.currency)}<small style={{ fontWeight: 400, color: 'var(--muted)', marginInlineStart: 4 }}>/ {intervalLabel(p.billing_interval)}</small></span>
                   </div>
                   {p.description && <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--muted)' }}>{p.description}</p>}
@@ -127,11 +127,11 @@ function SubscriptionNewInner() {
       </article>
 
       <article className="surface-panel" style={{ padding: 24 }}>
-        <div className="panel-head"><div><span className="panel-kicker">SUMMARY</span><h2>خلاصه سفارش</h2></div></div>
+        <div className="panel-head"><div><h2>خلاصه سفارش</h2></div></div>
         {selected ? (
           <div style={{ marginTop: 14 }}>
             <div className="metric-grid-4" style={{ marginBottom: 18 }}>
-              <div className="metric-tile"><span>پلن انتخابی</span><strong>{selected.name}</strong></div>
+              <div className="metric-tile"><span>پلن انتخابی</span><strong>{selected.name === 'Pro' ? 'حرفه‌ای' : selected.name}</strong></div>
               <div className="metric-tile"><span>قیمت</span><strong>{formatPrice(selected.price_minor, selected.currency)}</strong></div>
               <div className="metric-tile"><span>چرخه صورتحساب</span><strong>{intervalLabel(selected.billing_interval)}</strong></div>
               <div className="metric-tile"><span>روش پرداخت</span><strong>کیف پول</strong></div>

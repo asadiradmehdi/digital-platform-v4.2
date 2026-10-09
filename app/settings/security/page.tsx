@@ -99,19 +99,6 @@ export default async function SecuritySettings() {
           <article className="surface-panel" style={{ padding: 28 }}>
             <div className="panel-head">
               <div>
-                <span
-                  style={{
-                    display: 'block',
-                    fontSize: 11,
-                    fontWeight: 800,
-                    letterSpacing: '.07em',
-                    color: 'var(--accent)',
-                    marginBottom: 4,
-                    fontFamily: 'var(--font-latin)',
-                  }}
-                >
-                  PASSWORD
-                </span>
                 <h2>{contact.has_password ? 'تغییر رمز عبور' : 'ساخت رمز عبور'}</h2>
               </div>
             </div>
@@ -122,19 +109,6 @@ export default async function SecuritySettings() {
           <article className="surface-panel" style={{ padding: 28 }}>
             <div className="panel-head">
               <div>
-                <span
-                  style={{
-                    display: 'block',
-                    fontSize: 11,
-                    fontWeight: 800,
-                    letterSpacing: '.07em',
-                    color: 'var(--accent)',
-                    marginBottom: 4,
-                    fontFamily: 'var(--font-latin)',
-                  }}
-                >
-                  TWO-FACTOR AUTHENTICATION
-                </span>
                 <h2>احراز هویت دومرحله‌ای</h2>
               </div>
               <span className={`status-pill ${hasMfa ? 'success' : 'warning'}`}>
@@ -162,19 +136,6 @@ export default async function SecuritySettings() {
           <article className="surface-panel" style={{ padding: 28 }}>
             <div className="panel-head">
               <div>
-                <span
-                  style={{
-                    display: 'block',
-                    fontSize: 11,
-                    fontWeight: 800,
-                    letterSpacing: '.07em',
-                    color: 'var(--accent)',
-                    marginBottom: 4,
-                    fontFamily: 'var(--font-latin)',
-                  }}
-                >
-                  PASSKEY
-                </span>
                 <h2>ورود با اثر انگشت یا چهره</h2>
               </div>
               <span className={`status-pill ${passkeys.length > 0 ? 'success' : 'neutral'}`}>
@@ -247,19 +208,6 @@ export default async function SecuritySettings() {
           <article className="surface-panel" style={{ padding: 28 }}>
             <div className="panel-head">
               <div>
-                <span
-                  style={{
-                    display: 'block',
-                    fontSize: 11,
-                    fontWeight: 800,
-                    letterSpacing: '.07em',
-                    color: 'var(--accent)',
-                    marginBottom: 4,
-                    fontFamily: 'var(--font-latin)',
-                  }}
-                >
-                  ACTIVE SESSIONS
-                </span>
                 <h2>دستگاه‌های واردشده</h2>
               </div>
               <span className="status-pill info" style={{ fontSize: 11 }}>
@@ -294,19 +242,6 @@ export default async function SecuritySettings() {
             <article className="surface-panel" style={{ padding: 28 }}>
               <div className="panel-head">
                 <div>
-                  <span
-                    style={{
-                      display: 'block',
-                      fontSize: 11,
-                      fontWeight: 800,
-                      letterSpacing: '.07em',
-                      color: 'var(--accent)',
-                      marginBottom: 4,
-                      fontFamily: 'var(--font-latin)',
-                    }}
-                  >
-                    TRUSTED DEVICES
-                  </span>
                   <h2>دستگاه‌های مورد اعتماد</h2>
                 </div>
                 <span className="status-pill neutral">{trustedDevices.length} دستگاه</span>

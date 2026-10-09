@@ -48,7 +48,7 @@ export default async function ApiKeysSettings() {
           <div>
             <span className="eyebrow">حساب کاربری · API</span>
             <h1>API و دسترسی‌ها</h1>
-            <p>کلیدهای API، scopeها و کنترل دسترسی سرویس‌های خارجی به workspace.</p>
+            <p>کلیدهای API، scopeها و کنترل دسترسی سرویس‌های خارجی به فضای کاری.</p>
           </div>
           <Link className="button secondary" href="/settings">
             <ArrowRight size={15} />
@@ -61,19 +61,6 @@ export default async function ApiKeysSettings() {
           <article className="surface-panel" style={{ padding: 28 }}>
             <div className="panel-head">
               <div>
-                <span
-                  style={{
-                    display: 'block',
-                    fontSize: 11,
-                    fontWeight: 800,
-                    letterSpacing: '.07em',
-                    color: 'var(--accent)',
-                    marginBottom: 4,
-                    fontFamily: 'var(--font-latin)',
-                  }}
-                >
-                  ACTIVE KEYS
-                </span>
                 <h2>کلیدهای فعال</h2>
               </div>
             </div>
@@ -84,19 +71,6 @@ export default async function ApiKeysSettings() {
           <article className="surface-panel" style={{ padding: 28 }}>
             <div className="panel-head">
               <div>
-                <span
-                  style={{
-                    display: 'block',
-                    fontSize: 11,
-                    fontWeight: 800,
-                    letterSpacing: '.07em',
-                    color: 'var(--accent)',
-                    marginBottom: 4,
-                    fontFamily: 'var(--font-latin)',
-                  }}
-                >
-                  DOCUMENTATION
-                </span>
                 <h2>راهنمای استفاده</h2>
               </div>
             </div>

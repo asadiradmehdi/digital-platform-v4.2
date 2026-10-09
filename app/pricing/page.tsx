@@ -53,7 +53,7 @@ const plans = [
   },
   {
     id: 'pro',
-    name: 'Pro',
+    name: 'حرفه‌ای',
     price: 18_900_000,
     period: 'ماهانه',
     badge: 'پرفروش',

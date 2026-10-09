@@ -85,19 +85,6 @@ export default async function BillingSettings() {
           <article className="surface-panel" style={{ padding: 28 }}>
             <div className="panel-head">
               <div>
-                <span
-                  style={{
-                    display: 'block',
-                    fontSize: 11,
-                    fontWeight: 800,
-                    letterSpacing: '.07em',
-                    color: 'var(--accent)',
-                    marginBottom: 4,
-                    fontFamily: 'var(--font-latin)',
-                  }}
-                >
-                  SUBSCRIPTION
-                </span>
                 <h2>اشتراک فعال</h2>
               </div>
               {sub ? (
@@ -179,19 +166,6 @@ export default async function BillingSettings() {
           <article className="surface-panel" style={{ padding: 28 }}>
             <div className="panel-head">
               <div>
-                <span
-                  style={{
-                    display: 'block',
-                    fontSize: 11,
-                    fontWeight: 800,
-                    letterSpacing: '.07em',
-                    color: 'var(--accent)',
-                    marginBottom: 4,
-                    fontFamily: 'var(--font-latin)',
-                  }}
-                >
-                  WALLET
-                </span>
                 <h2>کیف پول</h2>
               </div>
               <Link
@@ -250,19 +224,6 @@ export default async function BillingSettings() {
           <article className="surface-panel" style={{ padding: 28 }}>
             <div className="panel-head">
               <div>
-                <span
-                  style={{
-                    display: 'block',
-                    fontSize: 11,
-                    fontWeight: 800,
-                    letterSpacing: '.07em',
-                    color: 'var(--accent)',
-                    marginBottom: 4,
-                    fontFamily: 'var(--font-latin)',
-                  }}
-                >
-                  INVOICES
-                </span>
                 <h2>فاکتورها</h2>
               </div>
             </div>
