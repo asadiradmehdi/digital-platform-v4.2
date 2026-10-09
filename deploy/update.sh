@@ -32,5 +32,6 @@ ls -1t backups/*.dump 2>/dev/null | tail -n +15 | xargs -r rm -f
 docker compose $PROFILE build app
 docker compose $PROFILE run --rm migrate
 docker compose $PROFILE up -d
+./grant-admins.sh || echo "admin grant skipped"
 docker image prune -f >/dev/null
 echo "$(date -Is) deployed ${REMOTE:0:7}"
