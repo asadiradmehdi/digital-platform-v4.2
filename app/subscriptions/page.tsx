@@ -202,7 +202,7 @@ export default async function Subscriptions() {
                     height: 52,
                     borderRadius: 16,
                     background: 'var(--accent-soft)',
-                    border: '1px solid rgba(22,52,138,.15)',
+                    border: '1px solid rgba(20,34,87,.15)',
                     display: 'grid',
                     placeItems: 'center',
                     color: 'var(--accent)',

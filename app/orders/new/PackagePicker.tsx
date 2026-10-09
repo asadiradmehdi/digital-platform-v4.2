@@ -189,7 +189,7 @@ export function PackagePicker({ service, workspaceId, walletToman }: { service: 
       <div className={`zp-done${done ? ' on' : ''}`} role="status" aria-hidden={!done}>
         <div className="in">
           <div className="zp-medal">
-            <svg className="rg" viewBox="0 0 150 110" aria-hidden="true"><ellipse cx="75" cy="55" rx="72" ry="24" transform="rotate(-14 75 55)" fill="none" stroke="#d6a54c" strokeOpacity=".55" strokeWidth="1.5" /><ellipse cx="75" cy="55" rx="60" ry="18" transform="rotate(-14 75 55)" fill="none" stroke="#d6a54c" strokeOpacity=".3" strokeWidth="1" /></svg>
+            <svg className="rg" viewBox="0 0 150 110" aria-hidden="true"><ellipse cx="75" cy="55" rx="72" ry="24" transform="rotate(-14 75 55)" fill="none" stroke="#D4A24C" strokeOpacity=".55" strokeWidth="1.5" /><ellipse cx="75" cy="55" rx="60" ry="18" transform="rotate(-14 75 55)" fill="none" stroke="#D4A24C" strokeOpacity=".3" strokeWidth="1" /></svg>
             <div className="zp-chk"><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#1d1404" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></div>
           </div>
           <h2>سفارش ثبت شد</h2>

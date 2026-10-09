@@ -3,68 +3,69 @@
 export const tokens = {
   colors: {
     /** Page canvas — illuminated-manuscript paper */
-    bg: '#F7F3EA',
-    bgElevated: '#FFFDF8',
+    bg: '#F5F0E6',
+    bgElevated: '#FFFCF6',
 
     /** Surface hierarchy — 4 levels of depth */
-    surface: '#FFFDF8',
-    surface2: '#F1EBDD',
-    surface3: '#E9E1CF',
-    surface4: '#DED4BE',
+    surface: '#FFFCF6',
+    surface2: '#EFE9DC',
+    surface3: '#E6DECD',
+    surface4: '#DACFB9',
 
     /** Typography — lapis-black */
-    ink: '#0C1638',
-    ink2: '#38405F',
-    muted: '#6C6757',
-    subtle: '#958F7E',
+    ink: '#0B1233',
+    ink2: '#3A3F5C',
+    muted: '#5F6378',
+    subtle: '#8D90A0',
 
     /** Borders */
-    line: '#E6DCCB',
-    lineStrong: '#D6C9B2',
+    line: '#E3DACA',
+    lineStrong: '#D3C7B1',
 
     /** ZOHALPAY brand — lapis enamel (لاجورد) */
-    accent: '#16348A',
-    accentStrong: '#0B1B52',
-    accentHover: '#1C3F9E',
-    accentSoft: 'rgba(22,52,138,0.07)',
-    accentGlow: 'rgba(22,52,138,0.16)',
-    lapis1: '#2148A6',
-    lapis2: '#16348A',
-    lapis3: '#0B1B52',
+    accent: '#142257',
+    accentStrong: '#0A1238',
+    accentHover: '#1B2D6E',
+    accentSoft: 'rgba(20,34,87,0.07)',
+    accentGlow: 'rgba(20,34,87,0.16)',
+    lapis1: '#22397F',
+    lapis2: '#142257',
+    lapis3: '#0A1238',
 
     /** Illumination gold ramp (طلای تذهیب) — gold0 lightest … gold4 bronze */
     gold0: '#FDF1D2',
     gold1: '#F2D390',
-    gold2: '#D6A54C',
+    gold2: '#D4A24C',
     gold3: '#A8762A',
     gold4: '#7A5218',
     goldText: '#8F6118',
     onGold: '#1D1404',
     rim: 'rgba(242,211,144,0.42)',
 
-    /** Turquoise (فیروزه) and vermilion (شنگرف) */
-    turquoise: '#12A39A',
-    turquoiseInk: '#0B7A73',
-    turquoiseSoft: '#DCF2EE',
-    vermilion: '#C0392B',
+    /** Turquoise (فیروزه): the fourth and last brand colour, for success/done states only. */
+    turquoise: '#169A8C',
+    turquoiseInk: '#0E7569',
+    turquoiseSoft: '#DDF1EC',
+    /** Unread/attention dots use gold now; kept as an alias so old call sites stay on-palette. */
+    vermilion: '#D4A24C',
 
     /** Semantic */
-    success: '#0B7A73',
-    successSoft: '#DCF2EE',
+    success: '#0E7569',
+    successSoft: '#DDF1EC',
     warning: '#8A5F17',
     warningSoft: '#F6EBD2',
     danger: '#C0392B',
     dangerSoft: 'rgba(192,57,43,0.08)',
-    info: '#2148A6',
-    infoSoft: 'rgba(33,72,166,0.08)',
+    info: '#142257',
+    infoSoft: 'rgba(20,34,87,0.07)',
   },
 
   /** Gradient stops (web: linear-gradient; native: expo-linear-gradient or layered views) */
   gradients: {
-    enamel: ['#2148A6', '#16348A', '#0B1B52'],
+    enamel: ['#22397F', '#142257', '#0A1238'],
     metal: ['#FDF0CF', '#EFCD86', '#CF9B44', '#E8C478', '#F8E6B6'],
     goldLight: ['#FBEFD2', '#F1D699', '#DCAE5B'],
-    turquoiseLapis: ['#14858A', '#0F4F78', '#0B1B52'],
+    turquoiseLapis: ['#1B6F78', '#14315F', '#0A1238'],
   },
 
   radius: {

@@ -30,7 +30,7 @@ export function BrandMark({ size = 38, id = 'zpm' }: { size?: number; id?: strin
     <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true" focusable="false">
       <defs>
         <linearGradient id={`${id}-a`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#FBE8B4" /><stop offset=".5" stopColor="#DCAA52" /><stop offset="1" stopColor="#A8762A" /></linearGradient>
-        <linearGradient id={`${id}-b`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#2148A6" /><stop offset="1" stopColor="#0B1B52" /></linearGradient>
+        <linearGradient id={`${id}-b`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#22397F" /><stop offset="1" stopColor="#0A1238" /></linearGradient>
       </defs>
       <ellipse cx="20" cy="20" rx="17.5" ry="7.4" transform="rotate(-26 20 20)" fill="none" stroke={`url(#${id}-b)`} strokeWidth="3.2" strokeDasharray="60 5 200" />
       <ellipse cx="20" cy="20" rx="10.6" ry="4.4" transform="rotate(-26 20 20)" fill="none" stroke={`url(#${id}-a)`} strokeWidth="3.2" />

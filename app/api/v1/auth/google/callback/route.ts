@@ -19,7 +19,7 @@ const escapeHtml = (s: string) => s.replace(/[&<>"']/g, c => `&#${c.charCodeAt(0
  */
 function continuePage(path: string) {
   const href = escapeHtml(path);
-  return `<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><meta http-equiv="refresh" content="0;url=${href}"><title>ورود</title></head><body style="font-family:system-ui,sans-serif;background:#F7F3EA;color:#0C1638;display:grid;place-items:center;min-height:100vh;margin:0"><p>در حال ورود… <a href="${href}">ادامه</a></p></body></html>`;
+  return `<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><meta http-equiv="refresh" content="0;url=${href}"><title>ورود</title></head><body style="font-family:system-ui,sans-serif;background:#F5F0E6;color:#0C1638;display:grid;place-items:center;min-height:100vh;margin:0"><p>در حال ورود… <a href="${href}">ادامه</a></p></body></html>`;
 }
 
 export async function GET(request: NextRequest) {

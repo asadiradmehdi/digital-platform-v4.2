@@ -9,8 +9,8 @@ export default function manifest(): MetadataRoute.Manifest {
     display: 'standalone',
     lang: 'fa',
     dir: 'rtl',
-    background_color: '#F7F3EA',
-    theme_color: '#F7F3EA',
+    background_color: '#F5F0E6',
+    theme_color: '#F5F0E6',
     icons: [
       { src: '/icon.svg', sizes: 'any', type: 'image/svg+xml' },
       { src: '/brand/zohalpay-logo-512.png', sizes: '512x512', type: 'image/png' },

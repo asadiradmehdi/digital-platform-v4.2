@@ -60,7 +60,7 @@ function Bubble({ mine, body, when, sending }: { mine: boolean; body: string; wh
         </View>
       ) : null}
       {mine ? (
-        <View style={[{ borderRadius: 18, ...tailRight, overflow: 'hidden', paddingVertical: 10, paddingHorizontal: 14, borderWidth: 1, borderColor: C.rim }, shadow(10, 20, 0.25, '#0b1b52')]}>
+        <View style={[{ borderRadius: 18, ...tailRight, overflow: 'hidden', paddingVertical: 10, paddingHorizontal: 14, borderWidth: 1, borderColor: C.rim }, shadow(10, 20, 0.25, '#0A1238')]}>
           <Fill kind="enamel" />
           <T size={13.8} color="#fff" style={{ lineHeight: 27, writingDirection: 'auto' }} selectable>{body}</T>
         </View>

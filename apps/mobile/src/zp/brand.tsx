@@ -57,7 +57,7 @@ export function Ornament({ w = 400, h = 160, cx = 300, cy = 150, rot = -12, colo
 /** Enamel (or gold-metal) panel with rim, ornament and children on top. */
 export function Enamel({ kind = 'enamel', radius = 22, style, children }: PropsWithChildren<{ kind?: FillKind; radius?: number; style?: StyleProp<ViewStyle> }>) {
   return (
-    <View style={[{ borderRadius: radius, overflow: 'hidden', borderWidth: 1, borderColor: kind === 'goldLight' ? 'rgba(255,255,255,0.5)' : C.rim }, shadow(12, 26, 0.3, '#0b1b52'), style]}>
+    <View style={[{ borderRadius: radius, overflow: 'hidden', borderWidth: 1, borderColor: kind === 'goldLight' ? 'rgba(255,255,255,0.5)' : C.rim }, shadow(12, 26, 0.3, '#0A1238'), style]}>
       <Fill kind={kind} />
       {children}
     </View>
@@ -70,7 +70,7 @@ export type TileVariant = 'enamel' | 'gold' | 'ghost' | 'danger';
 export function Tile({ icon, size = 56, variant = 'enamel', badge }: { icon: IconName; size?: number; variant?: TileVariant; badge?: string }) {
   const r = size * 0.3;
   const glyph = variant === 'gold' ? C.accentStrong : variant === 'danger' ? '#fff' : C.gold1;
-  const cut = variant === 'gold' ? '#e9c579' : variant === 'danger' ? '#a82d22' : '#13307f';
+  const cut = variant === 'gold' ? '#e9c579' : variant === 'danger' ? '#a82d22' : '#142257';
   return (
     <View style={{ width: size, height: size }}>
       <View style={[
@@ -109,7 +109,7 @@ export function BrandMark({ size = 38 }: { size?: number }) {
     <Svg width={size} height={size} viewBox="0 0 40 40">
       <Defs>
         <LinearGradient id={a} x1="0" y1="0" x2="1" y2="1"><Stop offset="0" stopColor="#FBE8B4" /><Stop offset=".5" stopColor="#DCAA52" /><Stop offset="1" stopColor="#A8762A" /></LinearGradient>
-        <LinearGradient id={b} x1="0" y1="0" x2="1" y2="1"><Stop offset="0" stopColor="#2148A6" /><Stop offset="1" stopColor="#0B1B52" /></LinearGradient>
+        <LinearGradient id={b} x1="0" y1="0" x2="1" y2="1"><Stop offset="0" stopColor="#22397F" /><Stop offset="1" stopColor="#0A1238" /></LinearGradient>
       </Defs>
       <SvgG rotation={-26} origin="20, 20">
         <Ellipse cx="20" cy="20" rx="17.5" ry="7.4" fill="none" stroke={`url(#${b})`} strokeWidth={3.2} strokeDasharray="60 5 200" />

@@ -288,7 +288,7 @@ export default function NewWorkflow() {
                           width: 30,
                           height: 30,
                           borderRadius: 9,
-                          background: isSelected ? 'rgba(22,52,138,.12)' : 'var(--surface-2)',
+                          background: isSelected ? 'rgba(20,34,87,.12)' : 'var(--surface-2)',
                           display: 'grid',
                           placeItems: 'center',
                           color: isSelected ? 'var(--accent)' : 'var(--subtle)',
@@ -500,7 +500,7 @@ export default function NewWorkflow() {
                       transition: 'border-color .15s, background .15s',
                     }}
                     onMouseEnter={e => {
-                      (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(22,52,138,.3)';
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(20,34,87,.3)';
                       (e.currentTarget as HTMLButtonElement).style.background = 'var(--accent-soft)';
                     }}
                     onMouseLeave={e => {

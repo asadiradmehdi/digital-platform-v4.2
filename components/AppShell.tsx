@@ -91,7 +91,7 @@ export function AppShell({ children, title, back, aside }: AppShellProps) {
 
       <div className={`zp-scrim${drawer ? ' on' : ''}`} onClick={() => setDrawer(false)} aria-hidden="true" />
       <div className={`zp-drawer${drawer ? ' on' : ''}`} role="dialog" aria-modal="true" aria-label="منوی اصلی" aria-hidden={!drawer}>
-        <Ornament id="drawer-orn" w={330} h={800} cx={330} cy={760} rot={-18} color="#d6a54c" alpha={0.35} girih={false} />
+        <Ornament id="drawer-orn" w={330} h={800} cx={330} cy={760} rot={-18} color="#D4A24C" alpha={0.35} girih={false} />
         <div className="zp-dh">
           <span className="zp-logo"><Wordmark id="drawer-mark" /></span>
           <button type="button" className="zp-ibtn zp-press" aria-label="بستن منو" onClick={() => setDrawer(false)}><ZIcon name="close" /></button>

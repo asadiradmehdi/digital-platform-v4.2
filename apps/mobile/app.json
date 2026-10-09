@@ -17,7 +17,7 @@
     "android": {
       "package": "com.digitalplatform.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0B1B52"
+        "backgroundColor": "#0A1238"
       }
     },
     "ios": {

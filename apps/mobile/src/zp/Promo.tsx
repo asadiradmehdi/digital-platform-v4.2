@@ -37,7 +37,7 @@ export function Promo({ slides, height }: { slides: PromoSlide[]; height: number
   const s = slides[i];
   const light = s.kind === 'goldLight';
   return (
-    <View {...pan.panHandlers} style={[{ height }, shadow(14, 28, 0.3, '#0b1b52')]}>
+    <View {...pan.panHandlers} style={[{ height }, shadow(14, 28, 0.3, '#0A1238')]}>
       <Pressable accessibilityRole="link" accessibilityLabel={`${s.title}. ${s.text}`} onPress={() => router.navigate(s.href)} style={{ flex: 1 }}>
         <Enamel kind={s.kind ?? 'enamel'} radius={26} style={{ flex: 1 }}>
           <Ornament w={400} h={160} cx={300} cy={150} rot={-12} color={light ? C.gold4 : C.gold1} />
@@ -59,7 +59,7 @@ export function Promo({ slides, height }: { slides: PromoSlide[]; height: number
       <View style={{ position: 'absolute', bottom: 11, ...atRight(20), flexDirection: row, gap: 5 }}>
         {slides.map((_, k) => (
           <Pressable key={k} accessibilityRole="button" accessibilityLabel={`اسلاید ${k + 1}`} accessibilityState={{ selected: k === i }} hitSlop={8} onPress={() => setI(k)}
-            style={{ width: k === i ? 18 : 6, height: 6, borderRadius: 6, backgroundColor: k === i ? (light ? C.accentStrong : C.gold1) : light ? 'rgba(11,27,82,0.25)' : 'rgba(255,255,255,0.4)' }} />
+            style={{ width: k === i ? 18 : 6, height: 6, borderRadius: 6, backgroundColor: k === i ? (light ? C.accentStrong : C.gold1) : light ? 'rgba(10,18,56,0.25)' : 'rgba(255,255,255,0.4)' }} />
         ))}
       </View>
     </View>

@@ -30,7 +30,7 @@ export function InviteScreen() {
           const progress = d.nextSharePercent && d.friendsToNext != null ? d.active / (d.active + d.friendsToNext) : 1;
           return (
             <>
-              <Enamel radius={26} style={[{ padding: 18, gap: 8 }, shadow(14, 28, 0.3, '#0b1b52')]}>
+              <Enamel radius={26} style={[{ padding: 18, gap: 8 }, shadow(14, 28, 0.3, '#0A1238')]}>
                 <Ornament w={400} h={220} cx={40} cy={230} rot={14} color={C.gold1} alpha={0.45} girih={false} />
                 <View style={{ flexDirection: row, alignItems: 'center', gap: 10 }}>
                   <Tile icon="gift" variant="gold" size={40} />
