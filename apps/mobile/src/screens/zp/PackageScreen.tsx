@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from 'react';
-import { Linking, Modal, PanResponder, Pressable, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Linking, Modal, PanResponder, Pressable, TextInput, Vibration, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { suggestedTopupToman } from '@digital-platform/api-contracts';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,16 +11,18 @@ import { atLeft, C, F, back, card, faNum, fwd, right, row, shadow, tRight } from
 import { BrandTile, Enamel, Fill, Ornament, Tile } from '../../zp/brand';
 import { Icon } from '../../zp/Icon';
 import { SubScreen } from '../../zp/Shell';
-import { Async, Cta, EmptyState, ErrorBox, IconBtn, Press, Sheet, T, useToast } from '../../zp/ui';
+import { Async, Cta, EmptyState, ErrorBox, IconBtn, Pop, Press, Pulse, Rise, Sheet, T, useToast } from '../../zp/ui';
 
 const PER_PAGE = 9;
 
 function Done({ done, onHome, onOrders }: { done: { id: string; label: string; amount: number } | null; onHome: () => void; onOrders: () => void }) {
+  useEffect(() => { if (done) Vibration.vibrate([0, 18, 60, 28]); }, [done]);
   return (
     <Modal visible={!!done} animationType="fade" onRequestClose={onHome}>
       <SafeAreaView style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <View accessibilityLiveRegion="polite" style={{ width: '100%', maxWidth: 360, alignItems: 'center', gap: 12 }}>
-          <View style={{ width: 150, height: 110, alignItems: 'center', justifyContent: 'center' }}>
+          <Pop style={{ width: 150, height: 110, alignItems: 'center', justifyContent: 'center' }}>
+            <Pulse />
             <Svg width={150} height={110} viewBox="0 0 150 110" style={{ position: 'absolute' }}>
               <Ellipse cx="75" cy="55" rx="72" ry="24" rotation={-14} origin="75, 55" fill="none" stroke={C.gold2} strokeOpacity={0.55} strokeWidth={1.5} />
               <Ellipse cx="75" cy="55" rx="60" ry="18" rotation={-14} origin="75, 55" fill="none" stroke={C.gold2} strokeOpacity={0.3} strokeWidth={1} />
@@ -29,18 +31,20 @@ function Done({ done, onHome, onOrders }: { done: { id: string; label: string; a
               <Fill kind="metal" />
               <View style={{ position: 'relative', zIndex: 1 }}><Svg width={42} height={42} viewBox="0 0 24 24"><Path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke={C.onGold} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" /></Svg></View>
             </View>
-          </View>
-          <T w="dx" size={22} style={{ textAlign: 'center', marginTop: 6 }}>سفارش ثبت شد</T>
-          <T size={13.5} color={C.muted} style={{ textAlign: 'center' }}>پرداخت انجام شد و سفارش در صف انجام است.</T>
+          </Pop>
+          <Rise delay={260}><T w="dx" size={22} style={{ textAlign: 'center', marginTop: 6 }}>سفارش ثبت شد</T></Rise>
+          <Rise delay={340}><T size={13.5} color={C.muted} style={{ textAlign: 'center' }}>پرداخت انجام شد و سفارش در صف انجام است.</T></Rise>
           {done ? (
+            <Rise delay={430} style={{ alignSelf: 'stretch' }}>
             <View style={[{ alignSelf: 'stretch', borderRadius: 20, padding: 16, gap: 9 }, card]}>
               <View style={{ flexDirection: row, justifyContent: 'space-between', gap: 10 }}><T color={C.muted} size={13.5}>سرویس</T><T w="b" size={13.5} style={{ flexShrink: 1 }}>{done.label}</T></View>
               <View style={{ flexDirection: row, justifyContent: 'space-between' }}><T color={C.muted} size={13.5}>کد پیگیری</T><T w="b" size={13.5}>{`ZP-${done.id.replace(/-/g, '').slice(0, 6).toUpperCase()}`}</T></View>
               <View style={{ borderTopWidth: 1.5, borderStyle: 'dashed', borderColor: C.line, marginHorizontal: 8 }} />
               <View style={{ flexDirection: row, justifyContent: 'space-between' }}><T color={C.muted} size={13.5}>مبلغ پرداختی</T><T w="b" size={13.5}>{formatTomanNumber(done.amount)} تومان</T></View>
             </View>
+            </Rise>
           ) : null}
-          <Cta full label="پیگیری سفارش" onPress={onOrders} />
+          <Rise delay={520} style={{ alignSelf: 'stretch' }}><Cta full label="پیگیری سفارش" onPress={onOrders} /></Rise>
           <Pressable accessibilityRole="link" onPress={onHome} style={{ padding: 8 }}><T w="sb" color={C.muted} style={{ textAlign: 'center' }}>بازگشت به خانه</T></Pressable>
         </View>
       </SafeAreaView>

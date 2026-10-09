@@ -8,7 +8,7 @@ export default function Layout() {
   if (!authenticated) return <Redirect href="/login" />;
 
   return (
-    <Tabs tabBar={props => <TabBar {...props} />} screenOptions={{ headerShown: false }}>
+    <Tabs tabBar={props => <TabBar {...props} />} screenOptions={{ headerShown: false, animation: 'fade' }}>
       <Tabs.Screen name="index" options={{ title: 'خانه' }} />
       <Tabs.Screen name="orders" options={{ title: 'سفارش‌ها' }} />
       <Tabs.Screen name="wallet" options={{ title: 'کیف پول' }} />

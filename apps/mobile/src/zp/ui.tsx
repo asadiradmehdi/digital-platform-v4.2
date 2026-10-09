@@ -1,8 +1,8 @@
 // Shared building blocks for the Kayvan screens: text, gold CTA, icon button, section head,
 // bottom sheet, toast, progress track and the empty / error / loading states.
-import { useEffect, useState, type PropsWithChildren, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type PropsWithChildren, type ReactNode } from 'react';
 import {
-  ActivityIndicator, Animated, Modal, Pressable, StyleSheet, Text, View,
+  ActivityIndicator, Animated, Easing, Modal, Pressable, StyleSheet, Text, View,
   type StyleProp, type TextProps, type TextStyle, type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,13 +15,45 @@ export function T({ w = 'm', size = 14, color = C.ink, style, ...rest }: TextPro
   return <Text {...rest} style={[{ fontFamily: F[w], fontSize: size, color, textAlign: tRight }, style]} />;
 }
 
-/** Pressable that shrinks slightly while pressed (the web .zp-press). */
-export function Press({ style, children, ...rest }: PropsWithChildren<Omit<React.ComponentProps<typeof Pressable>, 'style' | 'children'> & { style?: StyleProp<ViewStyle> }>) {
+const APressable = Animated.createAnimatedComponent(Pressable);
+
+/** Pressable with a springy press: dips on touch, settles back with a tiny overshoot (the web .zp-press). */
+export function Press({ style, children, onPressIn, onPressOut, ...rest }: PropsWithChildren<Omit<React.ComponentProps<typeof Pressable>, 'style' | 'children'> & { style?: StyleProp<ViewStyle> }>) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const to = (v: number, bounce: boolean) => Animated.spring(scale, { toValue: v, useNativeDriver: true, speed: bounce ? 22 : 40, bounciness: bounce ? 9 : 0 }).start();
   return (
-    <Pressable {...rest} style={({ pressed }) => [style, pressed && { transform: [{ scale: 0.96 }] }]}>
+    <APressable {...rest}
+      onPressIn={e => { to(0.955, false); onPressIn?.(e); }}
+      onPressOut={e => { to(1, true); onPressOut?.(e); }}
+      style={[style, { transform: [{ scale }] }]}>
       {children}
-    </Pressable>
+    </APressable>
   );
+}
+
+/** Fades and lifts its child in once on mount; `delay` staggers lists into a gentle cascade. */
+export function Rise({ delay = 0, distance = 14, style, children }: PropsWithChildren<{ delay?: number; distance?: number; style?: StyleProp<ViewStyle> }>) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => { Animated.timing(v, { toValue: 1, duration: 420, delay, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(); }, [v, delay]);
+  return (
+    <Animated.View style={[style, { opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [distance, 0] }) }] }]}>
+      {children}
+    </Animated.View>
+  );
+}
+
+/** Springs its child from small to full size once on mount (success marks, badges). */
+export function Pop({ delay = 0, style, children }: PropsWithChildren<{ delay?: number; style?: StyleProp<ViewStyle> }>) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => { Animated.sequence([Animated.delay(delay), Animated.spring(v, { toValue: 1, useNativeDriver: true, speed: 9, bounciness: 13 })]).start(); }, [v, delay]);
+  return <Animated.View style={[style, { opacity: v.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0, 1, 1] }), transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }) }] }]}>{children}</Animated.View>;
+}
+
+/** Soft expanding ring behind a success mark; loops twice then rests. */
+export function Pulse({ size = 92, color = C.gold2 }: { size?: number; color?: string }) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => { Animated.loop(Animated.timing(v, { toValue: 1, duration: 1400, easing: Easing.out(Easing.quad), useNativeDriver: true }), { iterations: 2 }).start(); }, [v]);
+  return <Animated.View pointerEvents="none" style={{ position: 'absolute', width: size, height: size, borderRadius: size / 2, borderWidth: 2, borderColor: color, opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.55, 0] }), transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.7] }) }] }} />;
 }
 
 /** Gold-metal call to action. */

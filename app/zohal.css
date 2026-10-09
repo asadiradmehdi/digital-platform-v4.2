@@ -676,3 +676,10 @@
 }
 /* Button labels never wrap onto a second line (Ali 2026-10-09). */
 .zp-cta,.zp-root .button,.zp-root button.zp-press,.zp-short a,.zp-ai-hero .alt{white-space:nowrap}
+/* Success moment: ring pulse behind the check, then the text lifts in one by one (mirrors the app). */
+.zp-chk{position:relative}
+.zp-done.on .zp-chk::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--gold-2);animation:zpRing 1.4s .35s ease-out 2 both;pointer-events:none}
+@keyframes zpRing{from{opacity:.55;transform:scale(1)}to{opacity:0;transform:scale(1.7)}}
+.zp-done.on h2,.zp-done.on p,.zp-done.on .in>*:nth-child(n+4){animation:zpRise .5s var(--ease) both}
+.zp-done.on h2{animation-delay:.26s}.zp-done.on p{animation-delay:.34s}.zp-done.on .in>*:nth-child(n+4){animation-delay:.45s}
+@media (prefers-reduced-motion:reduce){.zp-done.on .zp-chk::after{animation:none;opacity:0}}
