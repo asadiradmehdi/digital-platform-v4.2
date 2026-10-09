@@ -16,7 +16,7 @@ export type CategoryMeta = { key: CategoryKey; name: string; icon: IconName; hin
  * customers until they are ready to sell.
  */
 export const ALL_CATEGORIES: CategoryMeta[] = [
-  { key: 'ai-subscriptions', name: 'اشتراک هوش مصنوعی', icon: 'aiSub', hint: 'ChatGPT، Gemini و بیشتر', title: 'اشتراک هوش مصنوعی', note: 'فعال‌سازی روی ایمیل خودتان' },
+  { key: 'ai-subscriptions', name: 'اشتراک هوش مصنوعی', icon: 'aiSub', hint: 'ChatGPT و Gemini', title: 'اشتراک هوش مصنوعی', note: 'فعال‌سازی روی ایمیل خودتان' },
   { key: 'instagram', name: 'اینستاگرام', icon: 'ig', hint: 'فالوور، لایک و بازدید' },
   { key: 'telegram', name: 'تلگرام', icon: 'tg', hint: 'ممبر، بازدید و ری‌اکشن' },
   { key: 'youtube', name: 'یوتیوب', icon: 'yt', hint: 'سابسکرایب، بازدید و لایک' },

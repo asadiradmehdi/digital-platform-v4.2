@@ -13,6 +13,7 @@ type AuthContextValue = {
   ready: boolean;
   authenticated: boolean;
   signIn: (identifier: string, password: string) => Promise<SignInResult>;
+  register: (input: { name: string; email: string; password: string; referralCode?: string }) => Promise<SignInResult>;
   requestOtp: (phone: string) => Promise<OtpRequestResponse>;
   verifyOtp: (challengeId: string, code: string, referralCode?: string) => Promise<SignInResult>;
   completeMfa: (challengeToken: string, code: string) => Promise<SignInResult>;
@@ -49,6 +50,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       ready,
       authenticated,
       signIn: async (identifier, password) => finish(await post('/api/v1/auth/mobile/session', { identifier, password })),
+      register: async input => finish(await post('/api/v1/auth/mobile/register', input)),
       requestOtp: phone => apiFetch<OtpRequestResponse>('/api/v1/auth/mobile/otp/request', { method: 'POST', body: JSON.stringify({ phone }) }),
       verifyOtp: async (challengeId, code, referralCode) => finish(await post('/api/v1/auth/mobile/otp/verify', { challengeId, code, referralCode })),
       completeMfa: async (challengeToken, code) => finish(await post('/api/v1/auth/mobile/mfa', { challengeToken, code })),

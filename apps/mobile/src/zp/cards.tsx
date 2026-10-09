@@ -20,8 +20,8 @@ export function CategoryGrid({ categories }: { categories: AppCategory[] }) {
           onPress={() => router.navigate({ pathname: '/services/[category]', params: { category: c.key } })}
           style={[{ width: '31.8%', alignItems: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 4, borderRadius: 18, opacity: c.live ? 1 : 0.82 }, card]}>
           <Tile icon={c.icon} size={tile} badge={c.live ? undefined : 'به‌زودی'} />
-          <T w="b" size={12.5} color={C.ink} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ textAlign: 'center', alignSelf: 'stretch' }}>{c.name}</T>
-          {c.hint ? <T size={10} color={C.muted} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ textAlign: 'center', alignSelf: 'stretch', marginTop: -3 }}>{c.hint}</T> : null}
+          <T w="b" size={c.name.length > 12 ? 10.5 : 12.5} color={C.ink} numberOfLines={1} style={{ textAlign: 'center', alignSelf: 'stretch' }}>{c.name}</T>
+          {c.hint ? <T size={c.hint.length > 16 ? 9.5 : 10} color={C.muted} numberOfLines={1} style={{ textAlign: 'center', alignSelf: 'stretch', marginTop: -3 }}>{c.hint}</T> : null}
         </Press>
       ))}
     </View>

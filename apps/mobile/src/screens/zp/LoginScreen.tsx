@@ -11,14 +11,14 @@ import { apiFetch } from '../../api/client';
 import { errorText, siteUrl } from '../../api/app';
 import { useAuth, type SignInResult } from '../../auth/AuthProvider';
 import { googleErrorText, openGoogleSignIn, parseGoogleReturn, redeemGoogleHandoff } from '../../auth/google';
-import { C, F, card, faNum, right, row, tRight } from '../../zp/base';
+import { C, F, card, faNum, right, row, shadow, tRight } from '../../zp/base';
 import { BrandMark, Fill, Ornament, Wordmark } from '../../zp/brand';
 import { Icon } from '../../zp/Icon';
 import { CodeBoxes } from '../../zp/CodeBoxes';
 import { Cta, ErrorBox, Press, T } from '../../zp/ui';
 
 const ltrAlign = tRight === 'right' ? 'left' : 'right';
-type Step = 'phone' | 'code' | 'password' | 'mfa';
+type Step = 'phone' | 'code' | 'password' | 'register' | 'mfa';
 
 function Field({ label, focused, ltr = true, ...rest }: React.ComponentProps<typeof TextInput> & { label: string; focused: boolean; ltr?: boolean }) {
   return (
@@ -75,7 +75,7 @@ function Divider() {
 
 export function LoginScreen() {
   const router = useRouter();
-  const { signIn, requestOtp, verifyOtp, completeMfa, exchangeGoogleHandoff } = useAuth();
+  const { signIn, register, requestOtp, verifyOtp, completeMfa, exchangeGoogleHandoff } = useAuth();
   const [step, setStep] = useState<Step>('password');
   const [providers, setProviders] = useState<AuthProvidersResponse | null>(null);
   const [phone, setPhone] = useState('');
@@ -87,9 +87,13 @@ export function LoginScreen() {
   const [resendIn, setResendIn] = useState(0);
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
   const [mfaToken, setMfaToken] = useState('');
   const [mfaCode, setMfaCode] = useState('');
-  const [busy, setBusy] = useState<null | 'send' | 'verify' | 'google' | 'password' | 'mfa'>(null);
+  const [busy, setBusy] = useState<null | 'send' | 'verify' | 'google' | 'password' | 'register' | 'mfa'>(null);
   const [error, setError] = useState<string | null>(null);
   const [focus, setFocus] = useState<string | null>(null);
   const verifying = useRef(false);
@@ -160,6 +164,18 @@ export function LoginScreen() {
     } finally { setBusy(null); }
   };
 
+  const submitRegister = async () => {
+    if (name.trim().length < 2) { setError('نام و نام خانوادگی را کامل وارد کنید.'); return; }
+    if (!/^\S+@\S+\.\S+$/.test(regEmail.trim())) { setError('آدرس ایمیل درست نیست.'); return; }
+    if (regPassword.length < 14) { setError('رمز عبور باید دست‌کم ۱۴ کاراکتر باشد؛ یک عبارت ساده و به‌یادماندنی کافی است.'); return; }
+    setBusy('register'); setError(null);
+    try {
+      after(await register({ name: name.trim(), email: regEmail.trim(), password: regPassword, ...(referral.trim() ? { referralCode: referral.trim() } : {}) }));
+    } catch (e) {
+      setError(errorText(e, 'ساخت حساب انجام نشد. دوباره تلاش کنید.'));
+    } finally { setBusy(null); }
+  };
+
   const submitMfa = async () => {
     if (mfaCode.length !== 6) { setError('کد ۶ رقمی برنامه‌ی تأیید هویت را وارد کنید.'); return; }
     setBusy('mfa'); setError(null);
@@ -177,7 +193,8 @@ export function LoginScreen() {
   const header = {
     phone: { title: 'ورود یا ساخت حساب', sub: 'شماره موبایلتان را وارد کنید؛ اگر حساب نداشته باشید، همین‌جا ساخته می‌شود.' },
     code: { title: 'کد تأیید را وارد کنید', sub: '' },
-    password: { title: 'ورود به حساب', sub: 'با ایمیل و رمز عبوری که هنگام ثبت‌نام در سایت زُحل پی ساخته‌اید وارد شوید.' },
+    password: { title: 'ورود به حساب', sub: 'با ایمیل و رمز عبور حسابتان وارد شوید.' },
+    register: { title: 'ساخت حساب جدید', sub: 'در چند ثانیه حساب بسازید؛ همان ایمیل و رمز در سایت هم کار می‌کند.' },
     mfa: { title: 'تأیید دومرحله‌ای', sub: 'کد ۶ رقمی برنامه‌ی تأیید هویت (Authenticator) را وارد کنید.' },
   }[step];
 
@@ -203,6 +220,16 @@ export function LoginScreen() {
           <View style={{ flexGrow: 1, marginTop: -26, backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 18, paddingTop: 22, paddingBottom: 28, gap: 18 }}>
           <View style={{ alignSelf: 'center', width: 42, height: 4, borderRadius: 4, backgroundColor: C.surface4, marginTop: -10, marginBottom: -6 }} />
           <View style={[{ borderRadius: 26, padding: 20, gap: 14, overflow: 'hidden' }, card]}>
+            {step === 'password' || step === 'register' ? (
+              <View accessibilityRole="tablist" style={{ flexDirection: row, padding: 4, borderRadius: 16, backgroundColor: C.surface2, gap: 4 }}>
+                {([['password', 'ورود'], ['register', 'ساخت حساب']] as const).map(([k, label]) => (
+                  <Press key={k} accessibilityRole="tab" accessibilityState={{ selected: step === k }} onPress={() => go(k)}
+                    style={[{ flex: 1, alignItems: 'center', justifyContent: 'center', height: 42, borderRadius: 12 }, step === k && [{ backgroundColor: C.surface, borderWidth: 1, borderColor: C.line }, shadow(3, 8, 0.12)]]}>
+                    <T w="b" size={14} color={step === k ? C.ink : C.muted} numberOfLines={1}>{label}</T>
+                  </Press>
+                ))}
+              </View>
+            ) : null}
             <View style={{ alignItems: right, gap: 4 }}>
               <T w="dx" size={22} style={{ lineHeight: 34 }} accessibilityRole="header">{header.title}</T>
               {step === 'code' ? (
@@ -266,10 +293,25 @@ export function LoginScreen() {
                 {error ? <ErrorBox text={error} /> : null}
                 <Cta full label={busy === 'password' ? 'در حال ورود…' : 'ورود'} busy={busy === 'password'} onPress={() => void submitPassword()} />
                 {providers?.otp ? <View style={{ alignItems: 'center' }}><Link label="ورود با شماره موبایل" onPress={() => go('phone')} /></View> : null}
-                <View style={{ alignItems: 'center', gap: 2 }}>
-                  <T size={12} color={C.muted} style={{ textAlign: 'center' }}>هنوز حساب ندارید؟ ابتدا در سایت ثبت‌نام کنید:</T>
-                  <Link label="ثبت‌نام در سایت زُحل پی" onPress={() => void Linking.openURL(siteUrl('/auth?mode=register'))} />
-                </View>
+              </>
+            )}
+
+            {step === 'register' && (
+              <>
+                <Field label="نام و نام خانوادگی" ltr={false} focused={focus === 'nm'} value={name} onChangeText={setName}
+                  onFocus={() => setFocus('nm')} onBlur={() => setFocus(null)} autoComplete="name" textContentType="name" placeholder="علی اسدی" returnKeyType="next" />
+                <Field label="ایمیل" focused={focus === 're'} value={regEmail} onChangeText={setRegEmail}
+                  onFocus={() => setFocus('re')} onBlur={() => setFocus(null)} autoCapitalize="none" autoCorrect={false}
+                  keyboardType="email-address" autoComplete="email" textContentType="emailAddress" placeholder="email@example.com" returnKeyType="next" />
+                <Field label="رمز عبور (دست‌کم ۱۴ کاراکتر)" focused={focus === 'rp'} value={regPassword} onChangeText={setRegPassword}
+                  onFocus={() => setFocus('rp')} onBlur={() => setFocus(null)} secureTextEntry={!showPw} autoComplete="new-password" textContentType="newPassword"
+                  placeholder="یک عبارت ساده و به‌یادماندنی" returnKeyType="go" onSubmitEditing={() => void submitRegister()} />
+                <Press accessibilityRole="button" onPress={() => setShowPw(v => !v)} style={{ alignSelf: 'flex-end' }}>
+                  <T size={12} color={C.goldText} w="sb">{showPw ? 'پنهان‌کردن رمز' : 'نمایش رمز'}</T>
+                </Press>
+                {error ? <ErrorBox text={error} /> : null}
+                <Cta full label={busy === 'register' ? 'در حال ساخت حساب…' : 'ساخت حساب'} busy={busy === 'register'} onPress={() => void submitRegister()} />
+                <T size={11.5} color={C.subtle} style={{ textAlign: 'center', lineHeight: 20 }}>ساخت حساب یعنی پذیرش قوانین و حریم خصوصی زُحل پی.</T>
               </>
             )}
 
