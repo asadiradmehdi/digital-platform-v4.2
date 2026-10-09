@@ -1,82 +1,41 @@
 /**
  * Unit tests for server/identity/password-policy.ts
- * assertStrongPassword — length, uppercase, lowercase, digit, symbol checks
+ * assertStrongPassword — minimum length, no composition rules, guessable-password checks
  * Also verifies registration route calls the policy.
  */
 import { describe, it, expect } from 'vitest';
 import { assertStrongPassword } from '../../server/identity/password-policy';
 
-// ─── assertStrongPassword ─────────────────────────────────────────────────────
+// ─── assertStrongPassword (ASVS 5.0 V6.2: length, no composition rules, no guessable passwords) ───
+
+const fails = (pw: string, ctx?: { email?: string }) => {
+  try { assertStrongPassword(pw, ctx); return null; } catch (e) { return e as { code?: string; message: string }; }
+};
 
 describe('assertStrongPassword', () => {
-  const VALID = 'MyStr0ng!Password';
-
-  it('accepts a password that satisfies all requirements', () => {
-    expect(() => assertStrongPassword(VALID)).not.toThrow();
+  it('accepts a long passphrase with no upper case, digits or symbols (no composition rules)', () => {
+    expect(fails('shab-e yalda dar tehran')).toBeNull();
+    expect(fails('mybrotherasadrocks')).toBeNull();
+    expect(fails('رمز عبور من خیلی بلنده')).toBeNull();
   });
 
-  it('throws VALIDATION_ERROR when password is shorter than 14 characters', () => {
-    try {
-      assertStrongPassword('Short1!');
-      expect.fail('should have thrown');
-    } catch (e: unknown) {
-      expect((e as { code?: string }).code).toBe('VALIDATION_ERROR');
-      expect((e as Error).message).toContain('14');
-    }
+  it('rejects anything shorter than 14 characters with a Persian message', () => {
+    const e = fails('Short-Pass-1!');
+    expect(e?.code).toBe('VALIDATION_ERROR');
+    expect(e?.message).toContain('۱۴');
+    expect(fails('abcdefghijklmn')).not.toBeNull(); // 14 chars but sequential
   });
 
-  it('throws VALIDATION_ERROR when no uppercase letter', () => {
-    try {
-      assertStrongPassword('alllowercas3!zz');
-      expect.fail('should have thrown');
-    } catch (e: unknown) {
-      expect((e as { code?: string }).code).toBe('VALIDATION_ERROR');
-      expect((e as Error).message.toLowerCase()).toContain('uppercase');
-    }
+  it('rejects trivially guessable long passwords', () => {
+    expect(fails('aaaaaaaaaaaaaaaa')?.message).toContain('قابل حدس');
+    expect(fails('12345678901234')).not.toBeNull();
+    expect(fails('password123456')).not.toBeNull();
+    expect(fails('zohalpay2026!!')).not.toBeNull();
   });
 
-  it('throws VALIDATION_ERROR when no lowercase letter', () => {
-    try {
-      assertStrongPassword('ALLUPPERCASE3!ZZ');
-      expect.fail('should have thrown');
-    } catch (e: unknown) {
-      expect((e as { code?: string }).code).toBe('VALIDATION_ERROR');
-      expect((e as Error).message.toLowerCase()).toContain('lowercase');
-    }
-  });
-
-  it('throws VALIDATION_ERROR when no digit', () => {
-    try {
-      assertStrongPassword('NoDigitsHere!Zz');
-      expect.fail('should have thrown');
-    } catch (e: unknown) {
-      expect((e as { code?: string }).code).toBe('VALIDATION_ERROR');
-      expect((e as Error).message.toLowerCase()).toContain('number');
-    }
-  });
-
-  it('throws VALIDATION_ERROR when no symbol', () => {
-    try {
-      assertStrongPassword('NoSymbolsHere123');
-      expect.fail('should have thrown');
-    } catch (e: unknown) {
-      expect((e as { code?: string }).code).toBe('VALIDATION_ERROR');
-      expect((e as Error).message.toLowerCase()).toContain('symbol');
-    }
-  });
-
-  it('accepts minimum-length password of exactly 14 chars with all rules met', () => {
-    // exactly 14 chars: Aa1!0000000000 is 14 chars
-    expect(() => assertStrongPassword('Aa1!0000000000')).not.toThrow();
-  });
-
-  it('throws for password of exactly 13 chars even if it meets other rules', () => {
-    try {
-      assertStrongPassword('Aa1!000000000'); // 13 chars
-      expect.fail('should have thrown');
-    } catch (e: unknown) {
-      expect((e as { code?: string }).code).toBe('VALIDATION_ERROR');
-    }
+  it('rejects a password built from the email address', () => {
+    expect(fails('alireza.asadi-2026', { email: 'alireza.asadi@example.com' })).not.toBeNull();
+    expect(fails('alireza.asadi-2026', { email: 'someone@example.com' })).toBeNull();
   });
 });
 

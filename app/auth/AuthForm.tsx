@@ -242,7 +242,7 @@ export default function AuthForm({ initialMode = 'login', invite = null, otpEnab
               <label>
                 {mode === 'login' ? 'رمز عبور' : 'رمز عبور جدید'}
                 <input name="password" type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required minLength={mode === 'register' ? 14 : 8} />
-                {mode === 'register' && <span className="auth-hint">حداقل ۱۴ کاراکتر — ترکیب حروف بزرگ، کوچک، عدد و نماد.</span>}
+                {mode === 'register' && <span className="auth-hint">حداقل ۱۴ کاراکتر. می‌تواند یک عبارت ساده و به‌یادماندنی باشد.</span>}
               </label>
               {mode === 'register' && !invite && (
                 <label>
