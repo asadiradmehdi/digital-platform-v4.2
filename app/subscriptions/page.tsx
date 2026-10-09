@@ -23,9 +23,13 @@ const entitlementIcons: Record<string, typeof Sparkles> = {
 const entitlementLabel: Record<string, string> = {
   'ai_usage': 'مصرف هوش مصنوعی',
   'ai-usage': 'مصرف هوش مصنوعی',
-  'priority_routing': 'مسیردهی اولویت',
+  'priority_routing': 'انجام سفارش با اولویت',
   'automation_runs': 'اجرای اتوماسیون',
   'knowledge_base': 'پایگاه دانش',
+  'orders_per_month': 'سفارش در ماه',
+  'api_access': 'دسترسی API',
+  'dedicated_provider': 'سرویس‌دهنده‌ی اختصاصی',
+  'sla': 'تضمین کیفیت خدمات',
 };
 
 async function getSubscriptions(workspaceId: string) {
@@ -319,7 +323,7 @@ export default async function Subscriptions() {
             >
               {sub.entitlements.map(({ entitlement_key, value }) => {
                 const Icon = entitlementIcons[entitlement_key] ?? Sparkles;
-                const label = entitlementLabel[entitlement_key] ?? entitlement_key;
+                const label = entitlementLabel[entitlement_key] ?? 'امکان ویژه';
                 return (
                   <div
                     key={entitlement_key}

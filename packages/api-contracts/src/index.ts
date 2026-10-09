@@ -193,6 +193,7 @@ export type HealthResponse = { status: 'ok' | 'degraded'; version: string; check
 // ---------------------------------------------------------------------------
 export * from './phone';
 export * from './topup';
+export * from './entitlements';
 export type OtpRequestResponse = { ok: true; challengeId: string; expiresIn: number; resendIn: number; maskedPhone: string };
 export type OtpVerifyResponse = { ok: true; created: boolean; next: string; mfaRequired?: false } | { ok: true; mfaRequired: true; challengeToken: string };
 export type AuthProvidersResponse = { otp: boolean; google: boolean; password: boolean };

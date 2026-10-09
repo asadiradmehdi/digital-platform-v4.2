@@ -6,6 +6,7 @@ import { ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
 import { AppShell } from '../../../components/AppShell';
 import { SystemStrip } from '../../../components/ProductSurface';
 import { formatMoney } from '../../../lib/format';
+import { entitlementLabel } from '../../../packages/api-contracts/src/entitlements';
 
 type Plan = {
   id: string; name: string; slug: string; price_minor: string; currency: string;
@@ -113,9 +114,10 @@ function SubscriptionNewInner() {
                   {p.description && <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--muted)' }}>{p.description}</p>}
                   {p.entitlements.length > 0 && (
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
-                      {p.entitlements.map(e => (
-                        <span key={e.entitlement_key} style={{ fontSize: 10, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 5, padding: '2px 7px' }}>{e.entitlement_key}</span>
-                      ))}
+                      {p.entitlements.map(e => {
+                        const label = entitlementLabel(e.entitlement_key, e.value);
+                        return label && <span key={e.entitlement_key} style={{ fontSize: 10, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 5, padding: '2px 7px' }}>{label}</span>;
+                      })}
                     </div>
                   )}
                 </div>

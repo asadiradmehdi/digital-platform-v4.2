@@ -145,9 +145,6 @@ Trigger: تیکت جدید با category=order و priority=urgent
 - **سفارش‌های ایزوله**: سفارش‌های یک workspace در workspace دیگر نمایش داده نمی‌شود
 - **API keyهای جداگانه**: هر workspace API keyهای مخصوص خود دارد
 - **کانال‌های اجتماعی مستقل**: اکانت‌های اینستاگرام و تلگرام هر کلاینت در workspace خودش
-
-**Row-Level Security (RLS)**
-در سطح پایگاه داده، هر query به‌صورت خودکار با workspace_id فیلتر می‌شود. این یعنی حتی یک باگ در لایه application نمی‌تواند داده workspace دیگری را برگرداند.
     `.trim(),
   },
 };
