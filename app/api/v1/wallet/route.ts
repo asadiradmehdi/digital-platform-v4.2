@@ -9,6 +9,8 @@ import { requireUuid, safePositiveInteger } from '../../../../server/core/valida
 import { requireIdempotencyKey } from '../../../../server/core/idempotency';
 import { beginCheckout } from '../../../../server/payments/service';
 import { paymentCallbackUrl, resolvePaymentGateway } from '../../../../server/payments/gateways';
+import { topupAmountProblem } from '../../../../packages/api-contracts/src/topup';
+import { AppError } from '../../../../server/core/errors';
 
 export async function GET(request: NextRequest) {
   const id = correlationId(request);
@@ -62,7 +64,10 @@ export async function POST(request: NextRequest) {
     await requireWorkspacePermission(userId, workspaceId, 'wallet.deposit');
     await consumeDistributedRateLimit({ key: userId, scope: 'wallet:deposit', windowSeconds: 3600, maxRequests: 20 });
 
-    const amountToman = BigInt(safePositiveInteger(body.amountToman, 'amountToman'));
+    const requested = safePositiveInteger(body.amountToman, 'amountToman');
+    const problem = topupAmountProblem(requested);
+    if (problem) throw new AppError('VALIDATION_ERROR', problem);
+    const amountToman = BigInt(requested);
     const idempotencyKey = requireIdempotencyKey(request.headers.get('idempotency-key'));
     const gateway = resolvePaymentGateway(null);
 

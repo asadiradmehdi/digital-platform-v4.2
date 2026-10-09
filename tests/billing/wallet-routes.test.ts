@@ -155,6 +155,16 @@ describe('POST /api/v1/wallet (top-up intent)', () => {
     expect(mockBeginCheckout).not.toHaveBeenCalled();
   });
 
+  it('returns a Persian 400 for an amount below ۱۰ هزار or above ۵۰ میلیون تومان', async () => {
+    for (const [amountToman, message] of [[9_999, 'حداقل'], [50_000_001, 'حداکثر']] as const) {
+      okAuth();
+      const response = await POST_WALLET(makePostRequest({ workspaceId: 'ws-1', amountToman }, KEY));
+      expect(response.status).toBe(400);
+      expect(JSON.stringify(await response.json())).toContain(message);
+    }
+    expect(mockBeginCheckout).not.toHaveBeenCalled();
+  });
+
   it('returns 400 without an Idempotency-Key (no random fallback)', async () => {
     okAuth();
     const response = await POST_WALLET(makePostRequest({ workspaceId: 'ws-1', amountToman: 100000 }));
