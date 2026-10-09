@@ -6,7 +6,6 @@ import { appApi, errorText, newIdempotencyKey, siteUrl, type AppOverview, type A
 import { formatQuantityWords, formatTomanNumber, magnitudeParts } from '../../format';
 import { useRemote } from '../../hooks/useRemote';
 import { C, F, card, faNum, fwd, right, row, shadow } from '../../zp/base';
-import { Enamel } from '../../zp/brand';
 import { WalletCard } from '../../zp/cards';
 import { Icon } from '../../zp/Icon';
 import { AppScreen } from '../../zp/Shell';
@@ -27,14 +26,14 @@ function Panel({ o, reload }: { o: AppOverview; reload: () => void }) {
   const w = o.wallet!;
   const toast = useToast();
   const [toman, setToman] = useState<number | null>(1_000_000);
-  const [text, setText] = useState(formatTomanNumber(1_000_000));
+  const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hist, setHist] = useState(false);
   const idem = useRef<string | null>(null);
   const problem = toman == null ? 'مبلغ را به تومان وارد کنید.' : topupAmountProblem(toman);
   const words = toman ? `${formatQuantityWords(toman)} تومان` : '';
-  const pick = (a: number) => { setToman(a); setText(formatTomanNumber(a)); idem.current = null; setError(null); };
+  const pick = (a: number) => { setToman(a); setText(''); idem.current = null; setError(null); };
   const type = (raw: string) => {
     const n = raw.trim() ? parseTomanInput(raw) : null;
     setToman(n); idem.current = null; setError(null);
@@ -65,7 +64,7 @@ function Panel({ o, reload }: { o: AppOverview; reload: () => void }) {
   return (
     <>
       <WalletCard balanceToman={w.balanceToman} tierName={o.tier.name} tail={w.walletId.slice(-4).toUpperCase()} />
-      <SecHead title="افزایش موجودی" note="انتخاب کنید یا مبلغ دلخواه بنویسید" />
+      <SecHead title="افزایش موجودی" />
       <View accessibilityRole="radiogroup" accessibilityLabel="مبلغ افزایش موجودی" style={{ flexDirection: row, flexWrap: 'wrap', rowGap: 8, columnGap: 8 }}>
         {TOPUP_PRESETS_TOMAN.map(a => {
           const m = magnitudeParts(a);
@@ -80,18 +79,18 @@ function Panel({ o, reload }: { o: AppOverview; reload: () => void }) {
           );
         })}
       </View>
-      <Enamel radius={18} style={{ paddingVertical: 12, paddingHorizontal: 14, gap: 6 }}>
-        <T w="b" size={11.5} color={C.gold1}>مبلغ دلخواه</T>
-        <View style={{ flexDirection: row, alignItems: 'center', gap: 8, borderBottomWidth: 1.5, borderColor: toman != null && problem ? '#f0a69c' : 'rgba(242,211,144,0.45)', paddingBottom: 2 }}>
-          <TextInput value={text} onChangeText={type} keyboardType="number-pad" placeholder="مثلاً ۷۵۰٬۰۰۰" placeholderTextColor="rgba(255,255,255,0.35)"
-            accessibilityLabel="مبلغ دلخواه به تومان" selectionColor={C.gold1} returnKeyType="done" onSubmitEditing={topup}
-            style={{ flex: 1, color: '#fff', fontFamily: F.b, fontSize: 24, textAlign: 'right', paddingVertical: 4 }} />
-          <T w="b" size={13} color={C.gold1}>تومان</T>
-        </View>
-        <T size={11.5} color={toman != null && problem ? '#ffc9c1' : 'rgba(255,255,255,0.72)'}>
-          {toman != null && problem ? problem : toman ? `پرداخت در درگاه: ${formatTomanNumber(tomanToRial(toman))} ریال` : 'از ۱۰ هزار تا ۵۰ میلیون تومان'}
+      <View style={[{ flexDirection: row, alignItems: 'center', gap: 10, height: 52, borderRadius: 16, paddingHorizontal: 16 }, card,
+        text ? { borderWidth: 2, borderColor: problem ? C.danger : C.gold2 } : null]}>
+        <TextInput value={text} onChangeText={type} keyboardType="number-pad" placeholder="یا مبلغ دلخواه را بنویسید" placeholderTextColor={C.subtle}
+          accessibilityLabel="مبلغ دلخواه به تومان" selectionColor={C.gold2} returnKeyType="done" onSubmitEditing={topup}
+          style={{ flex: 1, color: C.ink, fontFamily: F.b, fontSize: 18, textAlign: 'right', paddingVertical: 0 }} />
+        <T w="b" size={12.5} color={C.muted}>تومان</T>
+      </View>
+      {text ? (
+        <T size={11.5} color={problem ? C.danger : C.muted} style={{ marginTop: -4, paddingHorizontal: 4 }}>
+          {problem ?? `معادل ${formatTomanNumber(tomanToRial(toman!))} ریال در درگاه`}
         </T>
-      </Enamel>
+      ) : null}
       {error ? <ErrorBox text={error} /> : null}
       <Cta full label={busy ? 'در حال انجام…' : problem ? 'مبلغ را وارد کنید' : `پرداخت ${words}`} busy={busy} onPress={topup} />
 

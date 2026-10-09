@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
 import { AppShell } from '../../../components/AppShell';
-import { SystemStrip } from '../../../components/ProductSurface';
 import { formatMoney } from '../../../lib/format';
 import { entitlementLabel } from '../../../packages/api-contracts/src/entitlements';
 
@@ -161,7 +160,6 @@ export default function SubscriptionNewPage() {
           <div><span className="eyebrow">اشتراک‌ها</span><h1>خرید اشتراک</h1><p>پلن مناسب را انتخاب کنید و اشتراک را از کیف پول شارژ کنید.</p></div>
           <Link className="button secondary" href="/subscriptions"><ArrowRight size={15}/>اشتراک‌های من</Link>
         </header>
-        <SystemStrip/>
         <Suspense fallback={<div style={{ color: 'var(--muted)', padding: 40, textAlign: 'center' }}>در حال بارگذاری...</div>}>
           <SubscriptionNewInner/>
         </Suspense>

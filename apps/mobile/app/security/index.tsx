@@ -11,10 +11,10 @@ const auditLabelMap: Record<string, { label: string; icon: string }> = {
   USER_LOGIN: { label: 'ورود موفق', icon: '✅' },
   USER_LOGOUT: { label: 'خروج', icon: '🚪' },
   PASSWORD_CHANGE: { label: 'تغییر رمز عبور', icon: '🔑' },
-  MFA_ENABLED: { label: 'فعال‌سازی OTP', icon: '🛡️' },
-  MFA_DISABLED: { label: 'غیرفعال‌سازی OTP', icon: '⚠️' },
+  MFA_ENABLED: { label: 'فعال‌سازی ورود دومرحله‌ای', icon: '🛡️' },
+  MFA_DISABLED: { label: 'غیرفعال‌سازی ورود دومرحله‌ای', icon: '⚠️' },
   SESSION_REVOKED: { label: 'خروج نشست', icon: '🚫' },
-  PASSKEY_ADDED: { label: 'افزودن Passkey', icon: '🔐' },
+  PASSKEY_ADDED: { label: 'افزودن ورود با اثر انگشت', icon: '🔐' },
 };
 
 function auditTone(action: string): Tone {
@@ -34,7 +34,7 @@ export default function SecurityCenter() {
 
   return (
     <Screen>
-      <Text style={styles.pageTitle}>مرکز امنیت</Text>
+      <Text style={styles.pageTitle}>امنیت و ورود</Text>
 
       {/* Security summary */}
       <Card>
@@ -110,7 +110,7 @@ export default function SecurityCenter() {
           </View>
           <View style={styles.actionContent}>
             <Text style={styles.actionLabel}>تغییر رمز عبور</Text>
-            <Text style={styles.actionHint}>آخرین تغییر: ۳ ماه پیش</Text>
+            <Text style={styles.actionHint}>یک عبارت بلند و به‌یادماندنی</Text>
           </View>
           <Text style={styles.actionArrow}>‹</Text>
         </View>
@@ -121,7 +121,7 @@ export default function SecurityCenter() {
           </View>
           <View style={styles.actionContent}>
             <Text style={styles.actionLabel}>احراز هویت دو مرحله‌ای</Text>
-            <Text style={styles.actionHint}>OTP و TOTP پشتیبانی می‌شود</Text>
+            <Text style={styles.actionHint}>با کد یک‌بارمصرف</Text>
           </View>
           <Text style={styles.actionArrow}>‹</Text>
         </View>
@@ -131,7 +131,7 @@ export default function SecurityCenter() {
             <Text style={styles.actionIcon}>🔐</Text>
           </View>
           <View style={styles.actionContent}>
-            <Text style={styles.actionLabel}>کلیدهای Passkey</Text>
+            <Text style={styles.actionLabel}>ورود با اثر انگشت یا چهره</Text>
             <Text style={styles.actionHint}>ورود بدون رمز عبور</Text>
           </View>
           <Text style={styles.actionArrow}>‹</Text>
@@ -157,7 +157,7 @@ export default function SecurityCenter() {
               </View>
               <View style={styles.auditMain}>
                 <Text style={styles.auditLabel}>
-                  {auditLabelMap[ev.action.toUpperCase()]?.label ?? ev.action}
+                  {auditLabelMap[ev.action.toUpperCase()]?.label ?? 'فعالیت حساب'}
                 </Text>
                 <Text style={styles.auditMeta}>
                   {ev.entityType} · {new Date(ev.createdAt).toLocaleDateString('fa-IR', { month: 'short', day: 'numeric' })}

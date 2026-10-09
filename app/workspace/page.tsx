@@ -4,7 +4,6 @@ import { redirect } from 'next/navigation';
 import { ChevronLeft, Settings2, Sparkles, Users } from 'lucide-react';
 import { CreateWorkspaceButton } from './CreateWorkspaceButton';
 import { AppShell } from '../../components/AppShell';
-import { SystemStrip } from '../../components/ProductSurface';
 import { requireCurrentUser } from '../../server/identity/request-user';
 import { query, withTenantTransaction } from '../../server/core/db';
 
@@ -53,7 +52,6 @@ export default async function WorkspacePage() {
           <div><span className="eyebrow">WORKSPACE</span><h1>Workspaceها</h1><p>هر Workspace یک محیط جداگانه با wallet، اشتراک، سفارش و تنظیمات مستقل دارد.</p></div>
           <CreateWorkspaceButton/>
         </header>
-        <SystemStrip/>
         <div style={{ display: 'grid', gap: 14, maxWidth: 680 }}>
           {workspaces.map(ws => (
             <article key={ws.workspace_id} className="surface-panel" style={{ padding: 20 }}>

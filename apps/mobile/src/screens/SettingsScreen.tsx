@@ -14,7 +14,6 @@ interface MenuItem {
 }
 
 const accountItems: MenuItem[] = [
-  { label: 'مرکز امنیت', hint: 'MFA، دستگاه‌ها، نشست‌ها', icon: '🔐', path: '/security' },
   { label: 'اشتراک و صورت‌حساب', hint: 'پلن، تمدید، فاکتور', icon: '⭐', path: '/subscriptions' },
   { label: 'کیف پول', hint: 'موجودی، شارژ، تاریخچه', icon: '💳', path: '/wallet' },
   { label: 'اعضای Workspace', hint: 'نقش‌ها، دعوت، مجوزها', icon: '👥', path: '/workspace' },

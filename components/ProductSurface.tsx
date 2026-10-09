@@ -13,6 +13,5 @@ export function ProductCard({ icon:Icon, title, description, meta, href }: { ico
 
 export function InsightPanel({ title, kicker, children }: {title:string;kicker:string;children:ReactNode}) { return <article className="surface-panel insight-panel"><div className="panel-head"><div><span className="panel-kicker">{kicker}</span><h2>{title}</h2></div></div>{children}</article> }
 
-export function SystemStrip(){return <div className="system-strip"><span><span className="system-dot"/> ZOHALPAY فعال است</span><span>همه سامانه‌ها پایدارند</span><Link href="/settings/security">مرکز امنیت <ChevronLeft size={13}/></Link></div>}
 
 export const productIcons = { ai:Bot, services:Layers3, automation:Workflow, wallet:WalletCards, security:LockKeyhole, success:CheckCircle2, activity:Clock3 };

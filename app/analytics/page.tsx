@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { AppShell } from '../../components/AppShell';
-import { SystemStrip } from '../../components/ProductSurface';
 import { formatMoney } from '../../lib/format';
 import { requireCurrentUser } from '../../server/identity/request-user';
 import { query, withWorkspaceTransaction } from '../../server/core/db';
@@ -92,8 +91,6 @@ export default async function Analytics() {
             <p>Revenue، هزینه‌ها و contribution margin از رویدادهای عملیاتی سمت سرور.</p>
           </div>
         </header>
-
-        <SystemStrip />
 
         <section className="metric-grid-4" style={{ marginBottom: 16 }}>
           <article className="metric-tile">

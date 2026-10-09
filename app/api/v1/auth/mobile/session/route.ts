@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     if (!row || locked || !validPassword) {
       if (row && validPassword === false) await recordLoginFailure(row.id);
       await recordSecurityEvent({ eventType: 'MOBILE_LOGIN_FAILURE', severity: 'WARNING', sourceIp: ip, userAgent: request.headers.get('user-agent') ?? undefined, correlationId: id });
-      throw new AppError('UNAUTHORIZED', 'Invalid credentials.');
+      throw new AppError('UNAUTHORIZED', 'ایمیل یا رمز عبور اشتباه است.');
     }
 
     await recordLoginSuccess(row.id);

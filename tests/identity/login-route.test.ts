@@ -146,6 +146,8 @@ describe('POST /api/v1/auth/login', () => {
 
     const response = await POST(makeRequest({ identifier: 'user@example.com', password: 'WrongPassword!' }));
     expect(response.status).toBe(401);
+    // Customers see a plain Persian reason, not the generic "session expired" text.
+    expect(JSON.stringify(await response.json())).toContain('ایمیل یا رمز عبور اشتباه است.');
     expect(mockFailure).toHaveBeenCalledWith('user-1');
   });
 

@@ -19,7 +19,6 @@ import {
   Circle,
 } from 'lucide-react';
 import { AppShell } from '../../components/AppShell';
-import { SystemStrip } from '../../components/ProductSurface';
 import { requireCurrentUser } from '../../server/identity/request-user';
 import { isPlatformAdmin } from '../../server/identity/platform-admin';
 import { getPlatformAdminStats } from '../../server/admin/platform-stats';
@@ -148,8 +147,6 @@ export default async function AdminPage() {
             </Link>
           </div>
         </header>
-
-        <SystemStrip />
 
         {/* ── Critical alert banner (only when issues present) ── */}
         {hasAlerts && (

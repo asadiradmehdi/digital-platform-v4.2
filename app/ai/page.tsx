@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { AudioLines, Bot, Code2, Image, Sparkles, Video, ArrowUpLeft, Zap } from 'lucide-react';
 import { AppShell } from '../../components/AppShell';
-import { SurfaceHero, SystemStrip } from '../../components/ProductSurface';
+import { SurfaceHero } from '../../components/ProductSurface';
 import Link from 'next/link';
 
 export const metadata: Metadata = { title: 'هوش مصنوعی', robots: { index: false, follow: false } };
@@ -76,8 +76,6 @@ export default function AI() {
           secondaryHref="/pricing"
           secondaryLabel="مشاهده پلن‌ها"
         />
-
-        <SystemStrip />
 
         <section style={{ marginBottom: 32 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>

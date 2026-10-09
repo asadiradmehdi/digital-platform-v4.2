@@ -57,7 +57,6 @@ export default function Settings() {
             <h1>تنظیمات</h1>
             <p>مدیریت پروفایل، امنیت، اعلان‌ها و دسترسی‌های فنی workspace.</p>
           </div>
-          <Link className="button secondary" href="/settings/security">مرکز امنیت</Link>
         </div>
 
         <div style={{ display: 'grid', gap: 10 }}>

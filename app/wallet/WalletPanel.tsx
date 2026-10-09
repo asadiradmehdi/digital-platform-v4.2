@@ -11,7 +11,7 @@ export type TxView = { id: string; title: string; when: string; amount: string; 
 
 export function WalletPanel({ workspaceId, tx }: { workspaceId: string; tx: TxView[] }) {
   const [toman, setToman] = useState<number | null>(1_000_000);
-  const [text, setText] = useState(formatTomanNumber(1_000_000));
+  const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hist, setHist] = useState(false);
@@ -31,7 +31,7 @@ export function WalletPanel({ workspaceId, tx }: { workspaceId: string; tx: TxVi
 
   const problem = toman == null ? 'مبلغ را به تومان وارد کنید.' : topupAmountProblem(toman);
   const words = toman ? `${formatQuantityWords(toman)} تومان` : '';
-  const pick = (a: number) => { setToman(a); setText(formatTomanNumber(a)); idem.current = null; setError(null); };
+  const pick = (a: number) => { setToman(a); setText(''); idem.current = null; setError(null); };
   const type = (raw: string) => {
     const n = raw.trim() ? parseTomanInput(raw) : null;
     setToman(n); idem.current = null; setError(null);
@@ -66,7 +66,7 @@ export function WalletPanel({ workspaceId, tx }: { workspaceId: string; tx: TxVi
   const last = tx[0];
   return (
     <>
-      <div className="zp-sec"><h2>افزایش موجودی</h2><span>انتخاب کنید یا مبلغ دلخواه بنویسید</span></div>
+      <div className="zp-sec"><h2>افزایش موجودی</h2></div>
       <div className="zp-amts" role="group" aria-label="مبلغ افزایش موجودی">
         {TOPUP_PRESETS_TOMAN.map(a => {
           const m = magnitudeParts(a);
@@ -77,17 +77,16 @@ export function WalletPanel({ workspaceId, tx }: { workspaceId: string; tx: TxVi
           );
         })}
       </div>
-      <label className={`zp-amount${toman != null && problem ? ' bad' : ''}`}>
-        <span className="lb">مبلغ دلخواه</span>
-        <span className="fld">
-          <input inputMode="numeric" autoComplete="off" dir="ltr" value={text} placeholder="مثلاً ۷۵۰٬۰۰۰" aria-describedby="amount-help"
-            onChange={e => type(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') void topup(); }} />
-          <span className="unit">تومان</span>
-        </span>
-        <span id="amount-help" className="hint" aria-live="polite">
-          {toman != null && problem ? problem : toman ? <>پرداخت در درگاه: <b>{formatTomanNumber(tomanToRial(toman))}</b> ریال</> : 'از ۱۰ هزار تا ۵۰ میلیون تومان'}
-        </span>
+      <label className={`zp-amount${text && problem ? ' bad' : text ? ' on' : ''}`}>
+        <input inputMode="numeric" autoComplete="off" dir="ltr" value={text} placeholder="یا مبلغ دلخواه را بنویسید" aria-label="مبلغ دلخواه به تومان" aria-describedby="amount-help"
+          onChange={e => type(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') void topup(); }} />
+        <span className="unit">تومان</span>
       </label>
+      {text && (
+        <p id="amount-help" className={`zp-amount-hint${problem ? ' bad' : ''}`} aria-live="polite">
+          {problem ?? <>معادل <b>{formatTomanNumber(tomanToRial(toman!))}</b> ریال در درگاه</>}
+        </p>
+      )}
       {error && <div className="zp-err" role="alert">{error}</div>}
       <button type="button" className="zp-cta full zp-press" onClick={topup} disabled={busy || !!problem}>{busy ? 'در حال انجام…' : problem ? 'مبلغ را وارد کنید' : `پرداخت ${words}`}</button>
 
