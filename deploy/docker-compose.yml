@@ -49,6 +49,9 @@ services:
       NODE_ENV: production
     ports:
       - "127.0.0.1:${APP_PORT:-3100}:3000"
+    volumes:
+      # The Android app, mirrored from the GitHub release by update.sh (GitHub downloads stall in Iran).
+      - ./downloads:/downloads:ro
 
   # Drives the background work the app exposes as internal endpoints: paid orders are dispatched to
   # providers through the outbox, order/payment notifications and SMS go out every cycle, referral rewards are released every 5 minutes and subscription
