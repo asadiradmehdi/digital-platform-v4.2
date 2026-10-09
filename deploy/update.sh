@@ -15,17 +15,18 @@ for pair in "android-latest:zohalpay" "android-admin-latest:zohalpay-admin"; do
   if [[ -n "$APK_TAG" && "$APK_TAG" != "$(cat deploy/downloads/$file.tag 2>/dev/null)" ]]; then
     if curl -fsSL -m 600 -o deploy/downloads/$file.apk.part "$APK_URL" && [[ "$(head -c2 deploy/downloads/$file.apk.part)" == "PK" ]]; then
       mv deploy/downloads/$file.apk.part deploy/downloads/$file.apk && echo "$APK_TAG" > deploy/downloads/$file.tag
-      # Chrome can hang at 100% while it vets an .apk download; the same file inside a .zip downloads cleanly.
-      python3 - "$file" <<'PY' || true
-import sys, zipfile
+      echo "$(date -Is) $file mirrored"
+    else rm -f deploy/downloads/$file.apk.part; fi
+  fi
+  # Chrome can hang at 100% while it vets an .apk download; the same file inside a .zip downloads cleanly.
+  if [[ -f deploy/downloads/$file.apk && ( ! -f deploy/downloads/$file.zip || deploy/downloads/$file.apk -nt deploy/downloads/$file.zip ) ]]; then
+    python3 - "$file" <<'PY' || true
+import os, sys, zipfile
 f = sys.argv[1]
 with zipfile.ZipFile(f"deploy/downloads/{f}.zip.part", "w", zipfile.ZIP_STORED) as z:
     z.write(f"deploy/downloads/{f}.apk", f"{f}.apk")
-import os
 os.replace(f"deploy/downloads/{f}.zip.part", f"deploy/downloads/{f}.zip")
 PY
-      echo "$(date -Is) $file mirrored"
-    else rm -f deploy/downloads/$file.apk.part; fi
   fi
 done
 LOCAL=$(git rev-parse HEAD); REMOTE=$(git rev-parse origin/master)
