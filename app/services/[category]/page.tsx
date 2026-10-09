@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { category } = await params;
   const cat = categoryMeta(category);
   const copy = categoryCopy(category);
-  if (!cat || !copy) return { title: 'صفحه پیدا نشد', robots: { index: false, follow: false } };
+  if (!cat || !copy || isHiddenCategory(cat.key)) return { title: 'صفحه پیدا نشد', robots: { index: false, follow: false } };
   const services = servicesIn(await getPublicCatalog(), cat.key);
   return metadataForPage({
     title: copy.title,
