@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 /** Every page under (console) is gated here, and each server function repeats requirePlatformAdmin. */
 export default async function AdminConsoleLayout({ children }: { children: ReactNode }) {
   let userId: string;
-  try { userId = await requireCurrentUser(); } catch { redirect('/auth'); }
+  try { userId = await requireCurrentUser(); } catch { redirect('/auth?next=%2Fadmin%2Fdashboard'); }
   if (!(await isPlatformAdmin(userId))) {
     return (
       <div className="zp-root zpa-main" role="alert">

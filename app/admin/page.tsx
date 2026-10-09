@@ -74,7 +74,7 @@ function ProviderStatusIcon({ status }: { status: string }) {
 
 export default async function AdminPage() {
   let userId: string;
-  try { userId = await requireCurrentUser(); } catch { redirect('/auth'); }
+  try { userId = await requireCurrentUser(); } catch { redirect('/auth?next=%2Fadmin'); }
 
   const isAdmin = await isPlatformAdmin(userId);
   if (!isAdmin) {
