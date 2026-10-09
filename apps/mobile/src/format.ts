@@ -19,8 +19,9 @@ export function formatCount(n: number | string): string {
   return fa.format(num);
 }
 
-/** «۱٬۲۴۸٬۰۰۰» — full toman figure with Persian digits and grouping. */
+/** «۱٬۲۴۸٬۰۰۰» — full toman figure with Persian digits and grouping. Zero is written «صفر»: the Persian «۰» renders as a dot that reads like a stray bullet. */
 export function formatTomanNumber(toman: number) {
+  if (Math.round(toman) === 0) return 'صفر';
   return fa.format(Math.round(toman));
 }
 
