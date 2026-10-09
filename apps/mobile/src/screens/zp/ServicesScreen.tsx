@@ -1,4 +1,3 @@
-import { useWindowDimensions } from 'react-native';
 import { appApi } from '../../api/app';
 import { useRemote } from '../../hooks/useRemote';
 import { faNum } from '../../zp/base';
@@ -8,15 +7,14 @@ import { Async, SecHead } from '../../zp/ui';
 
 /** Drawer «همه‌ی خدمات»: the same 12-category grid as home, on its own page. */
 export function ServicesScreen() {
-  const { height } = useWindowDimensions();
   const catalog = useRemote(appApi.catalog);
   return (
-    <SubScreen title="همه‌ی خدمات">
+    <SubScreen fixed title="همه‌ی خدمات">
       <Async state={catalog} retry={catalog.retry}>
         {c => (
           <>
             <SecHead title="دسته‌ها" note={`${faNum(c.services.length)} سرویس فعال`} />
-            <CategoryGrid categories={c.categories} height={Math.max(260, height - 320)} />
+            <CategoryGrid categories={c.categories} />
           </>
         )}
       </Async>

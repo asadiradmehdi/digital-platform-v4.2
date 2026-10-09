@@ -683,3 +683,18 @@
 .zp-done.on h2,.zp-done.on p,.zp-done.on .in>*:nth-child(n+4){animation:zpRise .5s var(--ease) both}
 .zp-done.on h2{animation-delay:.26s}.zp-done.on p{animation-delay:.34s}.zp-done.on .in>*:nth-child(n+4){animation-delay:.45s}
 @media (prefers-reduced-motion:reduce){.zp-done.on .zp-chk::after{animation:none;opacity:0}}
+
+/* Phone login: one fixed screen. The brand block shrinks to a slim header and the form card fills the rest;
+   only a very small or keyboard-covered screen scrolls inside the card, never the page. */
+@media (max-width:899px){
+  .zp-auth{height:100dvh;min-height:0;overflow:hidden;grid-template-rows:auto minmax(0,1fr)}
+  .auth-stage{padding:calc(14px + env(safe-area-inset-top,0px)) 22px 40px;gap:4px}
+  .auth-stage>svg{width:480px;inset:auto auto -60px 50%}
+  .auth-mark svg{width:44px;height:44px}
+  .auth-mark b{font-size:26px;margin-top:2px}
+  .auth-mark small{font-size:9.5px}
+  .auth-tag,.auth-trust{display:none}
+  .zp-auth .auth-card{overflow-y:auto;overscroll-behavior:contain;padding:22px 18px calc(18px + env(safe-area-inset-bottom,0px))!important}
+  .zp-auth .auth-card h1{font-size:22px}
+  .zp-auth .auth-card .auth-note{margin-top:10px}
+}

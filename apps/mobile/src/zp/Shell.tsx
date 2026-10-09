@@ -80,8 +80,18 @@ function Drawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   );
 }
 
+/** Screen body. `fixed` pages are a plain flex column that shares the leftover height, so they never scroll. */
+function Body({ fixed, children }: PropsWithChildren<{ fixed?: boolean }>) {
+  if (fixed) return <View style={{ flex: 1, paddingHorizontal: 18, paddingTop: 4, paddingBottom: 14, gap: 14 }}>{children}</View>;
+  return (
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 18, paddingTop: 4, paddingBottom: 14, gap: 14 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      {children}
+    </ScrollView>
+  );
+}
+
 /** Tab-level screen: wordmark bar + drawer. Body keeps a scroll fallback for very short phones. */
-export function AppScreen({ children, overlay }: PropsWithChildren<{ overlay?: ReactNode }>) {
+export function AppScreen({ children, overlay, fixed }: PropsWithChildren<{ overlay?: ReactNode; fixed?: boolean }>) {
   const [drawer, setDrawer] = useState(false);
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: C.bg }}>
@@ -90,9 +100,7 @@ export function AppScreen({ children, overlay }: PropsWithChildren<{ overlay?: R
         <NotificationBell />
         <IconBtn icon="menu" label="منو" onPress={() => setDrawer(true)} />
       </View>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 18, paddingTop: 4, paddingBottom: 14, gap: 14 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        {children}
-      </ScrollView>
+      <Body fixed={fixed}>{children}</Body>
       {overlay}
       <Drawer open={drawer} onClose={() => setDrawer(false)} />
     </SafeAreaView>
@@ -100,7 +108,7 @@ export function AppScreen({ children, overlay }: PropsWithChildren<{ overlay?: R
 }
 
 /** Stack sub-page: back button + centred title with a gold underline. */
-export function SubScreen({ title, children, footer, overlay }: PropsWithChildren<{ title: string; footer?: ReactNode; overlay?: ReactNode }>) {
+export function SubScreen({ title, children, footer, overlay, fixed }: PropsWithChildren<{ title: string; footer?: ReactNode; overlay?: ReactNode; fixed?: boolean }>) {
   const router = useRouter();
   return (
     <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: C.bg }}>
@@ -112,9 +120,7 @@ export function SubScreen({ title, children, footer, overlay }: PropsWithChildre
         </View>
         <View style={{ width: 42 }} />
       </View>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 18, paddingTop: 4, paddingBottom: 14, gap: 14 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        {children}
-      </ScrollView>
+      <Body fixed={fixed}>{children}</Body>
       {footer ? <View style={{ paddingHorizontal: 18, paddingBottom: 10 }}>{footer}</View> : null}
       {overlay}
     </SafeAreaView>

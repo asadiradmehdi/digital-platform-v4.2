@@ -82,9 +82,9 @@ function Panel({ o, reload, initialAmount }: { o: AppOverview; reload: () => voi
       </View>
       <View style={[{ flexDirection: row, alignItems: 'center', gap: 10, height: 52, borderRadius: 16, paddingHorizontal: 16 }, card,
         text ? { borderWidth: 2, borderColor: problem ? C.danger : C.gold2 } : null]}>
-        <TextInput value={text} onChangeText={type} keyboardType="number-pad" placeholder="یا مبلغ دلخواه را بنویسید" placeholderTextColor={C.subtle}
+        <TextInput value={text} onChangeText={type} keyboardType="number-pad" placeholder="مبلغ دلخواه" placeholderTextColor={C.subtle}
           accessibilityLabel="مبلغ دلخواه به تومان" selectionColor={C.gold2} returnKeyType="done" onSubmitEditing={topup}
-          style={{ flex: 1, color: C.ink, fontFamily: F.b, fontSize: 18, textAlign: 'right', paddingVertical: 0 }} />
+          style={{ flex: 1, color: C.ink, fontFamily: text ? F.b : F.m, fontSize: text ? 18 : 14, textAlign: 'right', paddingVertical: 0 }} />
         <T w="b" size={12.5} color={C.muted}>تومان</T>
       </View>
       {text ? (

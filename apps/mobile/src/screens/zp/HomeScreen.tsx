@@ -18,18 +18,17 @@ export function HomeScreen() {
   const catalog = useRemote(appApi.catalog);
   const overview = useRemote(appApi.overview);
   const o = overview.data;
-  // Fixed, no-scroll screen: what is left under header, promo, wallet strip, title and tab bar is shared by the grid rows.
+  // No-scroll screen: the promo takes a share of the height and the service grid fills whatever remains.
   const promoH = Math.round(Math.max(104, Math.min(150, height * 0.165)));
-  const gridH = Math.max(210, height - (118 + promoH + 84 + 44 + 118 + 40));
   return (
-    <AppScreen>
+    <AppScreen fixed>
       <Promo slides={SLIDES} height={promoH} />
       <WalletStrip balanceToman={o?.wallet?.balanceToman ?? null} tierName={o?.tier.name ?? null} />
       <Async state={catalog} retry={catalog.retry}>
         {c => (
           <>
             <SecHead title="خدمات" note={`${faNum(c.categories.length)} دسته · ${faNum(c.services.length)} سرویس فعال`} />
-            <CategoryGrid categories={c.categories} height={gridH} />
+            <CategoryGrid categories={c.categories} />
           </>
         )}
       </Async>

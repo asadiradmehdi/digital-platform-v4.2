@@ -16,6 +16,15 @@ const useSvgId = (p: string) => p + useId().replace(/[^a-zA-Z0-9]/g, '');
  * Android release builds mis-scale percent-sized SVGs with a stretched viewBox (half the button stayed
  * unpainted), so the layer measures itself and draws in real pixels, over a solid fallback colour.
  */
+/** Same geometry as CSS `linear-gradient(<deg>, …)`, so gold buttons match the web exactly (null = the older diagonal). */
+function gradientLine(w: number, h: number, deg: number | null) {
+  if (deg == null) return { x1: w * 0.25, y1: 0, x2: w * 0.75, y2: h };
+  const a = (deg * Math.PI) / 180;
+  const dx = Math.sin(a); const dy = -Math.cos(a);
+  const half = (Math.abs(w * dx) + Math.abs(h * dy)) / 2;
+  return { x1: w / 2 - dx * half, y1: h / 2 - dy * half, x2: w / 2 + dx * half, y2: h / 2 + dy * half };
+}
+
 export function Fill({ kind = 'enamel', vertical }: { kind?: FillKind; vertical?: boolean }) {
   const id = useSvgId('f');
   const stops = FILLS[kind];
@@ -24,13 +33,14 @@ export function Fill({ kind = 'enamel', vertical }: { kind?: FillKind; vertical?
     const { width, height } = e.nativeEvent.layout;
     if (!box || box.w !== width || box.h !== height) setBox({ w: width, h: height });
   };
+  const line = box ? gradientLine(box.w, box.h, kind === 'metal' || vertical ? 160 : null) : { x1: 0, y1: 0, x2: 0, y2: 0 };
   return (
     <View pointerEvents="none" onLayout={onLayout} style={[StyleSheet.absoluteFill, { backgroundColor: stops[stops.length - 1] }]}>
       {box && box.w > 0 && box.h > 0 ? (
         <Svg width={box.w} height={box.h}>
           <Defs>
             <LinearGradient id={id} gradientUnits="userSpaceOnUse"
-              x1={vertical ? 0 : box.w * 0.25} y1={0} x2={vertical ? 0 : box.w * 0.75} y2={box.h}>
+              x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2}>
               {stops.map((c, i) => <Stop key={c + i} offset={stops.length === 1 ? 0 : i / (stops.length - 1)} stopColor={c} />)}
             </LinearGradient>
           </Defs>
@@ -140,7 +150,8 @@ export function Wordmark({ size = 24, latin = true, light }: { size?: number; la
     <View style={{ flexDirection: row, alignItems: 'center', gap: 10 }}>
       <BrandMark size={size * 1.55} />
       <View>
-        <Text style={{ fontFamily: F.brand, fontSize: size, color: light ? '#fff' : C.ink, lineHeight: size * 1.5 }}>
+        {/* Roomy line box + padding: Android clips the zamme above ز and the swash of «ی» when the box hugs the glyphs. */}
+        <Text style={{ fontFamily: F.brand, fontSize: size, color: light ? '#fff' : C.ink, lineHeight: size * 2, paddingTop: size * 0.3, paddingHorizontal: 4, marginBottom: -size * 0.3, includeFontPadding: true, textAlignVertical: 'center' }}>
           زُحل <Text style={{ color: light ? C.gold1 : C.gold3 }}>پی</Text>
         </Text>
         {latin && <Text style={{ fontFamily: F.b, fontSize: 9, letterSpacing: 3, color: C.muted, marginTop: -4, textAlign: tRight }}>ZOHALPAY</Text>}
