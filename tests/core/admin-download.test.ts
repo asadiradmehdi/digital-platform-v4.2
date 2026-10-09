@@ -11,7 +11,7 @@ describe('GET /download/android', () => {
     writeFileSync(join(dir, 'zohalpay-admin.apk'), 'PK-test-bytes');
     vi.stubEnv('ADMIN_APK_PATH', join(dir, 'zohalpay-admin.apk'));
     const { GET } = await import('../../app/download/admin/route');
-    const res = GET();
+    const res = GET(new Request('http://localhost/download/x'));
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toBe('application/vnd.android.package-archive');
     expect(res.headers.get('content-length')).toBe('13');
@@ -21,7 +21,7 @@ describe('GET /download/android', () => {
   it('says so in Persian when the app is not mirrored yet', async () => {
     vi.stubEnv('ADMIN_APK_PATH', '/nonexistent/zohalpay-admin.apk');
     const { GET } = await import('../../app/download/admin/route');
-    const res = GET();
+    const res = GET(new Request('http://localhost/download/x'));
     expect(res.status).toBe(503);
     expect(await res.text()).toContain('فایل نصبی');
   });

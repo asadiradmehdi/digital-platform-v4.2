@@ -7,22 +7,24 @@ const APK = process.env.ADMIN_APK_PATH ?? '/downloads/zohalpay-admin.apk';
 
 export const dynamic = 'force-dynamic';
 
-export function GET() {
+export function GET(request: Request) {
+  const zip = new URL(request.url).searchParams.get('format') === 'zip';
+  const file = zip ? APK.replace(/\.apk$/, '.zip') : APK;
   let size: number;
   try {
-    size = statSync(APK).size;
+    size = statSync(file).size;
   } catch {
     return new Response('فایل نصبی اپ مدیریت هنوز آماده نیست. چند دقیقه دیگر دوباره تلاش کنید.', {
       status: 503,
       headers: { 'content-type': 'text/plain; charset=utf-8', 'retry-after': '120' },
     });
   }
-  const body = Readable.toWeb(createReadStream(APK)) as ReadableStream;
+  const body = Readable.toWeb(createReadStream(file)) as ReadableStream;
   return new Response(body, {
     headers: {
-      'content-type': 'application/vnd.android.package-archive',
+      'content-type': zip ? 'application/zip' : 'application/vnd.android.package-archive',
       'content-length': String(size),
-      'content-disposition': 'attachment; filename="zohalpay-admin.apk"',
+      'content-disposition': `attachment; filename="zohalpay-admin.${zip ? 'zip' : 'apk'}"`,
       'cache-control': 'no-cache',
       'x-content-type-options': 'nosniff',
     },
