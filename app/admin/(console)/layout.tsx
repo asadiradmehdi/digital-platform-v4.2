@@ -7,7 +7,7 @@ import { isPlatformAdmin } from '../../../server/identity/platform-admin';
 import { AdminNav } from './AdminNav';
 import './admin.css';
 
-export const metadata: Metadata = { title: 'برنامه مدیریت زُحل پی', robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: 'برنامه مدیریت زُحل پی', robots: { index: false, follow: false }, manifest: '/admin/manifest.webmanifest', appleWebApp: { capable: true, title: 'مدیریت' } };
 export const viewport: Viewport = { themeColor: '#142257' };
 export const dynamic = 'force-dynamic';
 
