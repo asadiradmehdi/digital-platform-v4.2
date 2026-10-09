@@ -1,0 +1,73 @@
+/* Admin console layout. Uses only the shared tokens (app/globals.css) — lapis ink, gold accents, warm paper. */
+.zpa{direction:rtl;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:var(--font-fa);display:grid;grid-template-columns:248px minmax(0,1fr)}
+.zpa :focus-visible{outline:2px solid var(--gold-2);outline-offset:2px;border-radius:8px}
+.zpa-side{position:sticky;top:0;align-self:start;height:100dvh;display:flex;flex-direction:column;gap:18px;padding:22px 14px;background:var(--enamel);color:var(--gold-0);box-shadow:inset -1px 0 0 var(--rim)}
+.zpa-brand{display:flex;align-items:center;gap:10px;padding:0 8px 14px;border-bottom:1px solid var(--rim)}
+.zpa-brand b{font-family:var(--font-brand);font-size:20px;font-weight:800;color:var(--gold-1)}
+.zpa-brand small{display:block;font-size:11px;color:var(--gold-0);opacity:.7;margin-top:2px}
+.zpa-nav{display:flex;flex-direction:column;gap:4px}
+.zpa-nav a{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-radius:12px;font-size:14px;font-weight:600;color:var(--gold-0);opacity:.82;text-decoration:none;transition:background .14s var(--ease),opacity .14s}
+.zpa-nav a:hover{background:rgba(255,255,255,.08);opacity:1}
+.zpa-nav a[aria-current="page"]{background:rgba(242,211,144,.16);opacity:1;color:var(--gold-1);box-shadow:inset 0 0 0 1px var(--rim)}
+.zpa-nav .zp-ico{width:20px;height:20px}
+.zpa-foot{margin-top:auto;font-size:12px;opacity:.7;padding:0 8px}
+.zpa-foot a{color:var(--gold-1);text-decoration:underline}
+.zpa-main{min-width:0;padding:28px clamp(16px,3vw,40px) 64px;max-width:1180px;width:100%}
+.zpa-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:22px}
+.zpa-head h1{margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em}
+.zpa-head p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.zpa-sec{margin:0 0 26px}
+.zpa-sec>h2{margin:0 0 10px;font-size:15px;font-weight:800;color:var(--ink-2)}
+.zpa-panel{background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-xs),inset 0 0 0 1px var(--line);padding:16px}
+.zpa-grid{display:grid;gap:12px;grid-template-columns:repeat(3,minmax(0,1fr))}
+.zpa-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.zpa-stat{display:grid;gap:4px}
+.zpa-stat small{color:var(--muted);font-size:12px;font-weight:600}
+.zpa-stat b{font-size:22px;font-weight:800;color:var(--brand)}
+.zpa-stat span{font-size:12px;color:var(--subtle)}
+.zpa-seg{display:inline-flex;background:var(--surface-2);border-radius:12px;padding:3px;gap:2px}
+.zpa-seg a{min-height:36px;display:grid;place-items:center;padding:0 14px;border-radius:10px;font-size:13px;font-weight:700;color:var(--ink-2);text-decoration:none}
+.zpa-seg a[aria-current="true"]{background:var(--surface);color:var(--brand);box-shadow:var(--shadow-xs)}
+.zpa-rows{display:grid;gap:10px}
+.zpa-row{display:grid;grid-template-columns:minmax(90px,150px) minmax(0,1fr) auto;gap:10px;align-items:center;font-size:13px}
+.zpa-bar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.zpa-bar i{display:block;height:100%;border-radius:99px;background:var(--metal)}
+.zpa-num{font-variant-numeric:tabular-nums;font-weight:700}
+.zpa-tag{display:inline-flex;align-items:center;min-height:22px;padding:0 8px;border-radius:99px;font-size:11px;font-weight:700;background:var(--surface-2);color:var(--ink-2)}
+.zpa-tag.ok{background:var(--success-soft);color:var(--success)}
+.zpa-tag.warn{background:var(--warning-soft);color:var(--warning)}
+.zpa-tag.bad{background:var(--danger-soft);color:var(--danger)}
+.zpa-tag.info{background:var(--info-soft);color:var(--info)}
+.zpa-tablewrap{overflow-x:auto;border-radius:var(--radius-lg);box-shadow:inset 0 0 0 1px var(--line);background:var(--surface)}
+.zpa-table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+.zpa-table th{text-align:right;font-size:12px;color:var(--muted);font-weight:700;padding:10px 12px;background:var(--surface-2);white-space:nowrap}
+.zpa-table td{padding:11px 12px;border-top:1px solid var(--line);vertical-align:middle}
+.zpa-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 16px;border-radius:12px;font-size:13px;font-weight:700;background:var(--brand);color:var(--gold-0);border:0;cursor:pointer;text-decoration:none}
+.zpa-btn.ghost{background:var(--surface-2);color:var(--ink)}
+.zpa-btn.danger{background:var(--danger);color:#fff}
+.zpa-btn.sm{min-height:34px;padding:0 12px;font-size:12px}
+.zpa-btn[disabled]{opacity:.55;cursor:not-allowed}
+.zpa-field{display:grid;gap:6px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.zpa-field input,.zpa-field select,.zpa-field textarea{min-height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--line-strong);background:var(--bg-elevated);color:var(--ink);font:inherit;font-weight:500;width:100%}
+.zpa-field textarea{padding:10px 12px;min-height:84px}
+.zpa-field small{font-weight:500;color:var(--muted);font-size:12px}
+.zpa-state{display:grid;justify-items:center;gap:8px;text-align:center;padding:36px 16px;color:var(--muted);font-size:14px}
+.zpa-state h3{margin:0;color:var(--ink);font-size:16px}
+.zpa-state.err{color:var(--danger)}
+.zpa-toast{padding:10px 14px;border-radius:12px;font-size:13px;font-weight:600;margin:0 0 12px}
+.zpa-toast.ok{background:var(--success-soft);color:var(--success)}
+.zpa-toast.bad{background:var(--danger-soft);color:var(--danger)}
+.zpa-pager{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:var(--muted)}
+.zpa-skel{border-radius:var(--radius-md);background:linear-gradient(90deg,var(--surface-2),var(--surface-3),var(--surface-2));background-size:200% 100%;animation:zpa-sh 1.4s linear infinite;min-height:84px}
+@keyframes zpa-sh{to{background-position:-200% 0}}
+.zpa-ltr{direction:ltr;unicode-bidi:isolate;display:inline-block}
+@media (prefers-reduced-motion:reduce){.zpa-skel{animation:none}}
+@media (max-width:860px){
+  .zpa{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+  .zpa-side{position:static;height:auto;flex-direction:row;align-items:center;gap:8px;padding:10px 12px;overflow-x:auto}
+  .zpa-brand,.zpa-foot{display:none}
+  .zpa-nav{flex-direction:row;gap:4px}
+  .zpa-nav a{white-space:nowrap;min-height:44px;padding:0 12px}
+  .zpa-grid,.zpa-grid.two{grid-template-columns:minmax(0,1fr)}
+  .zpa-main{padding-top:20px}
+}
