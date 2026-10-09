@@ -6,16 +6,19 @@ exec 9>/run/zohalpay-update.lock
 flock -n 9 || exit 0
 cd "$DIR"
 git fetch -q origin master
-# Mirror the newest Android app so customers download it from our own domain.
+# Mirror the newest Android apps (customer + admin) so they download from our own domain.
 mkdir -p deploy/downloads
-APK_URL=https://github.com/asadiradmehdi/digital-platform-v4.2/releases/download/android-latest/zohalpay.apk
-APK_TAG=$(curl -fsSL -m 20 https://api.github.com/repos/asadiradmehdi/digital-platform-v4.2/releases/tags/android-latest 2>/dev/null | grep -m1 '"updated_at"' || true)
-if [[ -n "$APK_TAG" && "$APK_TAG" != "$(cat deploy/downloads/.tag 2>/dev/null)" ]]; then
-  if curl -fsSL -m 600 -o deploy/downloads/zohalpay.apk.part "$APK_URL" && [[ "$(head -c2 deploy/downloads/zohalpay.apk.part)" == "PK" ]]; then
-    mv deploy/downloads/zohalpay.apk.part deploy/downloads/zohalpay.apk && echo "$APK_TAG" > deploy/downloads/.tag
-    echo "$(date -Is) android app mirrored"
-  else rm -f deploy/downloads/zohalpay.apk.part; fi
-fi
+for pair in "android-latest:zohalpay" "android-admin-latest:zohalpay-admin"; do
+  rel="${pair%%:*}"; file="${pair##*:}"
+  APK_URL=https://github.com/asadiradmehdi/digital-platform-v4.2/releases/download/$rel/$file.apk
+  APK_TAG=$(curl -fsSL -m 20 https://api.github.com/repos/asadiradmehdi/digital-platform-v4.2/releases/tags/$rel 2>/dev/null | grep -m1 '"updated_at"' || true)
+  if [[ -n "$APK_TAG" && "$APK_TAG" != "$(cat deploy/downloads/$file.tag 2>/dev/null)" ]]; then
+    if curl -fsSL -m 600 -o deploy/downloads/$file.apk.part "$APK_URL" && [[ "$(head -c2 deploy/downloads/$file.apk.part)" == "PK" ]]; then
+      mv deploy/downloads/$file.apk.part deploy/downloads/$file.apk && echo "$APK_TAG" > deploy/downloads/$file.tag
+      echo "$(date -Is) $file mirrored"
+    else rm -f deploy/downloads/$file.apk.part; fi
+  fi
+done
 LOCAL=$(git rev-parse HEAD); REMOTE=$(git rev-parse origin/master)
 if [[ "$LOCAL" == "$REMOTE" && "${1:-}" != "--force" ]]; then exit 0; fi
 echo "$(date -Is) deploying ${REMOTE:0:7} (was ${LOCAL:0:7})"
