@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
-import { StatusBar } from 'react-native';
+import { StatusBar, Text, TextInput } from 'react-native';
 import { useFonts } from 'expo-font';
 import { IBMPlexSansArabic_400Regular } from '@expo-google-fonts/ibm-plex-sans-arabic/400Regular';
 import { IBMPlexSansArabic_500Medium } from '@expo-google-fonts/ibm-plex-sans-arabic/500Medium';
@@ -11,6 +11,10 @@ import { Kufam_800ExtraBold } from '@expo-google-fonts/kufam/800ExtraBold';
 import { AuthProvider, useAuth } from '../src/auth/AuthProvider';
 import { C } from '../src/zp/base';
 import { AdminShell } from '../src/AdminShell';
+
+// The layouts are fixed, no-scroll screens: the phone's large-font setting must not push text out of its box.
+type WithDefaults = { defaultProps?: { allowFontScaling?: boolean; maxFontSizeMultiplier?: number } };
+for (const C of [Text, TextInput] as unknown as WithDefaults[]) C.defaultProps = { ...C.defaultProps, allowFontScaling: false, maxFontSizeMultiplier: 1 };
 
 /** Every screen except login (and the Google return link) needs a session; the server still authorizes each request. */
 function SessionGate() {

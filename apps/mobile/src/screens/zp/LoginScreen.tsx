@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { normalizeIranMobile, type AuthProvidersResponse } from '@digital-platform/api-contracts';
 import { apiFetch } from '../../api/client';
@@ -74,6 +74,7 @@ function Divider() {
 }
 
 export function LoginScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { signIn, register, requestOtp, verifyOtp, completeMfa, exchangeGoogleHandoff } = useAuth();
   const [step, setStep] = useState<Step>('password');
@@ -217,7 +218,7 @@ export function LoginScreen() {
               ))}
             </View>
           </View>
-          <View style={{ flexGrow: 1, marginTop: -26, backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 18, paddingTop: 22, paddingBottom: 28, gap: 18 }}>
+          <View style={{ flexGrow: 1, marginTop: -26, backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 18, paddingTop: 22, paddingBottom: 40 + insets.bottom, gap: 18 }}>
           <View style={{ alignSelf: 'center', width: 42, height: 4, borderRadius: 4, backgroundColor: C.surface4, marginTop: -10, marginBottom: -6 }} />
           <View style={[{ borderRadius: 26, padding: 20, gap: 14, overflow: 'hidden' }, card]}>
             {step === 'password' || step === 'register' ? (

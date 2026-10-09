@@ -36,15 +36,6 @@ export default async function Dashboard() {
     <AppShell aside={<ShellAside workspaceId={ws} />}>
       <main className="zp-screen">
         <Promo slides={SLIDES} />
-        <div className="zp-wallet m">
-          <Ornament id="home-wallet-orn" w={400} h={70} cx={60} cy={70} rot={10} alpha={0.5} girih={false} />
-          <Tile icon="wallet" className="ghost" />
-          <div className="t">
-            <span>موجودی شما <em>سطح {tier}</em></span>
-            <b>{wallet ? formatTomanNumber(toToman(wallet.balanceMinor, wallet.currency)) : '—'}<small>تومان</small></b>
-          </div>
-          <Link href="/wallet" className="zp-cta zp-press">افزایش موجودی</Link>
-        </div>
         <SecHead title="خدمات" note={`${new Intl.NumberFormat('fa-IR').format(CATEGORIES.length)} دسته · ${new Intl.NumberFormat('fa-IR').format(catalog.length)} سرویس فعال`} />
         <CategoryGrid live={live} />
       </main>

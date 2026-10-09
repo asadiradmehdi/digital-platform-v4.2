@@ -2,7 +2,7 @@ import { useWindowDimensions } from 'react-native';
 import { appApi } from '../../api/app';
 import { useRemote } from '../../hooks/useRemote';
 import { faNum } from '../../zp/base';
-import { CategoryGrid, WalletStrip } from '../../zp/cards';
+import { CategoryGrid } from '../../zp/cards';
 import { Promo, type PromoSlide } from '../../zp/Promo';
 import { AppScreen } from '../../zp/Shell';
 import { Async, SecHead } from '../../zp/ui';
@@ -16,12 +16,9 @@ const SLIDES: PromoSlide[] = [
 export function HomeScreen() {
   const { height } = useWindowDimensions();
   const catalog = useRemote(appApi.catalog);
-  const overview = useRemote(appApi.overview);
-  const o = overview.data;
   return (
     <AppScreen>
-      <Promo slides={SLIDES} height={Math.round(Math.max(122, Math.min(162, height * 0.195)))} />
-      <WalletStrip balanceToman={o?.wallet?.balanceToman ?? null} tierName={o?.tier.name ?? null} />
+      <Promo slides={SLIDES} height={Math.round(Math.max(122, Math.min(162, height * 0.2)))} />
       <Async state={catalog} retry={catalog.retry}>
         {c => (
           <>
