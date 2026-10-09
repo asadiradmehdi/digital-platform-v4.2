@@ -88,6 +88,13 @@ describe('resolveSession', () => {
     expect(userId).toBe('user-99');
   });
 
+  // Regression: a suspended user kept working sessions because only the session row was checked.
+  it('only resolves sessions of ACTIVE users', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as never);
+    await resolveSession('token');
+    expect(String(mockQuery.mock.calls[0][0])).toMatch(/u\.status='ACTIVE'/);
+  });
+
   it('returns null when session does not exist or is expired/revoked', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 } as never);
     const userId = await resolveSession('expired-token');

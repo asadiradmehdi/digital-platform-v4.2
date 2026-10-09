@@ -64,6 +64,7 @@ export async function resolveSession(rawToken: string) {
     `WITH s AS (
        SELECT id, user_id, last_seen_at FROM sessions
         WHERE token_hash=$1 AND revoked_at IS NULL AND expires_at>now() AND absolute_expires_at>now()
+          AND EXISTS (SELECT 1 FROM users u WHERE u.id=sessions.user_id AND u.status='ACTIVE')
      ), touched AS (
        UPDATE sessions SET last_seen_at=now(), expires_at=LEAST(now()+($2 || ' seconds')::interval, sessions.absolute_expires_at)
          FROM s WHERE sessions.id=s.id AND (s.last_seen_at IS NULL OR s.last_seen_at < now()-($3 || ' seconds')::interval)
