@@ -6,7 +6,7 @@ import { apiFetch, ApiClientError } from './client';
 
 export type Tone = 'live' | 'ok' | 'bad';
 
-export type AppCategory = { key: string; name: string; icon: IconName; title?: string; note?: string; live: boolean; count: number };
+export type AppCategory = { key: string; name: string; icon: IconName; hint?: string; title?: string; note?: string; live: boolean; count: number };
 export type AppService = {
   id: string; slug: string; name: string; description: string | null; category: string;
   /** Name inside its category («سیو» on the Instagram page); `brand` is set for AI plans. */

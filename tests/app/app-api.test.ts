@@ -30,7 +30,7 @@ describe('catalogView', () => {
     expect(v.services[0]).toMatchObject({ unitPriceToman: 1200, unit: 'فالوور', group: 'فالوور', quantities: [500, 1000, 2000, 3000, 5000] });
     expect(v.categories.find(c => c.key === 'instagram')).toMatchObject({ live: true, count: 1 });
     expect(v.categories.find(c => c.key === 'telegram')?.live).toBe(false);
-    expect(v.categories).toHaveLength(12);
+    expect(v.categories).toHaveLength(9);
   });
 });
 
@@ -69,7 +69,7 @@ describe('GET /api/v1/app/catalog', () => {
     vi.mocked(overview.listCatalogWithPrices).mockResolvedValue([]);
     const res = await catalogGET(new NextRequest('http://localhost/api/v1/app/catalog'));
     expect(res.status).toBe(200);
-    expect((await res.json()).categories).toHaveLength(12);
+    expect((await res.json()).categories).toHaveLength(9);
     expect(requireRequestUser).not.toHaveBeenCalled();
   });
 });

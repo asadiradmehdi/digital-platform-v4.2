@@ -1,242 +1,68 @@
 import type { Metadata } from 'next';
-import { AudioLines, Bot, Code2, Image, Sparkles, Video, ArrowUpLeft, Zap } from 'lucide-react';
-import { AppShell } from '../../components/AppShell';
-import { SurfaceHero } from '../../components/ProductSurface';
 import Link from 'next/link';
+import { AppShell } from '../../components/AppShell';
+import { Ornament, Tile } from '../../components/zp/brand';
+import { ZIcon, type IconName } from '../../components/zp/ZIcon';
 
 export const metadata: Metadata = { title: 'هوش مصنوعی', robots: { index: false, follow: false } };
 
-const MODEL_CATEGORIES = [
-  {
-    eyebrow: 'زبان',
-    title: 'نوشتن و محتوا',
-    description: 'کپشن، مقاله، ایمیل و هر متن فارسی یا انگلیسی را با مدل‌های زبانی بنویسید، بازنویسی یا خلاصه کنید.',
-    icon: Sparkles,
-    models: ['GPT-4o', 'Claude 3.5', 'Gemini Pro'],
-    href: '/ai/workspace',
-    meta: 'متن · ترجمه · خلاصه',
-  },
-  {
-    eyebrow: 'تصویر',
-    title: 'تولید تصویر',
-    description: 'از توضیح متنی به تصویر برسید؛ برای محتوا، محصول یا بازاریابی.',
-    icon: Image,
-    models: ['DALL·E 3', 'Stable Diffusion', 'Midjourney'],
-    href: '/ai/workspace',
-    meta: 'تصویر · ویرایش · سبک',
-  },
-  {
-    eyebrow: 'ویدیو',
-    title: 'پردازش ویدیو',
-    description: 'ویدیو بسازید یا متن آن را استخراج کنید؛ مصرف به‌صورت لحظه‌ای محاسبه می‌شود.',
-    icon: Video,
-    models: ['Sora', 'Runway', 'Pika'],
-    href: '/ai/workspace',
-    meta: 'ویدیو · پردازش · مصرف',
-  },
-  {
-    eyebrow: 'صدا',
-    title: 'صدا و گفتار',
-    description: 'متن را به صدای طبیعی تبدیل کنید یا فایل صوتی را به متن دربیاورید.',
-    icon: AudioLines,
-    models: ['Whisper', 'ElevenLabs', 'TTS-1'],
-    href: '/ai/workspace',
-    meta: 'صدا · گفتار · TTS',
-  },
-  {
-    eyebrow: 'کد',
-    title: 'کدنویسی و تحلیل',
-    description: 'کد بنویسید، باگ پیدا کنید یا داده را با یک مدل تخصصی تحلیل کنید.',
-    icon: Code2,
-    models: ['Claude 3.5', 'GPT-4o', 'Gemini'],
-    href: '/ai/workspace',
-    meta: 'کد · تحلیل · تحقیق',
-  },
-  {
-    eyebrow: 'عامل',
-    title: 'هوش مصنوعی خودکار',
-    description: 'عامل‌هایی بسازید که با ابزارها کار کنند، به پایگاه دانش دسترسی داشته باشند و قابل ردیابی باشند.',
-    icon: Bot,
-    models: ['GPT-4o', 'Claude 3 Opus', 'LangChain'],
-    href: '/ai/workspace',
-    meta: 'Agent · RAG · Audit',
-  },
-] as const;
+const TOOLS: { icon: IconName; title: string; text: string; brands: string }[] = [
+  { icon: 'aiArticle', title: 'نوشتن و محتوا', text: 'کپشن، مقاله، ایمیل و هر متن فارسی یا انگلیسی؛ نوشتن، بازنویسی و خلاصه.', brands: 'ChatGPT · Claude · Gemini' },
+  { icon: 'aiImage', title: 'ساخت تصویر', text: 'از یک توضیح ساده، تصویر محصول، پست و طرح تبلیغاتی بسازید.', brands: 'Midjourney · DALL·E' },
+  { icon: 'aiScript', title: 'ویدیو و سناریو', text: 'سناریو، زیرنویس و ویدیوی کوتاه برای ریلز و استوری.', brands: 'Sora · Runway' },
+  { icon: 'aiVoice', title: 'صدا و گفتار', text: 'متن را به صدای طبیعی تبدیل کنید یا فایل صوتی را به متن.', brands: 'ElevenLabs · Suno' },
+  { icon: 'bot', title: 'کدنویسی و تحلیل', text: 'کد بنویسید، خطا پیدا کنید و داده‌های کسب‌وکارتان را تحلیل کنید.', brands: 'Cursor · Claude' },
+  { icon: 'aiAssistant', title: 'دستیار خودکار', text: 'دستیاری که به سؤال مشتری‌ها جواب می‌دهد و کارهای تکراری را انجام می‌دهد.', brands: 'ChatGPT · Claude' },
+];
+
+const PROMISES: { icon: IconName; title: string; text: string }[] = [
+  { icon: 'rise', title: 'بهترین مدل، خودکار', text: 'برای هر درخواست، مناسب‌ترین و به‌صرفه‌ترین مدل انتخاب می‌شود.' },
+  { icon: 'wallet', title: 'پرداخت به اندازه‌ی مصرف', text: 'هزینه‌ی هر درخواست از کیف پول کم می‌شود و در تاریخچه می‌ماند.' },
+  { icon: 'hist', title: 'همه‌چیز ذخیره می‌شود', text: 'گفتگوها و خروجی‌ها همیشه در دسترس شماست.' },
+];
 
 export default function AI() {
   return (
     <AppShell>
-      <main className="workspace-page-content">
-        <SurfaceHero
-          eyebrow="هوش مصنوعی"
-          title="یک محیط، همه مدل‌ها."
-          description="متن بنویسید، تصویر بسازید، کد تحلیل کنید یا فرآیند خودکار راه‌اندازی کنید — همه از یک جا، با کنترل کامل هزینه."
-          primaryHref="/ai/workspace"
-          primaryLabel="شروع کار"
-          secondaryHref="/pricing"
-          secondaryLabel="مشاهده پلن‌ها"
-        />
-
-        <section style={{ marginBottom: 32 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <div>
-              <span className="eyebrow">دسته‌بندی مدل‌ها</span>
-              <h2 style={{ fontSize: 18, fontWeight: 700, margin: '4px 0 0', letterSpacing: '-.02em' }}>
-                چه کاری می‌خواهید انجام دهید؟
-              </h2>
+      <main className="zp-screen zp-ai">
+        <section className="zp-ai-hero">
+          <Ornament id="ai-orn" />
+          <div className="in">
+            <span className="k">هوش مصنوعی زُحل پی</span>
+            <h1>همه‌ی هوش مصنوعی‌های دنیا، یک‌جا و فارسی</h1>
+            <p>بنویسید، بسازید و تحلیل کنید؛ بدون حساب خارجی و بدون ارز.</p>
+            <div className="acts">
+              <Link href="/ai/workspace" className="zp-cta zp-press">شروع گفتگو</Link>
+              <Link href="/services/ai-subscriptions" className="alt zp-press">خرید اشتراک</Link>
             </div>
-            <Link
-              href="/ai/workspace"
-              className="button secondary"
-              style={{ flexShrink: 0 }}
-            >
-              شروع کار <ArrowUpLeft size={14} />
+          </div>
+        </section>
+
+        <div className="zp-sec"><h2>چه کاری می‌خواهید انجام دهید؟</h2></div>
+        <div className="zp-ai-grid">
+          {TOOLS.map(t => (
+            <Link key={t.title} href="/ai/workspace" className="zp-row zp-press">
+              <Tile icon={t.icon} />
+              <span className="t">
+                <b>{t.title}</b>
+                <small>{t.text}</small>
+                <em dir="ltr">{t.brands}</em>
+              </span>
+              <ZIcon name="chevL" className="chev" />
             </Link>
-          </div>
+          ))}
+        </div>
 
-          <div className="product-card-grid-premium">
-            {MODEL_CATEGORIES.map((cat) => {
-              const Icon = cat.icon;
-              return (
-                <Link key={cat.title} href={cat.href} className="product-card" style={{ textDecoration: 'none' }}>
-                  <div className="product-card-icon">
-                    <Icon size={18} />
-                  </div>
-                  <div className="product-card-copy">
-                    <div className="product-card-title">
-                      <div>
-                        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.08em', color: 'var(--accent)', marginBottom: 3, textTransform: 'uppercase' }}>
-                          {cat.eyebrow}
-                        </div>
-                        <h2 style={{ margin: 0 }}>{cat.title}</h2>
-                      </div>
-                      <ArrowUpLeft size={15} />
-                    </div>
-                    <p>{cat.description}</p>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
-                      <span style={{ fontSize: 11, color: 'var(--subtle)' }}>{cat.meta}</span>
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        {cat.models.slice(0, 2).map((m) => (
-                          <span
-                            key={m}
-                            className="text-ltr"
-                            style={{
-                              fontSize: 11,
-                              padding: '2px 6px',
-                              borderRadius: 5,
-                              background: 'var(--surface-2)',
-                              color: 'var(--subtle)',
-                              fontFamily: 'var(--font-latin)',
-                              letterSpacing: 0,
-                            }}
-                          >
-                            {m}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-
-        <section data-stack style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-          <article
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--line)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '20px 22px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 10,
-                  background: 'var(--accent-soft)',
-                  display: 'grid',
-                  placeItems: 'center',
-                  color: 'var(--accent)',
-                }}
-              >
-                <Zap size={16} />
-              </div>
-              <span style={{ fontSize: 12, fontWeight: 700 }}>انتخاب خودکار مدل</span>
+        <div className="zp-sec"><h2>چرا اینجا؟</h2></div>
+        <div className="zp-ai-promises">
+          {PROMISES.map(p => (
+            <div key={p.title}>
+              <Tile icon={p.icon} gold />
+              <b>{p.title}</b>
+              <small>{p.text}</small>
             </div>
-            <p style={{ fontSize: 10, color: 'var(--muted)', lineHeight: 1.9, margin: 0 }}>
-              سیستم بر اساس نوع درخواست، بهترین مدل را با کمترین هزینه انتخاب می‌کند.
-            </p>
-          </article>
-          <article
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--line)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '20px 22px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 10,
-                  background: 'rgba(22,163,74,.08)',
-                  display: 'grid',
-                  placeItems: 'center',
-                  color: 'var(--success)',
-                }}
-              >
-                <Sparkles size={16} />
-              </div>
-              <span style={{ fontSize: 12, fontWeight: 700 }}>هزینه هر درخواست</span>
-            </div>
-            <p style={{ fontSize: 10, color: 'var(--muted)', lineHeight: 1.9, margin: 0 }}>
-              مصرف هر بار از کیف پول کسر می‌شود و در تاریخچه قابل مشاهده است.
-            </p>
-          </article>
-          <article
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--line)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '20px 22px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 10,
-                  background: 'rgba(2,132,199,.08)',
-                  display: 'grid',
-                  placeItems: 'center',
-                  color: 'var(--info)',
-                }}
-              >
-                <Bot size={16} />
-              </div>
-              <span style={{ fontSize: 12, fontWeight: 700 }}>تاریخچه مکالمات</span>
-            </div>
-            <p style={{ fontSize: 10, color: 'var(--muted)', lineHeight: 1.9, margin: 0 }}>
-              هر مکالمه با هزینه و وضعیت ثبت می‌شود و همیشه قابل بررسی است.
-            </p>
-          </article>
-        </section>
+          ))}
+        </div>
       </main>
     </AppShell>
   );

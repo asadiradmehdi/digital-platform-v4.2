@@ -48,7 +48,7 @@ export default async function ApiKeysSettings() {
           <div>
             <span className="eyebrow">حساب کاربری · API</span>
             <h1>API و دسترسی‌ها</h1>
-            <p>کلیدهای API، scopeها و کنترل دسترسی سرویس‌های خارجی به فضای کاری.</p>
+            <p>برای وصل کردن سایت یا ربات خودتان به زُحل پی، کلید API بسازید. هر کلید را هر وقت خواستید باطل کنید.</p>
           </div>
           <Link className="button secondary" href="/settings">
             <ArrowRight size={15} />

@@ -7,7 +7,7 @@ import { Tile } from '../../../components/zp/brand';
 import { EmptyState } from '../../../components/zp/cards';
 import { SiteShell } from '../../../components/site/SiteShell';
 import { Mixed, Breadcrumbs, CtaBand, FaqList, LdScript, PriceTable, SectionTitle, Steps, TrustStrip } from '../../../components/site/bits';
-import { CATEGORIES, categoryMeta, perLabel, serviceBrand, serviceIcon, serviceMeta, shortServiceName, sortServices } from '../../../lib/catalog-ui';
+import { CATEGORIES, categoryMeta, isHiddenCategory, perLabel, serviceBrand, serviceIcon, serviceMeta, shortServiceName, sortServices } from '../../../lib/catalog-ui';
 import { formatTomanNumber } from '../../../lib/format';
 import { categoryCopy, categoryFaq, fromPrice, isSocialCategory, servicesIn } from '../../../lib/seo/catalog-seo';
 import { breadcrumbLd, faqLd, graph, organizationLd, serviceListLd, webPageLd } from '../../../lib/seo/jsonld';
@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 export default async function CategoryPage({ params }: Params) {
   const { category } = await params;
   const cat = categoryMeta(category);
-  if (!cat) notFound();
+  if (!cat || isHiddenCategory(cat.key)) notFound();
   const viewer = await optionalViewer();
   return viewer ? <MemberCategory catKey={cat.key} workspaceId={viewer.workspaceId} /> : <PublicCategory catKey={cat.key} />;
 }

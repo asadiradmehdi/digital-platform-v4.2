@@ -1,6 +1,6 @@
 // Lapis enamel + illumination gold surfaces, drawn once with react-native-svg (no animation, no filters).
-import { useId, type PropsWithChildren } from 'react';
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useId, useState, type PropsWithChildren } from 'react';
+import { StyleSheet, Text, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
 import Svg, { Defs, Ellipse, G as SvgG, LinearGradient, Path, Pattern, Rect, Stop, Circle, SvgXml } from 'react-native-svg';
 import { BRAND_LOGOS, type BrandLogo } from '@digital-platform/design-tokens';
 import { atLeft, C, F, G, row, shadow, tRight } from './base';
@@ -11,19 +11,33 @@ const FILLS: Record<FillKind, readonly string[]> = { ...G, danger: ['#D65445', '
 
 const useSvgId = (p: string) => p + useId().replace(/[^a-zA-Z0-9]/g, '');
 
-/** Absolute gradient layer; `angle` 155° matches the web enamel. */
+/**
+ * Absolute gradient layer; `angle` 155° matches the web enamel.
+ * Android release builds mis-scale percent-sized SVGs with a stretched viewBox (half the button stayed
+ * unpainted), so the layer measures itself and draws in real pixels, over a solid fallback colour.
+ */
 export function Fill({ kind = 'enamel', vertical }: { kind?: FillKind; vertical?: boolean }) {
   const id = useSvgId('f');
   const stops = FILLS[kind];
+  const [box, setBox] = useState<{ w: number; h: number } | null>(null);
+  const onLayout = (e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
+    if (!box || box.w !== width || box.h !== height) setBox({ w: width, h: height });
+  };
   return (
-    <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 100 100">
-      <Defs>
-        <LinearGradient id={id} x1={vertical ? '0' : '0.25'} y1="0" x2={vertical ? '0' : '0.75'} y2="1">
-          {stops.map((c, i) => <Stop key={c + i} offset={stops.length === 1 ? 0 : i / (stops.length - 1)} stopColor={c} />)}
-        </LinearGradient>
-      </Defs>
-      <Rect width="100" height="100" fill={`url(#${id})`} />
-    </Svg>
+    <View pointerEvents="none" onLayout={onLayout} style={[StyleSheet.absoluteFill, { backgroundColor: stops[stops.length - 1] }]}>
+      {box && box.w > 0 && box.h > 0 ? (
+        <Svg width={box.w} height={box.h}>
+          <Defs>
+            <LinearGradient id={id} gradientUnits="userSpaceOnUse"
+              x1={vertical ? 0 : box.w * 0.25} y1={0} x2={vertical ? 0 : box.w * 0.75} y2={box.h}>
+              {stops.map((c, i) => <Stop key={c + i} offset={stops.length === 1 ? 0 : i / (stops.length - 1)} stopColor={c} />)}
+            </LinearGradient>
+          </Defs>
+          <Rect x={0} y={0} width={box.w} height={box.h} fill={`url(#${id})`} />
+        </Svg>
+      ) : null}
+    </View>
   );
 }
 
@@ -57,7 +71,7 @@ export function Ornament({ w = 400, h = 160, cx = 300, cy = 150, rot = -12, colo
 /** Enamel (or gold-metal) panel with rim, ornament and children on top. */
 export function Enamel({ kind = 'enamel', radius = 22, style, children }: PropsWithChildren<{ kind?: FillKind; radius?: number; style?: StyleProp<ViewStyle> }>) {
   return (
-    <View style={[{ borderRadius: radius, overflow: 'hidden', borderWidth: 1, borderColor: kind === 'goldLight' ? 'rgba(255,255,255,0.5)' : C.rim }, shadow(12, 26, 0.3, '#0A1238'), style]}>
+    <View style={[{ borderRadius: radius, overflow: 'hidden', backgroundColor: FILLS[kind][FILLS[kind].length - 1], borderWidth: 1, borderColor: kind === 'goldLight' ? 'rgba(255,255,255,0.5)' : C.rim }, shadow(12, 26, 0.3, '#0A1238'), style]}>
       <Fill kind={kind} />
       {children}
     </View>

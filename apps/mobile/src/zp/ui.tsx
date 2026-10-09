@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import { atRight, C, F, row, right, shadow, tRight, card } from './base';
+import { atRight, C, F, G, row, right, shadow, tRight, card } from './base';
 import { Fill, Tile } from './brand';
 import { Icon, type IconName } from './Icon';
 
@@ -33,11 +33,11 @@ export function Cta({ label, onPress, icon, full, big, small, disabled, busy, ac
     <Press
       accessibilityRole="button" accessibilityLabel={accessibilityLabel ?? label} accessibilityState={{ disabled: disabled || busy, busy }}
       disabled={disabled || busy} onPress={onPress}
-      style={[{ overflow: 'hidden', alignItems: 'center', justifyContent: 'center', flexDirection: row, gap: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)' }, pad, full && { alignSelf: 'stretch' }, (disabled || busy) && { opacity: 0.55 }, shadow(8, 16, 0.35, '#7a5218')]}
+      style={[{ overflow: 'hidden', alignItems: 'center', justifyContent: 'center', flexDirection: row, gap: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)', backgroundColor: G.metal[G.metal.length - 1] }, pad, full && { alignSelf: 'stretch' }, (disabled || busy) && { opacity: 0.55 }, shadow(8, 16, 0.35, '#7a5218')]}
     >
       <Fill kind="metal" vertical />
       {busy ? <ActivityIndicator color={C.onGold} size="small" /> : null}
-      <T w="b" size={full ? 16 : big ? 15 : small ? 12.5 : 13.5} color={C.onGold}>{label}</T>
+      <T w="b" size={full ? 16 : big ? 15 : small ? 12.5 : 13.5} color={C.onGold} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ zIndex: 1 }}>{label}</T>
       {icon && !busy ? <View style={{ position: 'relative', zIndex: 1 }}><Icon name={icon} size={18} color={C.onGold} stroke={2.6} /></View> : null}
     </Press>
   );

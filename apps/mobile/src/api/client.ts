@@ -61,7 +61,19 @@ export const auth = {
 
 // Me
 export const me = {
-  get: () => apiFetch<{ user: { id: string; email: string; name: string } }>(`${V1}/me`),
+  get: () => apiFetch<{ user: { id: string; email: string | null; phone: string | null; displayName: string | null; phoneVerified: boolean; emailVerified: boolean } }>(`${V1}/me`),
+};
+
+// Notification preferences (channel × category switches; `locked` pairs are never switchable)
+export const notificationPrefs = {
+  get: () => apiFetch<{ preferences: { channel: string; category: string; enabled: boolean }[]; locked: string[] }>(`${V1}/notifications/preferences`),
+  save: (preferences: { channel: string; category: string; enabled: boolean }[]) =>
+    apiFetch<{ ok: true }>(`${V1}/notifications/preferences`, { method: 'PUT', body: JSON.stringify({ preferences }) }),
+};
+
+// Public plan catalogue
+export const plans = {
+  list: () => apiFetch<{ items: { id: string; name: string; slug: string; price_minor: string; currency: string; billing_interval: string; description: string | null; entitlements: { entitlement_key: string; value: unknown }[] }[] }>(`${V1}/plans`),
 };
 
 // Workspaces
@@ -206,6 +218,8 @@ export const sessions = {
     apiFetch<{ items: { id: string; clientType: string; deviceName: string; lastSeenAt: string; createdAt: string; current: boolean }[] }>(
       `${V1}/auth/sessions`,
     ),
+  revoke: (id: string) =>
+    apiFetch<{ ok: true }>(`${V1}/auth/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   revokeOthers: () =>
     apiFetch<{ ok: true }>(`${V1}/auth/sessions`, { method: 'DELETE' }),
 };

@@ -6,7 +6,7 @@ import { AppShell } from '../../../components/AppShell';
 
 const CHANNELS = [
   { key: 'email', label: 'ایمیل', desc: 'دریافت اعلان‌های مهم به ایمیل' },
-  { key: 'push', label: 'Push', desc: 'اعلان فوری در مرورگر یا اپ موبایل' },
+  { key: 'push', label: 'اعلان فوری', desc: 'اعلان فوری در مرورگر یا اپ موبایل' },
 ] as const;
 
 const CATEGORIES: Array<{ key: string; label: string; desc: string; alwaysOn?: boolean }> = [

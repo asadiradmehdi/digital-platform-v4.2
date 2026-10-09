@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { ZIcon } from './ZIcon';
 import { Ornament, Tile } from './brand';
-import { categoryMeta, isTeamFulfilled, serviceIcon } from '../../lib/catalog-ui';
+import { categoryMeta, isHiddenCategory, isTeamFulfilled, serviceIcon } from '../../lib/catalog-ui';
 import { formatQuantityWords, formatTomanNumber, formatWhen, orderCode, toToman } from '../../lib/format';
 import { orderStage } from '../../lib/order-progress';
 import type { OrderCard } from '../../server/account/overview';
@@ -32,27 +32,38 @@ export function orderTitle(o: Pick<OrderCard, 'serviceName' | 'quantity' | 'id'>
   return q > 1 ? `${formatQuantityWords(q)} ${o.serviceName}` : o.serviceName;
 }
 
+/** Reorder link: same service and package, opened on the order form for a fresh payment. */
+export function reorderHref(o: { serviceSlug: string | null; quantity: string | null }, target?: string | null) {
+  const q = new URLSearchParams({ service: o.serviceSlug ?? '' });
+  if (o.quantity) q.set('qty', String(Number(o.quantity)));
+  if (target) q.set('target', target.slice(0, 500));
+  return `/orders/new?${q}`;
+}
+
 export function OrderItem({ order }: { order: OrderCard }) {
   const stage = orderStage(order.status, isTeamFulfilled(order.productSlug));
   const icon = serviceIcon(order.serviceSlug ?? '');
   const cat = categoryMeta(order.productSlug ?? '');
   return (
-    <Link href={`/orders/${order.id}`} className="zp-ord zp-press">
-      <div className="r">
+    <div className="zp-ord">
+      <Link href={`/orders/${order.id}`} className="r zp-press">
         <Tile icon={icon} />
         <span className="t">
           <b>{orderTitle(order)}</b>
           <span>{cat ? `${cat.name} · ` : ''}{formatWhen(order.createdAt)}</span>
         </span>
         <span className={`zp-st${stage.tone === 'ok' ? ' ok' : stage.tone === 'bad' ? ' bad' : ''}`}>{stage.label}</span>
-      </div>
+      </Link>
       <div className="zp-pm">
         <div className={`zp-prog${stage.tone === 'ok' ? ' tq' : stage.tone === 'bad' ? ' bad' : ''}`}>
           <i style={{ transform: `scaleX(${Math.max(stage.steps, 0.15) / 4})` }} />
         </div>
         <span>{formatTomanNumber(toToman(order.totalMinor, order.currency))} تومان</span>
+        {order.serviceSlug && !isHiddenCategory(order.productSlug) && (
+          <Link href={reorderHref(order)} className="zp-again zp-press" aria-label={`سفارش دوباره‌ی ${orderTitle(order)}`}>سفارش دوباره</Link>
+        )}
       </div>
-    </Link>
+    </div>
   );
 }
 

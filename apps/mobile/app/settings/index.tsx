@@ -1,1 +1,1 @@
-import { SettingsScreen } from '../../src/screens/SettingsScreen'; export default SettingsScreen;
+import { SettingsScreen } from '../../src/screens/zp/SettingsScreen'; export default SettingsScreen;

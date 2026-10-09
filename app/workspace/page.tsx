@@ -7,7 +7,7 @@ import { AppShell } from '../../components/AppShell';
 import { requireCurrentUser } from '../../server/identity/request-user';
 import { query, withTenantTransaction } from '../../server/core/db';
 
-export const metadata: Metadata = { title: 'Workspace', robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: 'فضاهای کاری', robots: { index: false, follow: false } };
 
 export default async function WorkspacePage() {
   let userId: string;
@@ -49,7 +49,7 @@ export default async function WorkspacePage() {
     <AppShell>
       <main className="workspace-page-content">
         <header className="page-header">
-          <div><h1>Workspaceها</h1><p>هر Workspace یک محیط جداگانه با wallet، اشتراک، سفارش و تنظیمات مستقل دارد.</p></div>
+          <div><h1>فضاهای کاری</h1><p>هر فضای کاری کیف پول، سفارش‌ها، اشتراک و اعضای جدای خودش را دارد؛ مثلاً یکی برای خودتان و یکی برای هر مشتری.</p></div>
           <CreateWorkspaceButton/>
         </header>
         <div style={{ display: 'grid', gap: 14, maxWidth: 680 }}>
@@ -83,7 +83,7 @@ export default async function WorkspacePage() {
           ))}
           {workspaces.length === 0 && (
             <article className="surface-panel" style={{ padding: 32, textAlign: 'center' }}>
-              <p style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 16 }}>هنوز Workspace‌ای ندارید.</p>
+              <p style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 16 }}>هنوز فضای کاری ندارید.</p>
             </article>
           )}
           <div className="ws-new-btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

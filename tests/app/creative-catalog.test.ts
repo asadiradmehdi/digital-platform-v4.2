@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
-  BRIEF_MAX, BRIEF_MIN, CATEGORIES, CREATIVE_SERVICES, KINDS, TEAM_CATEGORIES, orderForm, perLabel, serviceIcon, serviceKind,
+  BRIEF_MAX, BRIEF_MIN, ALL_CATEGORIES, CATEGORIES, CREATIVE_SERVICES, KINDS, TEAM_CATEGORIES, orderForm, perLabel, serviceIcon, serviceKind,
   serviceMeta, sortServices, targetField,
 } from '../../lib/catalog-ui';
 import { ICONS } from '../../packages/design-tokens/src/icons';
@@ -22,7 +22,7 @@ describe('creative service catalogue', () => {
       const n = rows.filter(r => r.product === cat).length;
       expect(n, cat).toBeGreaterThanOrEqual(6);
       expect(n, cat).toBeLessThanOrEqual(10);
-      expect(CATEGORIES.some(c => c.key === cat)).toBe(true);
+      expect(ALL_CATEGORIES.some(c => c.key === cat)).toBe(true);
     }
     expect(seed).toContain("'design'");
     expect(seed).toMatch(/DRAFT PRICES/);
@@ -102,7 +102,7 @@ describe('creative service catalogue', () => {
     const logo = view.services.find(s => s.slug === 'ds-logo')!;
     expect(logo).toMatchObject({ icon: 'dsLogo', unit: 'لوگو', quantities: [1], perLabel: 'هر لوگو', brief: { min: BRIEF_MIN } });
     expect(logo.facts.map(f => f.text)).toContain('تحویل ۷ روز کاری');
-    expect(view.categories.find(c => c.key === 'design')).toMatchObject({ live: true, count: 1 });
+    expect(view.categories.find(c => c.key === 'design')).toBeUndefined(); // hidden from customers (Ali 2026-10-09)
     expect(view.services.find(s => s.slug === 'ig-likes')!.brief).toBeNull();
   });
 });

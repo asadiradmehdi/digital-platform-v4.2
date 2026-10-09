@@ -8,18 +8,20 @@ import { Enamel, Ornament, Tile } from './brand';
 import { Cta, Press, Progress, Star, StatusPill, T } from './ui';
 
 /** 12-category grid; categories without priced services show «به‌زودی». */
+/** Service grid, three per row in priority order; every card names what the category sells in one line. */
 export function CategoryGrid({ categories }: { categories: AppCategory[] }) {
   const router = useRouter();
   const { width, height } = useWindowDimensions();
-  const tile = Math.round(Math.max(50, Math.min(66, width * 0.15, height * 0.076)));
+  const tile = Math.round(Math.max(44, Math.min(56, width * 0.13, height * 0.064)));
   return (
-    <View accessibilityRole="menu" accessibilityLabel="دسته‌های خدمات" style={{ flex: 1, flexDirection: row, flexWrap: 'wrap', alignContent: 'space-evenly', rowGap: Math.max(10, Math.min(22, height * 0.024)) }}>
+    <View accessibilityRole="menu" accessibilityLabel="دسته‌های خدمات" style={{ flex: 1, flexDirection: row, flexWrap: 'wrap', alignContent: 'space-evenly', justifyContent: 'space-between', rowGap: Math.max(8, Math.min(14, height * 0.016)) }}>
       {categories.map(c => (
-        <Press key={c.key} accessibilityRole="menuitem" accessibilityLabel={c.live ? c.name : `${c.name}، به‌زودی`}
+        <Press key={c.key} accessibilityRole="menuitem" accessibilityLabel={c.live ? `${c.name}، ${c.hint ?? ''}` : `${c.name}، به‌زودی`}
           onPress={() => router.navigate({ pathname: '/services/[category]', params: { category: c.key } })}
-          style={{ width: '25%', alignItems: 'center', gap: 8, opacity: c.live ? 1 : 0.82 }}>
+          style={[{ width: '31.8%', alignItems: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 4, borderRadius: 18, opacity: c.live ? 1 : 0.82 }, card]}>
           <Tile icon={c.icon} size={tile} badge={c.live ? undefined : 'به‌زودی'} />
-          <T w="sb" size={12} color={C.ink2} numberOfLines={2} style={{ textAlign: 'center', lineHeight: 16 }}>{c.name}</T>
+          <T w="b" size={12.5} color={C.ink} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ textAlign: 'center', alignSelf: 'stretch' }}>{c.name}</T>
+          {c.hint ? <T size={10} color={C.muted} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ textAlign: 'center', alignSelf: 'stretch', marginTop: -3 }}>{c.hint}</T> : null}
         </Press>
       ))}
     </View>

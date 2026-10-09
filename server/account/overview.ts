@@ -1,6 +1,7 @@
 // Read models for the customer app surfaces (home, wallet, orders, account).
 // Every workspace-scoped read goes through withWorkspaceTransaction so RLS applies.
 import { query, withWorkspaceTransaction } from '../core/db';
+import { isHiddenCategory } from '../../lib/catalog-ui';
 
 export type Viewer = { userId: string; displayName: string; email: string | null; phone: string | null; workspaceId: string | null; workspaceName: string | null };
 
@@ -121,7 +122,8 @@ export async function listCatalogWithPrices(productSlug?: string): Promise<Catal
      ORDER BY p.slug, s.slug`,
     [productSlug ?? null],
   );
-  return r.rows;
+  // Sections hidden from customers (lib/catalog-ui HIDDEN_CATEGORIES) are not offered anywhere.
+  return r.rows.filter(row => !isHiddenCategory(row.productSlug));
 }
 
 /** Whether the user has an enabled second factor (for the account screen's security row). */

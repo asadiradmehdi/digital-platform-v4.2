@@ -38,7 +38,7 @@ export function CreateWorkspaceButton() {
   if (!open) {
     return (
       <button className="button primary" type="button" onClick={() => setOpen(true)}>
-        <Plus size={15}/>Workspace جدید
+        <Plus size={15}/>فضای کاری جدید
       </button>
     );
   }
@@ -46,7 +46,7 @@ export function CreateWorkspaceButton() {
   return (
     <div style={{ background: 'var(--surface-2)', border: '1px solid var(--line)', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column', gap: 10, minWidth: 260 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: 12, fontWeight: 700 }}>Workspace جدید</span>
+        <span style={{ fontSize: 12, fontWeight: 700 }}>فضای کاری جدید</span>
         <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)' }} onClick={() => { setOpen(false); setError(null); }}><X size={14}/></button>
       </div>
       {error && <p style={{ margin: 0, fontSize: 11, color: 'var(--danger)' }}>{error}</p>}

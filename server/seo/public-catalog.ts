@@ -3,6 +3,7 @@
 // into public pages. Prices are the same active IRT row the order flow charges.
 import { cache } from 'react';
 import { query } from '../core/db';
+import { isHiddenCategory } from '../../lib/catalog-ui';
 
 export type PublicService = {
   slug: string;
@@ -41,7 +42,7 @@ async function load(): Promise<PublicService[]> {
      WHERE s.active = true AND pr.unit_price_minor > 0
      ORDER BY p.slug, s.slug`,
   );
-  return r.rows.map(row => ({
+  return r.rows.filter(row => !isHiddenCategory(row.category)).map(row => ({
     slug: row.slug,
     name: row.name,
     description: row.description,

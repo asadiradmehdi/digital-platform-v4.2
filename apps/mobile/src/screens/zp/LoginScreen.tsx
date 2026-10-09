@@ -2,17 +2,18 @@
 // number opens a new account), Google second (only when the server has it configured), email + password
 // third, and the second-factor step when the account has TOTP enabled.
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { normalizeIranMobile, type AuthProvidersResponse } from '@digital-platform/api-contracts';
 import { apiFetch } from '../../api/client';
-import { errorText } from '../../api/app';
+import { errorText, siteUrl } from '../../api/app';
 import { useAuth, type SignInResult } from '../../auth/AuthProvider';
 import { googleErrorText, openGoogleSignIn, parseGoogleReturn, redeemGoogleHandoff } from '../../auth/google';
 import { C, F, card, faNum, right, row, tRight } from '../../zp/base';
-import { Ornament, Wordmark } from '../../zp/brand';
+import { BrandMark, Fill, Ornament, Wordmark } from '../../zp/brand';
+import { Icon } from '../../zp/Icon';
 import { CodeBoxes } from '../../zp/CodeBoxes';
 import { Cta, ErrorBox, Press, T } from '../../zp/ui';
 
@@ -75,7 +76,7 @@ function Divider() {
 export function LoginScreen() {
   const router = useRouter();
   const { signIn, requestOtp, verifyOtp, completeMfa, exchangeGoogleHandoff } = useAuth();
-  const [step, setStep] = useState<Step>('phone');
+  const [step, setStep] = useState<Step>('password');
   const [providers, setProviders] = useState<AuthProvidersResponse | null>(null);
   const [phone, setPhone] = useState('');
   const [referral, setReferral] = useState('');
@@ -176,17 +177,32 @@ export function LoginScreen() {
   const header = {
     phone: { title: 'ورود یا ساخت حساب', sub: 'شماره موبایلتان را وارد کنید؛ اگر حساب نداشته باشید، همین‌جا ساخته می‌شود.' },
     code: { title: 'کد تأیید را وارد کنید', sub: '' },
-    password: { title: 'ورود با رمز عبور', sub: 'با ایمیل یا شماره موبایل و رمز عبورتان وارد شوید.' },
+    password: { title: 'ورود به حساب', sub: 'با ایمیل و رمز عبوری که هنگام ثبت‌نام در سایت زُحل پی ساخته‌اید وارد شوید.' },
     mfa: { title: 'تأیید دومرحله‌ای', sub: 'کد ۶ رقمی برنامه‌ی تأیید هویت (Authenticator) را وارد کنید.' },
   }[step];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: C.accentStrong }}>
+      <Fill kind="enamel" />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 18, gap: 22 }} keyboardShouldPersistTaps="handled">
-          <View style={{ alignItems: 'center' }}><Wordmark size={30} /></View>
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+          <View style={{ alignItems: 'center', paddingTop: 30, paddingBottom: 50, paddingHorizontal: 22, gap: 10, overflow: 'hidden' }}>
+            <Ornament w={520} h={300} cx={260} cy={330} rot={-14} color={C.gold1} alpha={0.55} />
+            <BrandMark size={64} />
+            <Wordmark size={34} light latin />
+            <T size={14} color="rgba(255,255,255,0.82)" style={{ textAlign: 'center' }}>همه‌ی خدمات دیجیتال، یک‌جا و مطمئن</T>
+            <View style={{ flexDirection: row, flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginTop: 4 }}>
+              {([['shieldS', 'پرداخت امن'], ['clock', 'تحویل سریع'], ['chat', 'پشتیبانی واقعی']] as const).map(([icon, label]) => (
+                <View key={label} style={{ flexDirection: row, alignItems: 'center', gap: 5, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(242,211,144,0.28)' }}>
+                  <Icon name={icon} size={14} color={C.gold1} />
+                  <T w="sb" size={11.5} color="#fff">{label}</T>
+                </View>
+              ))}
+            </View>
+          </View>
+          <View style={{ flexGrow: 1, marginTop: -26, backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 18, paddingTop: 22, paddingBottom: 28, gap: 18 }}>
+          <View style={{ alignSelf: 'center', width: 42, height: 4, borderRadius: 4, backgroundColor: C.surface4, marginTop: -10, marginBottom: -6 }} />
           <View style={[{ borderRadius: 26, padding: 20, gap: 14, overflow: 'hidden' }, card]}>
-            <Ornament w={400} h={420} cx={380} cy={-20} rot={-14} color={C.gold2} alpha={0.35} girih={false} />
             <View style={{ alignItems: right, gap: 4 }}>
               <T w="dx" size={22} style={{ lineHeight: 34 }} accessibilityRole="header">{header.title}</T>
               {step === 'code' ? (
@@ -249,7 +265,11 @@ export function LoginScreen() {
                   placeholder="••••••••••••" returnKeyType="go" onSubmitEditing={() => void submitPassword()} />
                 {error ? <ErrorBox text={error} /> : null}
                 <Cta full label={busy === 'password' ? 'در حال ورود…' : 'ورود'} busy={busy === 'password'} onPress={() => void submitPassword()} />
-                <View style={{ alignItems: 'center' }}><Link label="ورود با شماره موبایل" onPress={() => go('phone')} /></View>
+                {providers?.otp ? <View style={{ alignItems: 'center' }}><Link label="ورود با شماره موبایل" onPress={() => go('phone')} /></View> : null}
+                <View style={{ alignItems: 'center', gap: 2 }}>
+                  <T size={12} color={C.muted} style={{ textAlign: 'center' }}>هنوز حساب ندارید؟ ابتدا در سایت ثبت‌نام کنید:</T>
+                  <Link label="ثبت‌نام در سایت زُحل پی" onPress={() => void Linking.openURL(siteUrl('/auth?mode=register'))} />
+                </View>
               </>
             )}
 
@@ -267,6 +287,7 @@ export function LoginScreen() {
               ورود یا ساخت حساب یعنی پذیرش قوانین و حریم خصوصی زُحل پی.
             </T>
           ) : null}
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

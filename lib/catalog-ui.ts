@@ -7,27 +7,38 @@ export type CategoryKey =
   | 'instagram' | 'telegram' | 'youtube' | 'tiktok' | 'rubika' | 'aparat'
   | 'bale' | 'eitaa' | 'ai-subscriptions' | 'ai' | 'automation' | 'design';
 
-/** `title` overrides the page heading «خدمات {name}» where that would read awkwardly. */
-export type CategoryMeta = { key: CategoryKey; name: string; icon: IconName; title?: string; note?: string };
+/** `title` overrides the page heading «خدمات {name}» where that would read awkwardly; `hint` is the one-line teaser under the name. */
+export type CategoryMeta = { key: CategoryKey; name: string; icon: IconName; hint: string; title?: string; note?: string };
 
-/** Home grid order. Categories without active services in the catalogue render as «به‌زودی». */
-export const CATEGORIES: CategoryMeta[] = [
-  { key: 'instagram', name: 'اینستاگرام', icon: 'ig' },
-  { key: 'telegram', name: 'تلگرام', icon: 'tg' },
-  { key: 'youtube', name: 'یوتیوب', icon: 'yt' },
-  { key: 'tiktok', name: 'تیک‌تاک', icon: 'tt' },
-  { key: 'ai-subscriptions', name: 'اشتراک هوش مصنوعی', icon: 'aiSub', title: 'اشتراک هوش مصنوعی', note: 'فعال‌سازی روی ایمیل خودتان' },
-  { key: 'rubika', name: 'روبیکا', icon: 'rb' },
-  { key: 'aparat', name: 'آپارات', icon: 'ap' },
-  { key: 'bale', name: 'بله', icon: 'bl' },
-  { key: 'eitaa', name: 'ایتا', icon: 'et' },
-  { key: 'ai', name: 'تولید محتوا با AI', icon: 'ai', title: 'تولید محتوا با AI', note: 'تولید با AI، بازبینی تیم' },
-  { key: 'automation', name: 'اتوماسیون', icon: 'au', note: 'راه‌اندازی و پشتیبانی توسط تیم' },
-  { key: 'design', name: 'طراحی و گرافیک', icon: 'ds', title: 'طراحی و گرافیک', note: 'طراحی اختصاصی، ۲ بار اصلاح' },
+/**
+ * Every category the catalogue knows, in Ali's priority order (2026-10-09). The creative sections
+ * (AI content, automation, design) stay defined so existing orders still render, but are hidden from
+ * customers until they are ready to sell.
+ */
+export const ALL_CATEGORIES: CategoryMeta[] = [
+  { key: 'ai-subscriptions', name: 'اشتراک هوش مصنوعی', icon: 'aiSub', hint: 'ChatGPT، Gemini و بیشتر', title: 'اشتراک هوش مصنوعی', note: 'فعال‌سازی روی ایمیل خودتان' },
+  { key: 'instagram', name: 'اینستاگرام', icon: 'ig', hint: 'فالوور، لایک و بازدید' },
+  { key: 'telegram', name: 'تلگرام', icon: 'tg', hint: 'ممبر، بازدید و ری‌اکشن' },
+  { key: 'youtube', name: 'یوتیوب', icon: 'yt', hint: 'سابسکرایب، بازدید و لایک' },
+  { key: 'tiktok', name: 'تیک‌تاک', icon: 'tt', hint: 'فالوور، لایک و بازدید' },
+  { key: 'rubika', name: 'روبیکا', icon: 'rb', hint: 'عضو کانال و بازدید' },
+  { key: 'aparat', name: 'آپارات', icon: 'ap', hint: 'دنبال‌کننده و بازدید' },
+  { key: 'bale', name: 'بله', icon: 'bl', hint: 'عضو کانال و بازدید' },
+  { key: 'eitaa', name: 'ایتا', icon: 'et', hint: 'عضو کانال و بازدید' },
+  { key: 'ai', name: 'تولید محتوا با AI', icon: 'ai', hint: 'تولید با AI، بازبینی تیم', title: 'تولید محتوا با AI', note: 'تولید با AI، بازبینی تیم' },
+  { key: 'automation', name: 'اتوماسیون', icon: 'au', hint: 'راه‌اندازی توسط تیم', note: 'راه‌اندازی و پشتیبانی توسط تیم' },
+  { key: 'design', name: 'طراحی و گرافیک', icon: 'ds', hint: 'طراحی اختصاصی', title: 'طراحی و گرافیک', note: 'طراحی اختصاصی، ۲ بار اصلاح' },
 ];
 
+/** Hidden from customers for now (Ali 2026-10-09); flip here to bring a section back. */
+export const HIDDEN_CATEGORIES: readonly CategoryKey[] = ['ai', 'automation', 'design'];
+export const isHiddenCategory = (key: string | null | undefined) => (HIDDEN_CATEGORIES as readonly string[]).includes(key ?? '');
+
+/** What customers see: home grid, services list, app catalogue. */
+export const CATEGORIES: CategoryMeta[] = ALL_CATEGORIES.filter(c => !isHiddenCategory(c.key));
+
 export function categoryMeta(key: string): CategoryMeta | undefined {
-  return CATEGORIES.find(c => c.key === key);
+  return ALL_CATEGORIES.find(c => c.key === key);
 }
 
 export type ServiceKind =

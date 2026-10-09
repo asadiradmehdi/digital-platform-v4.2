@@ -3,7 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AlertCircle, ArrowLeft, ArrowRight, Gift, KeyRound, Loader2, Mail, PencilLine, ShieldCheck, Smartphone } from 'lucide-react';
-import { Wordmark } from '../../components/zp/brand';
+import { BrandMark, Ornament } from '../../components/zp/brand';
+import { ZIcon } from '../../components/zp/ZIcon';
 import { CodeBoxes } from '../../components/zp/CodeBoxes';
 import { apiErrorMessage } from '../../lib/api-error';
 import { normalizeIranMobile, toAsciiDigits } from '../../packages/api-contracts/src/phone';
@@ -155,9 +156,22 @@ export default function AuthForm({ initialMode = 'login', invite = null, otpEnab
   }[step];
 
   return (
-    <main className="auth-shell">
+    <main className="auth-shell zp-auth">
+      <aside className="auth-stage" aria-hidden="false">
+        <Ornament id="auth-orn" />
+        <Link href="/" className="auth-mark zp-root" aria-label="زُحل پی، صفحه‌ی اصلی">
+          <BrandMark size={64} id="auth-bm" />
+          <b>زُحل <span className="zp-gtext">پی</span></b>
+          <small>ZOHALPAY</small>
+        </Link>
+        <p className="auth-tag">همه‌ی خدمات دیجیتال، یک‌جا و مطمئن</p>
+        <ul className="auth-trust">
+          <li><ZIcon name="shieldS" />پرداخت امن</li>
+          <li><ZIcon name="clock" />تحویل سریع</li>
+          <li><ZIcon name="chat" />پشتیبانی واقعی</li>
+        </ul>
+      </aside>
       <section className="auth-card" aria-busy={busy}>
-        <Link href="/" className="auth-brand zp-root" aria-label="زُحل پی"><Wordmark id="auth-mark" /></Link>
 
         <span className="eyebrow" style={{ marginTop: 4 }}>{heading.eyebrow}</span>
         <h1 style={{ margin: '6px 0 0' }}>{heading.title}</h1>
