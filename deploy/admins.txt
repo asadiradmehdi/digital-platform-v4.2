@@ -1,3 +1,4 @@
 # One email per line: these accounts get the platform_admin role (admin console) on every deploy.
 # Only the owner belongs here. Removing a line does not revoke; use the admin console for that.
 asadiradmehdi@gmail.com
+alikahroba8@gmail.com
