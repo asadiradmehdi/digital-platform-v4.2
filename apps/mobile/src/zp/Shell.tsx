@@ -5,7 +5,7 @@ import { Animated, Dimensions, Easing, Linking, Modal, Pressable, ScrollView, St
 import { useRouter, type Href } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, F, RTL, atRight, back, fwd, leftRadii, row, right, shadow } from './base';
-import { Enamel, Ornament, Tile, Wordmark } from './brand';
+import { Ambient, Enamel, Ornament, Tile, Wordmark } from './brand';
 import { Icon, type IconName } from './Icon';
 import { Cta, IconBtn, Press, T } from './ui';
 import { siteUrl } from '../api/app';
@@ -104,6 +104,7 @@ export function AppScreen({ children, overlay, fixed }: PropsWithChildren<{ over
   const [drawer, setDrawer] = useState(false);
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: C.bg }}>
+      <Ambient />
       <View style={{ flexDirection: row, alignItems: 'center', gap: 10, paddingHorizontal: 18, paddingTop: 8, paddingBottom: 8, minHeight: 62 }}>
         <View style={{ flex: 1, alignItems: right }}><Wordmark size={22} /></View>
         <IconBtn icon="search" label="جستجو" onPress={() => router.navigate('/search' as Href)} />
@@ -124,6 +125,7 @@ export function SubScreen({ title, children, footer, overlay, fixed }: PropsWith
   const router = useRouter();
   return (
     <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: C.bg }}>
+      <Ambient />
       <View style={{ flexDirection: row, alignItems: 'center', gap: 10, paddingHorizontal: 18, paddingTop: 8, paddingBottom: 8, minHeight: 62 }}>
         <IconBtn icon={back} label="بازگشت" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
         <View style={{ flex: 1, alignItems: 'center' }}>

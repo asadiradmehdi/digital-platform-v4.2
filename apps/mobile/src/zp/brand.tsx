@@ -1,7 +1,7 @@
 // Lapis enamel + illumination gold surfaces, drawn once with react-native-svg (no animation, no filters).
 import { useId, useState, type PropsWithChildren } from 'react';
 import { StyleSheet, Text, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
-import Svg, { Defs, Ellipse, G as SvgG, LinearGradient, Path, Pattern, Rect, Stop, Circle, SvgXml } from 'react-native-svg';
+import Svg, { Defs, Ellipse, G as SvgG, LinearGradient, Path, Pattern, RadialGradient, Rect, Stop, Circle, SvgXml } from 'react-native-svg';
 import { BRAND_LOGOS, type BrandLogo } from '@digital-platform/design-tokens';
 import { atLeft, C, F, G, row, shadow, tRight } from './base';
 import { Icon, type IconName } from './Icon';
@@ -23,6 +23,32 @@ function gradientLine(w: number, h: number, deg: number | null) {
   const dx = Math.sin(a); const dy = -Math.cos(a);
   const half = (Math.abs(w * dx) + Math.abs(h * dy)) / 2;
   return { x1: w / 2 - dx * half, y1: h / 2 - dy * half, x2: w / 2 + dx * half, y2: h / 2 + dy * half };
+}
+
+/** Soft ambient light behind a screen: a warm gold glow from the top corner and a faint lapis haze from the bottom, so the ivory ground has depth. */
+export function Ambient() {
+  const id = useSvgId('a');
+  const [box, setBox] = useState<{ w: number; h: number } | null>(null);
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill} onLayout={e => setBox({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
+      {box && box.w > 0 ? (
+        <Svg width={box.w} height={box.h}>
+          <Defs>
+            <RadialGradient id={`${id}g`} cx={box.w * 0.9} cy={0} r={box.w * 0.95} gradientUnits="userSpaceOnUse">
+              <Stop offset={0} stopColor="#E9C46A" stopOpacity={0.3} />
+              <Stop offset={1} stopColor="#E9C46A" stopOpacity={0} />
+            </RadialGradient>
+            <RadialGradient id={`${id}l`} cx={0} cy={box.h} r={box.w * 0.9} gradientUnits="userSpaceOnUse">
+              <Stop offset={0} stopColor="#2148a6" stopOpacity={0.05} />
+              <Stop offset={1} stopColor="#2148a6" stopOpacity={0} />
+            </RadialGradient>
+          </Defs>
+          <Rect x={0} y={0} width={box.w} height={box.h} fill={`url(#${id}g)`} />
+          <Rect x={0} y={0} width={box.w} height={box.h} fill={`url(#${id}l)`} />
+        </Svg>
+      ) : null}
+    </View>
+  );
 }
 
 export function Fill({ kind = 'enamel', vertical }: { kind?: FillKind; vertical?: boolean }) {

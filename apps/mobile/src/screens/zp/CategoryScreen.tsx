@@ -41,7 +41,7 @@ function ServiceGrid({ services }: { services: AppService[] }) {
           onPress={() => (multi ? router.navigate({ pathname: '/variants/[base]', params: { base: g.base } }) : router.navigate({ pathname: '/order/[service]', params: { service: s.slug } }))}
           style={[{ width: w, alignItems: 'center', gap: 2, borderRadius: 20, paddingTop: compact ? 9 : 12, paddingBottom: compact ? 8 : 10, paddingHorizontal: 6 }, card]}>
           <View style={{ marginBottom: compact ? 3 : 5 }}>{s.brand ? <BrandTile brand={s.brand} size={tile} /> : <Tile icon={s.icon} size={tile} />}</View>
-          <T w="b" size={compact ? 12 : 12.8} numberOfLines={compact ? 1 : 2} style={{ textAlign: 'center', lineHeight: 19, minHeight: compact ? undefined : 38 }}>{g.name}</T>
+          <T w="b" size={compact ? 12 : 12.8} numberOfLines={compact ? 1 : 2} style={{ textAlign: 'center', lineHeight: 19, minHeight: undefined }}>{g.name}</T>
           <T size={10} color={multi ? C.goldText : C.muted} numberOfLines={1} style={{ textAlign: 'center' }}>{multi ? `${faNum(g.members.length)} نوع` : s.perLabel}</T>
           <View style={{ flexDirection: row, alignItems: 'baseline', gap: 3 }}>
             {multi ? <T size={9.5} color={C.muted}>از</T> : null}
