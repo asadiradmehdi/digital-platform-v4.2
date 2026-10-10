@@ -85,7 +85,7 @@ importers:
         specifier: 0.4.1
         version: 0.4.1
       '@expo-google-fonts/vazirmatn':
-        specifier: ^0.4.1
+        specifier: 0.4.1
         version: 0.4.1
       expo:
         specifier: ~54.0.0
