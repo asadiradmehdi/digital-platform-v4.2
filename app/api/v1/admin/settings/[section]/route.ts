@@ -4,13 +4,14 @@ import { requireRequestUser } from '../../../../../../server/identity/request-us
 import { requireAdminAccess, requirePermission } from '../../../../../../server/admin/access';
 import { assertSameOrigin } from '../../../../../../server/core/security-boundary';
 import { AppError } from '../../../../../../server/core/errors';
+import { saveLoyalty, saveReferral, saveSite } from '../../../../../../server/admin/site-settings';
 import { saveGateway, saveGoogle, saveInvoice, saveLicenses, saveSms, setSupportHours, upsertSupportContact } from '../../../../../../server/admin/settings';
 
 type Params = { params: Promise<{ section: string }> };
 
 /**
  * Saves one settings section. The response never contains a secret (only {ok:true}); secrets are write-only.
- * Sections: sms, google, gateway, invoice, licenses, support-hours, support-contact.
+ * Sections: sms, google, gateway, invoice, licenses, site, referral, loyalty, support-hours, support-contact.
  */
 export async function POST(request: NextRequest, { params }: Params) {
   const id = correlationId(request);
@@ -29,6 +30,9 @@ export async function POST(request: NextRequest, { params }: Params) {
       case 'gateway': await saveGateway(ctx, body); break;
       case 'invoice': await saveInvoice(ctx, body); break;
       case 'licenses': await saveLicenses(ctx, body); break;
+      case 'site': await saveSite(actorUserId, body); break;
+      case 'referral': await saveReferral(actorUserId, body); break;
+      case 'loyalty': await saveLoyalty(actorUserId, body); break;
       case 'support-hours': await setSupportHours(String(body.hours ?? ''), actorUserId); break;
       case 'support-contact':
         await upsertSupportContact({
