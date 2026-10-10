@@ -56,6 +56,8 @@ export async function postWalletEntry(client: Queryable, wallet: LockedWallet, i
   referenceId: string | null;
   idempotencyKey: string;
   label: string;
+  /** Extra non-customer-facing facts stored with the entry (e.g. who adjusted and why). The label is what customers see. */
+  metadata?: Record<string, unknown>;
 }): Promise<{ walletAmountMinor: bigint; inserted: boolean }> {
   if (input.amountMinor <= 0n) throw new AppError('VALIDATION_ERROR', 'Ledger amount must be positive.');
   const walletAmountMinor = toWalletMinor(input.amountMinor, input.currency, wallet.walletCurrency);
@@ -63,7 +65,7 @@ export async function postWalletEntry(client: Queryable, wallet: LockedWallet, i
     `INSERT INTO ledger_entries(account_id,direction,amount_minor,currency,reference_type,reference_id,idempotency_key,metadata)
      VALUES($1,$2,$3,$4,$5,$6,$7,$8)
      ON CONFLICT(account_id,idempotency_key) DO NOTHING`,
-    [wallet.accountId, input.direction, walletAmountMinor.toString(), wallet.walletCurrency, input.referenceType, input.referenceId, input.idempotencyKey, { label: input.label }],
+    [wallet.accountId, input.direction, walletAmountMinor.toString(), wallet.walletCurrency, input.referenceType, input.referenceId, input.idempotencyKey, { ...(input.metadata ?? {}), label: input.label }],
   );
   return { walletAmountMinor, inserted: (r.rowCount ?? 0) > 0 };
 }

@@ -77,6 +77,7 @@ describe('createCheckout', () => {
     const clientQuery = makeClientQuery(
       { rows: [] },    // no existing session
       { rows: [{ price_id: 'price-1', service_id: 'svc-1', unit_price_minor: '5000', currency: 'IRT', price_version: 1, pricing_rule_id: null, fx_rate_id: null, provider_cost_minor: null, provider_cost_currency: null }] },
+      { rows: [] },    // pinned package price (none)
       { rows: [sessionResult] },   // INSERT session
       { rows: [] },   // INSERT item
     );
@@ -107,6 +108,7 @@ describe('createCheckout', () => {
     const clientQuery = makeClientQuery(
       { rows: [] },  // no existing session
       { rows: [{ price_id: 'price-1', service_id: 'svc-1', unit_price_minor: '5000', currency: 'IRT', price_version: 1, pricing_rule_id: null, fx_rate_id: null, provider_cost_minor: null, provider_cost_currency: null }] },
+      { rows: [] },    // pinned package price (none)
       { rows: [expiredCoupon] },  // coupon lookup
     );
     mockTx.mockImplementationOnce(async (_wid, _opts, fn) => fn({ query: clientQuery } as never));

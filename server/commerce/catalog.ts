@@ -7,7 +7,7 @@ export type CatalogServiceDetail = CatalogService & { description: string | null
 export async function getService(id: string): Promise<CatalogServiceDetail> {
   const r = await query<CatalogServiceDetail>(
     `SELECT s.id, s.name, s.slug, s.service_type AS "serviceType",
-            s.description, s.active, s.product_id AS "productId",
+            s.description, (s.active AND p.active) AS active, s.product_id AS "productId",
             p.name AS "productName", p.slug AS "productSlug"
      FROM services s JOIN products p ON p.id=s.product_id
      WHERE s.id=$1`,

@@ -8,11 +8,14 @@ import type { BrandLogo } from '../../../packages/design-tokens/src/brand-logos'
 import { apiErrorMessage } from '../../../lib/api-error';
 import type { BriefSpec, OrderFact, TargetSpec } from '../../../lib/catalog-ui';
 import { formatQuantityWords, formatTomanNumber, magnitudeParts, orderCode } from '../../../lib/format';
+import { packagePriceToman, type PackagePrices } from '../../../lib/package-price';
 import { suggestedTopupToman } from '../../../packages/api-contracts/src/topup';
 
 export type PickerService = {
   id: string; slug: string; name: string; note: string; icon: IconName; brand?: BrandLogo; unit: string;
   unitPriceToman: number; quantities: number[];
+  /** Packages the owner priced individually; every other quantity is quantity × unit price. */
+  packagePrices?: PackagePrices;
   target: TargetSpec;
   /** Team-fulfilled services ask for a written brief and show their delivery terms. */
   brief: BriefSpec | null; facts: OrderFact[]; refund: string;
@@ -45,7 +48,7 @@ export function PackagePicker({ service, workspaceId, walletToman, initialQty = 
   }, [toast]);
 
   const list = useMemo(() => service.quantities.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE), [service.quantities, page]);
-  const price = qty ? qty * service.unitPriceToman : 0;
+  const price = qty ? packagePriceToman(qty, service.unitPriceToman, service.packagePrices) : 0;
   const label = qty ? `${formatQuantityWords(qty)} ${service.unit} · ${service.name}` : '';
   const short = walletToman != null && qty != null && walletToman < price;
   const shortfall = short ? suggestedTopupToman(price - (walletToman ?? 0)) : 0;
@@ -124,7 +127,7 @@ export function PackagePicker({ service, workspaceId, walletToman, initialQty = 
             <button key={q} type="button" className="zp-pkg" aria-pressed={qty === q} onClick={() => setQty(q)}>
               <span className="q">{m.value}{m.unit && <small>{m.unit}</small>}</span>
               <span className="u">{service.unit}</span>
-              <span className="p">{formatTomanNumber(q * service.unitPriceToman)} <i>تومان</i></span>
+              <span className="p">{formatTomanNumber(packagePriceToman(q, service.unitPriceToman, service.packagePrices))} <i>تومان</i></span>
             </button>
           );
         })}

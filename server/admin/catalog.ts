@@ -4,15 +4,16 @@ import { query, withUserTransaction } from '../core/db';
 import { writeAudit } from '../core/audit';
 import { AppError } from '../core/errors';
 import { requirePlatformAdmin } from '../identity/platform-admin';
-import { bulkNewUnit } from '../../lib/admin-pricing';
-import { KINDS, serviceKind } from '../../lib/catalog-ui';
+import { MAX_UNIT_PRICE, PRICE_CURRENCY, swapInPrice, wholeNumber } from './price-core';
 import type { PoolClient } from 'pg';
 
-export const PRICE_CURRENCY = 'IRT';
-const MAX_UNIT_PRICE = 100_000_000;
+export { PRICE_CURRENCY };
+export { applyBulk, previewBulk, type BulkPlanRow } from './packages';
 
 export type AdminServiceRow = {
   id: string; name: string; slug: string; productSlug: string; productName: string; active: boolean; fulfillmentMode: string;
+  /** Category (products.active) switch, and the owner-edited hint / position (migration 0064). */
+  productActive: boolean; hint: string | null; sortOrder: number | null;
   price: { id: string; unitToman: number; min: number | null; max: number | null; since: string; confirmed: boolean } | null;
   /** The price that was live before the current one (target of «بازگشت به قیمت قبلی»). */
   previous: { unitToman: number; endedAt: string | null } | null;
@@ -23,11 +24,13 @@ export async function listAdminServices(userId: string): Promise<AdminServiceRow
   await requirePlatformAdmin(userId);
   const r = await query<{
     id: string; name: string; slug: string; product_slug: string; product_name: string; active: boolean; fulfillment_mode: string;
+    product_active?: boolean; hint?: string | null; sort_order?: number | null;
     p_id: string | null; p_unit: string | null; p_min: string | null; p_max: string | null; p_since: string | null; p_confirmed: boolean | null;
     d_id: string | null; d_unit: string | null; d_min: string | null; d_max: string | null; d_created: string | null;
     v_unit: string | null; v_ended: string | null;
   }>(
     `SELECT s.id, s.name, s.slug, p.slug AS product_slug, p.name AS product_name, s.active, s.fulfillment_mode,
+            p.active AS product_active, s.hint, s.sort_order,
             cur.id AS p_id, cur.unit_price_minor::text AS p_unit, cur.min_quantity::text AS p_min, cur.max_quantity::text AS p_max,
             cur.effective_from::text AS p_since, (cur.approved_at IS NOT NULL) AS p_confirmed,
             dr.id AS d_id, dr.unit_price_minor::text AS d_unit, dr.min_quantity::text AS d_min, dr.max_quantity::text AS d_max, dr.effective_from::text AS d_created,
@@ -49,17 +52,11 @@ export async function listAdminServices(userId: string): Promise<AdminServiceRow
   const n = (v: string | null) => (v == null ? null : Number(v));
   return r.rows.map(x => ({
     id: x.id, name: x.name, slug: x.slug, productSlug: x.product_slug, productName: x.product_name, active: x.active, fulfillmentMode: x.fulfillment_mode,
+    productActive: x.product_active !== false, hint: x.hint ?? null, sortOrder: x.sort_order ?? null,
     price: x.p_id ? { id: x.p_id, unitToman: Number(x.p_unit), min: n(x.p_min), max: n(x.p_max), since: x.p_since!, confirmed: Boolean(x.p_confirmed) } : null,
     previous: x.v_unit ? { unitToman: Number(x.v_unit), endedAt: x.v_ended } : null,
     draft: x.d_id ? { id: x.d_id, unitToman: Number(x.d_unit), min: n(x.d_min), max: n(x.d_max), createdAt: x.d_created! } : null,
   }));
-}
-
-function wholeNumber(v: unknown, label: string, { min, max, optional }: { min: number; max: number; optional?: boolean }): number | null {
-  if ((v === null || v === undefined || v === '') && optional) return null;
-  const n = typeof v === 'string' ? Number(v.trim()) : v;
-  if (typeof n !== 'number' || !Number.isInteger(n) || n < min || n > max) throw new AppError('VALIDATION_ERROR', `${label} باید عدد صحیح بین ${min} و ${max} باشد.`);
-  return n;
 }
 
 /** Inserts a new inactive DRAFT price (any older open draft of the service is marked REJECTED). */
@@ -135,21 +132,6 @@ export async function approveAllDrafts(input: { actorUserId: string; productSlug
   });
 }
 
-/** Inserts `unit` as the new live price (append-only): closes the current row, rejects open drafts, inserts an APPROVED row. */
-async function swapInPrice(client: PoolClient, actorUserId: string, serviceId: string, unit: number, min: number | null, max: number | null, action: string, extra: Record<string, unknown> = {}) {
-  const cur = (await client.query<{ id: string; unit_price_minor: string; price_version: string }>(
-    `UPDATE service_prices SET active=false, effective_to=now() WHERE service_id=$1 AND currency=$2 AND active=true RETURNING id, unit_price_minor::text, price_version::text`, [serviceId, PRICE_CURRENCY])).rows[0];
-  await client.query(`UPDATE service_prices SET approval_status='REJECTED' WHERE service_id=$1 AND currency=$2 AND approval_status='DRAFT'`, [serviceId, PRICE_CURRENCY]);
-  const ins = await client.query<{ id: string }>(
-    `INSERT INTO service_prices(service_id, currency, unit_price_minor, min_quantity, max_quantity, active, approval_status, created_by, approved_by, approved_at, price_source, price_version, price_updated_at)
-     VALUES($1,$2,$3,$4,$5,true,'APPROVED',$6,$6,now(),'ADMIN',$7,now()) RETURNING id`,
-    [serviceId, PRICE_CURRENCY, unit, min, max, actorUserId, Number(cur?.price_version ?? 0) + 1]);
-  const id = ins.rows[0].id;
-  await writeAudit({ actorUserId, action, entityType: 'service_price', entityId: id,
-    metadata: { serviceId, previousPriceId: cur?.id ?? null, fromToman: cur ? Number(cur.unit_price_minor) : null, toToman: unit, ...extra } }, client);
-  return id;
-}
-
 /** One-tap price change: the new price goes live immediately as a new row; the old row is kept as history. */
 export async function setPriceNow(input: { actorUserId: string; serviceId: string; unitToman: unknown; min?: unknown; max?: unknown }) {
   await requirePlatformAdmin(input.actorUserId);
@@ -179,52 +161,6 @@ export async function revertPrice(input: { actorUserId: string; serviceId: strin
     const id = await swapInPrice(client, input.actorUserId, input.serviceId, Number(prev.unit_price_minor),
       prev.min_quantity == null ? null : Number(prev.min_quantity), prev.max_quantity == null ? null : Number(prev.max_quantity), 'admin.price.revert', { revertedToPriceId: prev.id });
     return { id, unitToman: Number(prev.unit_price_minor) };
-  });
-}
-
-export type BulkPlanRow = { serviceId: string; name: string; oldUnit: number; newUnit: number; per: number; unit: string };
-
-async function bulkPlan(client: { query: PoolClient['query'] }, productSlug: string, percent: number, roundTo: number): Promise<BulkPlanRow[]> {
-  const r = await client.query<{ id: string; name: string; slug: string; unit_price_minor: string }>(
-    `SELECT s.id, s.name, s.slug, sp.unit_price_minor::text FROM services s JOIN products p ON p.id=s.product_id
-     JOIN service_prices sp ON sp.service_id=s.id AND sp.active=true AND sp.currency=$2
-     WHERE p.slug=$1 ORDER BY s.slug LIMIT 200`, [productSlug, PRICE_CURRENCY]);
-  return r.rows.map(x => {
-    const kind = KINDS[serviceKind(x.slug)];
-    const old = Number(x.unit_price_minor);
-    return { serviceId: x.id, name: x.name, oldUnit: old, newUnit: Math.min(MAX_UNIT_PRICE, bulkNewUnit(old, percent, roundTo, kind.per)), per: kind.per, unit: kind.unit };
-  }).filter(x => x.newUnit !== x.oldUnit);
-}
-
-function bulkArgs(input: { productSlug: unknown; percent: unknown; roundTo?: unknown }) {
-  if (typeof input.productSlug !== 'string' || !/^[a-z0-9-]{1,40}$/.test(input.productSlug)) throw new AppError('VALIDATION_ERROR', 'دسته نامعتبر است.');
-  const percent = typeof input.percent === 'number' ? input.percent : NaN;
-  if (!Number.isFinite(percent) || percent < -90 || percent > 300) throw new AppError('VALIDATION_ERROR', 'درصد تغییر باید بین ۹۰- و ۳۰۰ باشد.');
-  const roundTo = input.roundTo === undefined || input.roundTo === null ? 0 : input.roundTo;
-  if (roundTo !== 0 && roundTo !== 100 && roundTo !== 1000) throw new AppError('VALIDATION_ERROR', 'گردکردن فقط ۱۰۰ یا ۱۰۰۰ تومان است.');
-  return { productSlug: input.productSlug, percent, roundTo: roundTo as number };
-}
-
-/** Old→new table for a category-wide percent change; nothing is written. */
-export async function previewBulk(input: { actorUserId: string; productSlug: unknown; percent: unknown; roundTo?: unknown }) {
-  await requirePlatformAdmin(input.actorUserId);
-  const a = bulkArgs(input);
-  return { rows: await bulkPlan({ query: query as never }, a.productSlug, a.percent, a.roundTo) };
-}
-
-/** Applies the same plan in ONE transaction: every changed service gets a new live row (open drafts are rejected). */
-export async function applyBulk(input: { actorUserId: string; productSlug: unknown; percent: unknown; roundTo?: unknown }) {
-  await requirePlatformAdmin(input.actorUserId);
-  const a = bulkArgs(input);
-  return withUserTransaction(input.actorUserId, async client => {
-    const plan = await bulkPlan(client, a.productSlug, a.percent, a.roundTo);
-    for (const row of plan) {
-      await client.query(`SELECT id FROM services WHERE id=$1 FOR UPDATE`, [row.serviceId]);
-      const q = (await client.query<{ min_quantity: string | null; max_quantity: string | null }>(`SELECT min_quantity::text, max_quantity::text FROM service_prices WHERE service_id=$1 AND currency=$2 AND active=true`, [row.serviceId, PRICE_CURRENCY])).rows[0];
-      await swapInPrice(client, input.actorUserId, row.serviceId, row.newUnit, q?.min_quantity == null ? null : Number(q.min_quantity), q?.max_quantity == null ? null : Number(q.max_quantity), 'admin.price.bulk_item', { percent: a.percent, roundTo: a.roundTo });
-    }
-    await writeAudit({ actorUserId: input.actorUserId, action: 'admin.price.bulk', entityType: 'product', metadata: { productSlug: a.productSlug, percent: a.percent, roundTo: a.roundTo, count: plan.length } }, client);
-    return { count: plan.length };
   });
 }
 

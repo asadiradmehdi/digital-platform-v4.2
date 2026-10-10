@@ -36,6 +36,7 @@ describe('createOrder — audit trail', () => {
     const clientQuery = vi.fn()
       .mockResolvedValueOnce({ rows: [] })                                           // idempotency
       .mockResolvedValueOnce({ rows: [priceRow] })                                   // catalog price
+      .mockResolvedValueOnce({ rows: [] })                                           // pinned package price
       .mockResolvedValueOnce({ rows: [{ id: 'ord-1', status: 'PAYMENT_PENDING' }] }) // INSERT orders
       .mockResolvedValueOnce({ rows: [] })                                           // INSERT order_items
       .mockResolvedValueOnce({ rows: [] })                                           // INSERT order_events

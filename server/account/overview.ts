@@ -103,6 +103,10 @@ export async function getAccountStats(workspaceId: string): Promise<AccountStats
 export type CatalogItem = {
   id: string; slug: string; name: string; description: string | null; productSlug: string;
   unitPriceMinor: string | null; currency: string | null; minQuantity: string | null; maxQuantity: string | null;
+  /** Packages the owner priced individually (admin console): total toman for exactly that quantity. */
+  packagePrices?: Array<{ quantity: string; priceMinor: string }>;
+  /** Owner-edited one-line hint and manual position (admin console); null = use the built-in defaults. */
+  hint?: string | null; sortOrder?: number | null;
 };
 
 /** Active services with their current IRT unit price — the same price row createOrder charges. */
@@ -110,7 +114,12 @@ export async function listCatalogWithPrices(productSlug?: string): Promise<Catal
   const r = await query<CatalogItem>(
     `SELECT s.id, s.slug, s.name, s.description, p.slug AS "productSlug",
             pr.unit_price_minor::text AS "unitPriceMinor", pr.currency,
-            pr.min_quantity::text AS "minQuantity", pr.max_quantity::text AS "maxQuantity"
+            pr.min_quantity::text AS "minQuantity", pr.max_quantity::text AS "maxQuantity",
+            s.hint, s.sort_order AS "sortOrder",
+            COALESCE((SELECT json_agg(json_build_object('quantity', pp.quantity::text, 'priceMinor', pp.price_minor::text) ORDER BY pp.quantity)
+                      FROM service_package_prices pp
+                      WHERE pp.service_id=s.id AND pp.active=true AND pp.approval_status='APPROVED' AND pp.currency='IRT'
+                        AND (pp.effective_to IS NULL OR pp.effective_to > now())), '[]'::json) AS "packagePrices"
      FROM services s JOIN products p ON p.id=s.product_id
      LEFT JOIN LATERAL (
        SELECT sp.unit_price_minor, sp.currency, sp.min_quantity, sp.max_quantity FROM service_prices sp
@@ -118,8 +127,8 @@ export async function listCatalogWithPrices(productSlug?: string): Promise<Catal
          AND (sp.effective_to IS NULL OR sp.effective_to > now())
        ORDER BY sp.effective_from DESC LIMIT 1
      ) pr ON true
-     WHERE s.active=true AND ($1::text IS NULL OR p.slug=$1)
-     ORDER BY p.slug, s.slug`,
+     WHERE s.active=true AND p.active=true AND ($1::text IS NULL OR p.slug=$1)
+     ORDER BY p.slug, s.sort_order NULLS LAST, s.slug`,
     [productSlug ?? null],
   );
   // Sections hidden from customers (lib/catalog-ui HIDDEN_CATEGORIES) are not offered anywhere.

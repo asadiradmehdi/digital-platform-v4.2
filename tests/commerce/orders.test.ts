@@ -66,6 +66,7 @@ describe('createOrder', () => {
     const clientQuery = vi.fn()
       .mockResolvedValueOnce({ rows: [] })            // idempotency check
       .mockResolvedValueOnce({ rows: [priceRow] })    // catalog price
+      .mockResolvedValueOnce({ rows: [] })            // pinned package price (none)
       .mockResolvedValueOnce({ rows: [newOrder] })    // INSERT orders
       .mockResolvedValueOnce({ rows: [] })            // INSERT order_items
       .mockResolvedValueOnce({ rows: [] })            // INSERT order_events
@@ -75,8 +76,8 @@ describe('createOrder', () => {
 
     const result = await createOrder(baseInput);
     expect(result).toEqual(newOrder);
-    // 6 domain writes + the audit row, which now commits on the same tenant tx client.
-    expect(clientQuery).toHaveBeenCalledTimes(7);
+    // pinned-price lookup + 6 domain writes + the audit row, which now commits on the same tenant tx client.
+    expect(clientQuery).toHaveBeenCalledTimes(8);
     expect(clientQuery.mock.calls.some(([sql]) => String(sql).includes("INSERT INTO audit_logs"))).toBe(true);
   });
 
@@ -88,6 +89,7 @@ describe('createOrder', () => {
     const clientQuery = vi.fn()
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [priceRow] })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ id: 'ord-calc', status: 'PAYMENT_PENDING' }] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
@@ -96,8 +98,8 @@ describe('createOrder', () => {
     mockTx.mockImplementationOnce(async (_wid, _uid, fn) => fn({ query: clientQuery } as never));
 
     await createOrder({ ...baseInput, quantity: 3n });
-    // 3rd call (index 2) = INSERT INTO orders
-    const params = clientQuery.mock.calls[2][1] as unknown[];
+    // 4th call (index 3) = INSERT INTO orders (after the pinned-price lookup)
+    const params = clientQuery.mock.calls[3][1] as unknown[];
     // total = 3 * 500 = 1500; it's passed as params[2] (subtotal_minor and total_minor are same param $3)
     expect(String(params[2])).toBe('1500');
   });
@@ -124,6 +126,7 @@ describe('createOrder', () => {
     const clientQuery = vi.fn()
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [priceRow] })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ id: 'ord-1', status: 'PAYMENT_PENDING' }] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
@@ -132,7 +135,7 @@ describe('createOrder', () => {
     mockTx.mockImplementationOnce(async (_wid, _uid, fn) => fn({ query: clientQuery } as never));
 
     await createOrder(baseInput);
-    const outboxCall = clientQuery.mock.calls[5];
+    const outboxCall = clientQuery.mock.calls[6];
     expect(outboxCall[0]).toContain('outbox_events');
     expect(outboxCall[0]).toContain('order.payment_pending');
   });

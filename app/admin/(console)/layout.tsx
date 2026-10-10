@@ -4,7 +4,9 @@ import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { requireCurrentUser } from '../../../server/identity/request-user';
 import { isPlatformAdmin } from '../../../server/identity/platform-admin';
-import { AdminNav } from './AdminNav';
+import { AdminNav, AdminTabs } from './AdminNav';
+import { ToastProvider } from './kit';
+import { getNavBadges } from '../../../server/admin/overview';
 import './admin.css';
 
 export const metadata: Metadata = { title: 'برنامه مدیریت زُحل پی', robots: { index: false, follow: false }, manifest: '/admin/manifest.webmanifest', appleWebApp: { capable: true, title: 'مدیریت' } };
@@ -26,14 +28,18 @@ export default async function AdminConsoleLayout({ children }: { children: React
       </div>
     );
   }
+  const badges = await getNavBadges(userId).catch(() => ({}));
   return (
-    <div className="zp-root zpa">
-      <aside className="zpa-side">
-        <div className="zpa-brand"><div><b>زُحل پی</b><small>برنامه مدیریت</small></div></div>
-        <AdminNav />
-        <div className="zpa-foot"><Link href="/admin">وضعیت فنی و ارائه‌دهندگان</Link></div>
-      </aside>
-      <main className="zpa-main">{children}</main>
-    </div>
+    <ToastProvider>
+      <div className="zp-root zpa">
+        <aside className="zpa-side">
+          <div className="zpa-brand"><div><b>زُحل پی</b><small>برنامه مدیریت</small></div></div>
+          <AdminNav badges={badges} />
+          <div className="zpa-foot"><Link href="/admin">وضعیت فنی و ارائه‌دهندگان</Link></div>
+        </aside>
+        <main className="zpa-main">{children}</main>
+        <AdminTabs badges={badges} />
+      </div>
+    </ToastProvider>
   );
 }

@@ -4,6 +4,7 @@ import { ShellAside } from '../../../components/zp/ShellAside';
 import { EmptyState } from '../../../components/zp/cards';
 import { categoryMeta, orderForm, serviceBrand, serviceIcon, serviceMeta } from '../../../lib/catalog-ui';
 import { toToman } from '../../../lib/format';
+import { pinnedPricesFromRows } from '../../../lib/package-price';
 import { requireViewer } from '../../../server/account/page-context';
 import { getWalletSummary, listCatalogWithPrices } from '../../../server/account/overview';
 import { PackagePicker } from './PackagePicker';
@@ -46,7 +47,7 @@ export default async function OrderNewPage({ searchParams }: { searchParams: Pro
           walletToman={wallet ? toToman(wallet.balanceMinor, wallet.currency) : null}
           service={{
             id: item.id, slug: item.slug, name: item.name, note: item.description ?? (cat ? `خدمات ${cat.name}` : ''),
-            icon: serviceIcon(item.slug), brand: serviceBrand(item.slug), unit: kind.unit, unitPriceToman: Number(item.unitPriceMinor),
+            icon: serviceIcon(item.slug), brand: serviceBrand(item.slug), unit: kind.unit, unitPriceToman: Number(item.unitPriceMinor), packagePrices: pinnedPricesFromRows(item.packagePrices),
             quantities: quantities.length ? quantities : [min],
             target: form.target, brief: form.brief, facts: form.facts, refund: form.refund,
           }}

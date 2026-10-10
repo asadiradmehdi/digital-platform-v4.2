@@ -51,10 +51,10 @@ describe('createOrder quantity bounds', () => {
   });
 
   it('charges quantity × unit price inside the bounds', async () => {
-    q.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [price('1', '10')] })
+    q.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [price('1', '10')] }).mockResolvedValueOnce({ rows: [] }) // no pinned package price
       .mockResolvedValueOnce({ rows: [{ id: 'ord-1', status: 'PAYMENT_PENDING' }] }).mockResolvedValue({ rows: [] });
     await createOrder(input(3n));
-    expect(q.mock.calls[2][1]).toEqual(['ws-1', 'IRT', '1170000', 'idem-key-abcdef01']);
+    expect(q.mock.calls[3][1]).toEqual(['ws-1', 'IRT', '1170000', 'idem-key-abcdef01']);
   });
 });
 

@@ -4,6 +4,7 @@ import { CATEGORIES, baseSlug, categoryMeta, variantOf, isHiddenCategory, isTeam
 import { formatQuantityWords, formatWhen, orderCode, toToman } from '../../lib/format';
 import { orderStage } from '../../lib/order-progress';
 import { tierFor } from '../../lib/tiers';
+import { pinnedPricesFromRows } from '../../lib/package-price';
 import type { CatalogItem, OrderCard, WalletEntry } from './overview';
 
 export function catalogView(items: CatalogItem[]) {
@@ -20,6 +21,8 @@ export function catalogView(items: CatalogItem[]) {
       short: shortServiceName(i.name, categoryMeta(i.productSlug)?.name ?? ''), brand: serviceBrand(i.slug) ?? null, perLabel: perLabel(kind),
       group: kind.group, unit: kind.unit, icon: serviceIcon(i.slug), per: kind.per,
       unitPriceToman: Number(i.unitPriceMinor),
+      // Packages priced individually by the owner: use packagePrices[q] ?? q * unitPriceToman (lib/package-price.ts).
+      packagePrices: pinnedPricesFromRows(i.packagePrices),
       quantities: quantities.length ? quantities : [min],
       target: form.target, brief: form.brief, facts: form.facts, refund: form.refund,
     };

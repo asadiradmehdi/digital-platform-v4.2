@@ -5,6 +5,7 @@ import { requireIdempotencyKey } from '../core/idempotency';
 import type { PoolClient } from 'pg';
 import { calculateCheckoutTotal, calculateDiscount } from './calculator';
 import { assertQuantityWithinBounds } from './quantity';
+import { resolvePackageTotal } from '../pricing/package-price';
 import { insertSubscription } from '../subscriptions/service';
 
 export type CheckoutItemInput = Readonly<{
@@ -53,9 +54,11 @@ export async function createCheckout(input: {
       void _min; void _max;
       if (currency == null) currency = price.currency;
       if (currency !== price.currency) throw new AppError('VALIDATION_ERROR', 'Checkout cannot mix currencies.');
-      const total = item.quantity * BigInt(price.unit_price_minor);
+      // A pinned package price replaces quantity × unit; the item keeps the implied unit price, the total stays exact.
+      const pkg = item.serviceId ? await resolvePackageTotal(client, item.serviceId, item.quantity, BigInt(price.unit_price_minor)) : null;
+      const total = pkg ? pkg.totalMinor : item.quantity * BigInt(price.unit_price_minor);
       subtotal += total;
-      resolved.push({ ...priceRow, quantity: item.quantity.toString(), total: total.toString(), parameters: item.parameters ?? {} });
+      resolved.push({ ...priceRow, ...(pkg?.pinned ? { unit_price_minor: pkg.unitMinor.toString() } : {}), quantity: item.quantity.toString(), total: total.toString(), parameters: item.parameters ?? {} });
     }
 
     let discount = 0n;

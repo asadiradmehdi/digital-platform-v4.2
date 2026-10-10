@@ -23,3 +23,29 @@ export function bulkNewUnit(oldUnit: number, percent: number, roundTo: number, p
   const rounded = roundTo > 1 ? Math.round(pack / roundTo) * roundTo : pack;
   return Math.max(1, Math.round(rounded / per));
 }
+
+/** ۱۲٬۵۰۰ / "12,500" / "١٢٥٠٠" → "12500" (Latin digits only, separators dropped). Keeps nothing but digits. */
+export function digitsOnly(input: string): string {
+  return input.replace(/[۰-۹]/g, d => String(FA.indexOf(d))).replace(/[٠-٩]/g, d => String(AR.indexOf(d))).replace(/\D/g, '');
+}
+
+/** Whole non-negative number from what a person typed (Persian/Arabic/Latin digits, any separators); null if empty/invalid. */
+export function parseAmount(input: string, { allowZero = false, max = 99_999_999_999 }: { allowZero?: boolean; max?: number } = {}): number | null {
+  const t = digitsOnly(input);
+  if (t === '' || t.length > 12) return null;
+  const n = Number(t);
+  if (n > max || (!allowZero && n < 1)) return null;
+  return n;
+}
+
+/** 2490000 → «۲٬۴۹۰٬۰۰۰» */
+export function formatFa(n: number): string {
+  return new Intl.NumberFormat('fa-IR').format(n);
+}
+
+/** Percent typed by a person: «۱۰», «-5», «۲٫۵» → number, null when invalid. */
+export function parsePercent(input: string): number | null {
+  const t = input.replace(/[۰-۹]/g, d => String(FA.indexOf(d))).replace(/[٠-٩]/g, d => String(AR.indexOf(d))).replace(/[٫,،]/g, '.').replace(/[−–]/g, '-').trim();
+  if (!/^-?\d{1,3}(\.\d{1,2})?$/.test(t)) return null;
+  return Number(t);
+}

@@ -92,14 +92,22 @@ describe('bulk tools', () => {
     await expect(previewBulk({ actorUserId: ADMIN, productSlug: 'instagram', percent: 5, roundTo: 7 })).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
     expect(mockQuery).not.toHaveBeenCalled();
   });
-  it('applies every change in one transaction with a summary audit', async () => {
+  it('applies every change in one transaction: one undoable batch per service, summary audit with a group id', async () => {
     mockQuery.mockResolvedValueOnce({ rows: planRows } as never).mockImplementation((async (sql: string) => {
+      if (/FROM services WHERE id=\$1 FOR UPDATE|SELECT slug FROM services/.test(sql)) return { rows: [{ slug: 'ig-followers' }] };
+      if (/FROM service_prices\s+WHERE service_id=\$1 AND currency=\$2 AND active=true AND \(effective_to/.test(sql)) return { rows: [{ id: 'cur', unit_price_minor: '180', min_quantity: '100', max_quantity: null }] };
+      if (/INSERT INTO service_price_batches/.test(sql)) return { rows: [{ id: 'batch-1' }] };
       if (/RETURNING id, unit_price_minor/.test(sql)) return { rows: [{ id: 'old', unit_price_minor: '180', price_version: '1' }] };
       if (/INSERT INTO service_prices/.test(sql)) return { rows: [{ id: 'new' }] };
-      if (/SELECT min_quantity/.test(sql)) return { rows: [{ min_quantity: '100', max_quantity: null }] };
       return { rows: [] };
     }) as never);
-    expect(await applyBulk({ actorUserId: ADMIN, productSlug: 'instagram', percent: 10 })).toEqual({ count: 1 });
+    const r = await applyBulk({ actorUserId: ADMIN, productSlug: 'instagram', percent: 10 });
+    expect(r.count).toBe(1);
+    expect(r.groupId).toMatch(/^[0-9a-f-]{36}$/);
+    const batch = mockQuery.mock.calls.find(c => /INSERT INTO service_price_batches/.test(String(c[0])))!;
+    expect(batch[1]![1]).toBe('BULK');
+    expect(JSON.parse(String(batch[1]![3]))).toMatchObject({ unit: 180 });
+    expect(JSON.parse(String(batch[1]![4]))).toMatchObject({ unit: 198 });
     expect(vi.mocked(writeAudit)).toHaveBeenCalledWith(expect.objectContaining({ action: 'admin.price.bulk', metadata: expect.objectContaining({ count: 1, percent: 10 }) }), expect.anything());
   });
   it('approves all drafts and audits the count', async () => {
