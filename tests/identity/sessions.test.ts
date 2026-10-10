@@ -23,8 +23,8 @@ describe('createSession', () => {
     await createSession('user-1', 60, { clientType: 'ANDROID', lastIp: '203.0.113.7' });
     await createSession('user-1', 60, { clientType: 'IOS', lastIp: '2001:db8::1' });
     expect((mockQuery.mock.calls[0][1] as unknown[])[7]).toBeNull();
-    expect((mockQuery.mock.calls[1][1] as unknown[])[7]).toBe('203.0.113.7');
-    expect((mockQuery.mock.calls[2][1] as unknown[])[7]).toBe('2001:db8::1');
+    expect((mockQuery.mock.calls[2][1] as unknown[])[7]).toBe('203.0.113.7');
+    expect((mockQuery.mock.calls[4][1] as unknown[])[7]).toBe('2001:db8::1');
   });
 
   it('inserts a session row and returns a raw token string', async () => {
@@ -116,7 +116,7 @@ describe('rotateSession', () => {
     const newToken = await rotateSession('old-raw-token');
     expect(typeof newToken).toBe('string');
     expect(newToken).not.toBe('old-raw-token');
-    expect(mockQuery).toHaveBeenCalledTimes(3);
+    expect(mockQuery).toHaveBeenCalledTimes(4);
   });
 
   it('returns null when original session is invalid', async () => {
@@ -154,5 +154,22 @@ describe('session lifetime policy', () => {
     expect(sql).toContain('expires_at>now() AND absolute_expires_at>now()');
     expect(sql).toContain("LEAST(now()+($2 || ' seconds')::interval, sessions.absolute_expires_at)");
     expect(params[1]).toBe(7 * 24 * 3600);
+  });
+});
+
+describe('terms acceptance evidence', () => {
+  it('records the accepted terms version when a session is created, and never blocks sign-in on failure', async () => {
+    const { query } = await import('../../server/core/db');
+    const { TERMS_VERSION } = await import('../../lib/legal-content');
+    const calls: Array<[string, unknown[]]> = [];
+    vi.mocked(query).mockImplementation((async (sql: string, params: unknown[]) => {
+      calls.push([sql, params]);
+      if (sql.includes('terms_acceptances')) throw new Error('db down');
+      return { rows: [], rowCount: 1 };
+    }) as never);
+    const { createSession } = await import('../../server/identity/sessions');
+    await expect(createSession('00000000-0000-4000-8000-000000000001', undefined, { clientType: 'ANDROID', authMethod: 'OTP' })).resolves.toBeTypeOf('string');
+    const terms = calls.find(([sql]) => sql.includes('terms_acceptances'));
+    expect(terms?.[1].slice(0, 4)).toEqual(['00000000-0000-4000-8000-000000000001', TERMS_VERSION, 'ANDROID', 'OTP']);
   });
 });

@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { isIP } from 'node:net';
 import { query } from '../core/db';
+import { TERMS_VERSION } from '../../lib/legal-content';
 export const hashSessionToken = (token: string) => createHash('sha256').update(token).digest('hex');
 const hash = hashSessionToken;
 
@@ -38,6 +39,12 @@ export async function createSession(userId: string, idleTtlSeconds = SESSION_IDL
      VALUES($1,$2,now()+($3 || ' seconds')::interval,$4,$5,$6,$7,$8,$9,now(),$10,now()+($11 || ' seconds')::interval)`,
     [userId, hash(raw), idle, metadata.clientType ?? 'WEB', metadata.deviceIdHash ?? null, metadata.deviceName ?? null, metadata.platformVersion ?? null, inetOrNull(metadata.lastIp), metadata.lastUserAgent?.slice(0, 500) ?? null, metadata.authMethod ?? null, SESSION_ABSOLUTE_TTL_SECONDS]
   );
+  // Evidence of acceptance of the current terms (the login screens state that signing in means accepting them).
+  // Best effort: a failure here must never block a sign-in.
+  await query(
+    `INSERT INTO terms_acceptances(user_id, terms_version, channel, auth_method, ip, user_agent) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT (user_id, terms_version) DO NOTHING`,
+    [userId, TERMS_VERSION, metadata.clientType ?? 'WEB', metadata.authMethod ?? null, inetOrNull(metadata.lastIp), metadata.lastUserAgent?.slice(0, 500) ?? null],
+  ).catch(() => undefined);
   return raw;
 }
 export async function revokeSession(rawToken: string) { await query(`UPDATE sessions SET revoked_at=now() WHERE token_hash=$1`, [hash(rawToken)]); }
