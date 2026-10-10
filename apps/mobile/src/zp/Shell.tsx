@@ -160,6 +160,7 @@ function TabItem({ on, meta, onPress }: { on: boolean; meta: { label: string; ic
     <Press accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={meta.label} onPress={onPress} depth={0.9} haptic
       style={{ flex: 1, alignItems: 'center', gap: 3, paddingVertical: 6 }}>
       <Animated.View pointerEvents="none" style={{ position: 'absolute', top: -10, width: 18, height: 3, borderBottomLeftRadius: 3, borderBottomRightRadius: 3, backgroundColor: C.gold2, opacity: v, transform: [{ scaleX: v.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1] }) }] }} />
+      <Animated.View pointerEvents="none" style={{ position: 'absolute', top: 2, width: 50, height: 32, borderRadius: 16, backgroundColor: 'rgba(233,196,106,0.2)', opacity: v, transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }] }} />
       <Animated.View style={{ transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [0, -2] }) }, { scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] }) }] }}>
         <Icon name={meta.icon} size={24} color={on ? C.gold3 : C.muted} duo={on ? 0.38 : 0} stroke={1.9} />
       </Animated.View>

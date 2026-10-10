@@ -180,7 +180,7 @@ export function Wordmark({ size = 24, latin = true, light }: { size?: number; la
         <Text style={{ fontFamily: F.brand, fontSize: size, color: light ? '#fff' : C.ink, lineHeight: size * 2, paddingTop: size * 0.3, paddingHorizontal: 4, marginBottom: -size * 0.3, includeFontPadding: true, textAlignVertical: 'center' }}>
           زُحل <Text style={{ color: light ? C.gold1 : C.gold3 }}>پی</Text>
         </Text>
-        {latin && <Text style={{ fontFamily: F.b, fontSize: 9, letterSpacing: 3, color: C.muted, marginTop: -4, textAlign: tRight }}>ZOHALPAY</Text>}
+        {latin && <Text style={{ fontFamily: F.b, fontSize: 9, letterSpacing: 3, color: light ? 'rgba(255,255,255,0.62)' : C.muted, marginTop: -4, textAlign: tRight }}>ZOHALPAY</Text>}
       </View>
     </View>
   );

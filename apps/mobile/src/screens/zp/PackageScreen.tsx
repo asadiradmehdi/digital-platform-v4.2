@@ -11,7 +11,7 @@ import { atLeft, C, F, back, card, faNum, fwd, right, row, shadow, tRight } from
 import { BrandTile, Enamel, Fill, Ornament, Tile } from '../../zp/brand';
 import { Icon } from '../../zp/Icon';
 import { SubScreen } from '../../zp/Shell';
-import { Async, Cta, EmptyState, ErrorBox, IconBtn, Pop, Press, Pulse, Rise, Sheet, T, useToast } from '../../zp/ui';
+import { Async, Burst, Cta, EmptyState, ErrorBox, IconBtn, Pop, Press, Pulse, Rise, Sheet, T, useToast } from '../../zp/ui';
 
 const PER_PAGE = 9;
 
@@ -22,7 +22,7 @@ function Done({ done, onHome, onOrders }: { done: { id: string; label: string; a
       <SafeAreaView style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <View accessibilityLiveRegion="polite" style={{ width: '100%', maxWidth: 360, alignItems: 'center', gap: 12 }}>
           <Pop style={{ width: 150, height: 110, alignItems: 'center', justifyContent: 'center' }}>
-            <Pulse />
+            <Pulse /><Burst />
             <Svg width={150} height={110} viewBox="0 0 150 110" style={{ position: 'absolute' }}>
               <Ellipse cx="75" cy="55" rx="72" ry="24" rotation={-14} origin="75, 55" fill="none" stroke={C.gold2} strokeOpacity={0.55} strokeWidth={1.5} />
               <Ellipse cx="75" cy="55" rx="60" ry="18" rotation={-14} origin="75, 55" fill="none" stroke={C.gold2} strokeOpacity={0.3} strokeWidth={1} />

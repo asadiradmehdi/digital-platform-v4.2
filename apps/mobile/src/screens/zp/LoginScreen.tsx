@@ -229,7 +229,6 @@ export function LoginScreen() {
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
           <View style={{ alignItems: 'center', paddingTop: 30, paddingBottom: 50, paddingHorizontal: 22, gap: 10, overflow: 'hidden' }}>
             <Ornament w={520} h={300} cx={260} cy={330} rot={-14} color={C.gold1} alpha={0.55} />
-            <BrandMark size={64} />
             <Wordmark size={34} light latin />
             <T size={14} color="rgba(255,255,255,0.82)" style={{ textAlign: 'center' }}>همه‌ی خدمات دیجیتال، یک‌جا و مطمئن</T>
             <View style={{ flexDirection: row, flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginTop: 4 }}>

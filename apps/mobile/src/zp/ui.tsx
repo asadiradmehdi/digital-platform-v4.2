@@ -69,6 +69,28 @@ export function Pulse({ size = 92, color = C.gold2 }: { size?: number; color?: s
   return <Animated.View pointerEvents="none" style={{ position: 'absolute', width: size, height: size, borderRadius: size / 2, borderWidth: 2, borderColor: color, opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.55, 0] }), transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.7] }) }] }} />;
 }
 
+/** One-off burst of gold sparks flying out of a success mark (native-driven; 12 diamonds, each its own angle, reach and fade). */
+export function Burst({ size = 92 }: { size?: number }) {
+  const [v] = useState(() => new Animated.Value(0));
+  useEffect(() => { Animated.sequence([Animated.delay(260), Animated.timing(v, { toValue: 1, duration: 1100, easing: Easing.out(Easing.cubic), useNativeDriver: true })]).start(); }, [v]);
+  const sparks = Array.from({ length: 12 }, (_, i) => {
+    const a = (i / 12) * Math.PI * 2 + (i % 2 ? 0.2 : 0);
+    const reach = size * (i % 3 === 0 ? 1.15 : i % 3 === 1 ? 0.9 : 1.4);
+    return { dx: Math.cos(a) * reach, dy: Math.sin(a) * reach, s: i % 3 === 0 ? 9 : 6 };
+  });
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', width: 1, height: 1 }}>
+      {sparks.map((p, i) => (
+        <Animated.View key={i} style={{
+          position: 'absolute', width: p.s, height: p.s, marginLeft: -p.s / 2, marginTop: -p.s / 2, borderRadius: 2, backgroundColor: i % 2 ? C.gold1 : C.gold3,
+          opacity: v.interpolate({ inputRange: [0, 0.12, 0.75, 1], outputRange: [0, 1, 0.9, 0] }),
+          transform: [{ translateX: v.interpolate({ inputRange: [0, 1], outputRange: [0, p.dx] }) }, { translateY: v.interpolate({ inputRange: [0, 1], outputRange: [0, p.dy] }) }, { rotate: v.interpolate({ inputRange: [0, 1], outputRange: ['45deg', `${225 + i * 20}deg`] }) }, { scale: v.interpolate({ inputRange: [0, 0.3, 1], outputRange: [0.2, 1.2, 0.5] }) }],
+        }} />
+      ))}
+    </View>
+  );
+}
+
 /** Gold-metal call to action. */
 export function Cta({ label, onPress, icon, full, big, small, disabled, busy, accessibilityLabel }: {
   label: string; onPress?: () => void; icon?: IconName; full?: boolean; big?: boolean; small?: boolean; disabled?: boolean; busy?: boolean; accessibilityLabel?: string;

@@ -377,7 +377,7 @@ export default function AuthForm({ initialMode = 'login', invite = null, otpEnab
 
         <div className="auth-note">
           <ShieldCheck size={14} />
-          <span>اتصال رمزنگاری‌شده · کد و رمز عبور هرگز به‌صورت متن ذخیره نمی‌شوند · با ورود، <Link href="/terms">قوانین زُحل پی</Link> را می‌پذیرید.</span>
+          <span>اتصال رمزنگاری‌شده است و کد و رمز عبور هرگز به‌صورت متن ذخیره نمی‌شوند. با ورود، <Link href="/terms">قوانین زُحل پی</Link> را می‌پذیرید.</span>
         </div>
       </section>
     </main>
