@@ -10,7 +10,7 @@ import { CodeBoxes } from '../../zp/CodeBoxes';
 import { Field } from '../../zp/Field';
 import { Cta, ErrorBox, Press, Sheet, T } from '../../zp/ui';
 
-type SheetProps = { open: boolean; onClose: () => void; done: (message: string) => void };
+type SheetProps = { onClose: () => void; done: (message: string) => void };
 
 /** SMS code entry with a resend countdown; calls `onCode` once all six digits are in. */
 function CodeStep({ challenge, onCode, onResend, busy, error }: {
@@ -18,7 +18,6 @@ function CodeStep({ challenge, onCode, onResend, busy, error }: {
 }) {
   const [code, setCode] = useState('');
   const [left, setLeft] = useState(challenge.resendIn);
-  useEffect(() => { setCode(''); setLeft(challenge.resendIn); }, [challenge]);
   useEffect(() => {
     if (left <= 0) return;
     const t = setTimeout(() => setLeft(n => n - 1), 1000);
@@ -40,11 +39,10 @@ function CodeStep({ challenge, onCode, onResend, busy, error }: {
   );
 }
 
-export function RenameSheet({ open, onClose, done, current }: SheetProps & { current: string }) {
+function RenameSheetBody({ onClose, done, current }: SheetProps & { current: string }) {
   const [name, setName] = useState(current);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  useEffect(() => { if (open) { setName(current); setError(null); } }, [open, current]);
   const save = async () => {
     if (name.trim().length < 2) { setError('نام باید دست‌کم ۲ حرف باشد.'); return; }
     setBusy(true); setError(null);
@@ -53,23 +51,22 @@ export function RenameSheet({ open, onClose, done, current }: SheetProps & { cur
     finally { setBusy(false); }
   };
   return (
-    <Sheet open={open} onClose={onClose} title="ویرایش نام" subtitle="نامی که در حساب و فاکتورها می‌بینید" icon="user">
+    <>
       <Field label="نام و نام خانوادگی" ltr={false} focused value={name} onChangeText={t => { setName(t); setError(null); }} maxLength={60}
         returnKeyType="done" onSubmitEditing={() => void save()} editable={!busy} />
       {error ? <ErrorBox text={error} /> : null}
       <Cta full label={busy ? 'در حال ذخیره…' : 'ذخیره'} busy={busy} onPress={() => void save()} />
-    </Sheet>
+    </>
   );
 }
 
 /** Adds and proves a mobile number (needed for SMS sign-in, password recovery and secure changes). */
-export function PhoneSheet({ open, onClose, done }: SheetProps) {
+function PhoneSheetBody({ onClose, done }: SheetProps) {
   const [phone, setPhone] = useState('');
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
   const [number, setNumber] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  useEffect(() => { if (open) { setPhone(''); setChallenge(null); setError(null); } }, [open]);
 
   const send = async () => {
     const n = normalizeIranMobile(phone) ?? (challenge ? number : null);
@@ -90,10 +87,10 @@ export function PhoneSheet({ open, onClose, done }: SheetProps) {
     finally { setBusy(false); }
   };
   return (
-    <Sheet open={open} onClose={onClose} title="تأیید شماره‌ی موبایل" subtitle="کد تأیید یک‌بار برای شما پیامک می‌شود" icon="phone">
+    <>
       {challenge ? (
         <>
-          <CodeStep challenge={challenge} busy={busy} error={error} onCode={v => void verify(v)} onResend={() => void send()} />
+          <CodeStep key={challenge.challengeId} challenge={challenge} busy={busy} error={error} onCode={v => void verify(v)} onResend={() => void send()} />
           <Press accessibilityRole="button" onPress={() => { setChallenge(null); setError(null); }} style={{ alignSelf: 'center' }}><T w="b" size={12.5} color={C.muted}>ویرایش شماره</T></Press>
         </>
       ) : (
@@ -104,11 +101,11 @@ export function PhoneSheet({ open, onClose, done }: SheetProps) {
           <Cta full label={busy ? 'در حال ارسال کد…' : 'دریافت کد تأیید'} busy={busy} onPress={() => void send()} />
         </>
       )}
-    </Sheet>
+    </>
   );
 }
 
-export function PasswordSheet({ open, onClose, done, hasPassword, phoneVerified }: SheetProps & { hasPassword: boolean; phoneVerified: boolean }) {
+function PasswordSheetBody({ onClose, done, hasPassword, phoneVerified }: SheetProps & { hasPassword: boolean; phoneVerified: boolean }) {
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [again, setAgain] = useState('');
@@ -116,7 +113,6 @@ export function PasswordSheet({ open, onClose, done, hasPassword, phoneVerified 
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  useEffect(() => { if (open) { setCurrent(''); setNext(''); setAgain(''); setChallenge(null); setError(null); setShow(false); } }, [open]);
 
   const submit = async (otpProof?: string) => {
     setBusy(true); setError(null);
@@ -143,10 +139,10 @@ export function PasswordSheet({ open, onClose, done, hasPassword, phoneVerified 
     catch (e) { setError(errorText(e, 'کد درست نیست.').replace('نشست شما تمام شده است. دوباره وارد شوید.', 'کد درست نیست یا منقضی شده است.')); setBusy(false); }
   };
   return (
-    <Sheet open={open} onClose={onClose} title={hasPassword ? 'تغییر رمز عبور' : 'ساخت رمز عبور'} subtitle={phoneVerified ? 'برای امنیت بیشتر، کد پیامکی هم لازم است' : 'رمز تازه جایگزین رمز قبلی می‌شود'} icon="shield">
+    <>
       {challenge ? (
         <>
-          <CodeStep challenge={challenge} busy={busy} error={error} onCode={v => void verify(v)} onResend={() => void start()} />
+          <CodeStep key={challenge.challengeId} challenge={challenge} busy={busy} error={error} onCode={v => void verify(v)} onResend={() => void start()} />
           <Press accessibilityRole="button" onPress={() => { setChallenge(null); setError(null); }} style={{ alignSelf: 'center' }}><T w="b" size={12.5} color={C.muted}>بازگشت</T></Press>
         </>
       ) : (
@@ -159,18 +155,17 @@ export function PasswordSheet({ open, onClose, done, hasPassword, phoneVerified 
           <Cta full label={busy ? 'در حال بررسی…' : phoneVerified ? 'ادامه و دریافت کد' : 'ثبت رمز جدید'} busy={busy} onPress={() => void start()} />
         </>
       )}
-    </Sheet>
+    </>
   );
 }
 
 /** Two-step sign-in with an authenticator app: set up (secret + first code + recovery codes) or switch off. */
-export function TwoFactorSheet({ open, onClose, done, enabled, accountName }: SheetProps & { enabled: boolean; accountName: string }) {
+function TwoFactorSheetBody({ onClose, done, enabled, accountName }: SheetProps & { enabled: boolean; accountName: string }) {
   const [setup, setSetup] = useState<{ uri: string; secret: string } | null>(null);
   const [recovery, setRecovery] = useState<string[] | null>(null);
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  useEffect(() => { if (open) { setSetup(null); setRecovery(null); setCode(''); setError(null); } }, [open]);
 
   const begin = async () => {
     setBusy(true); setError(null);
@@ -194,7 +189,7 @@ export function TwoFactorSheet({ open, onClose, done, enabled, accountName }: Sh
 
   const mono = { fontFamily: 'monospace' as const, writingDirection: 'ltr' as const, textAlign: 'center' as const };
   return (
-    <Sheet open={open} onClose={onClose} title="ورود دومرحله‌ای" subtitle="کد برنامه‌ی تأیید هویت، علاوه بر رمز عبور" icon="shieldS">
+    <>
       {recovery ? (
         <>
           <T size={12.5} color={C.muted} style={{ lineHeight: 22 }}>این کدهای بازیابی را جای امنی نگه دارید؛ اگر برنامه‌ی تأیید هویت را از دست دادید، هر کد یک‌بار ورود شما را باز می‌کند و دوباره نمایش داده نمی‌شود.</T>
@@ -230,6 +225,38 @@ export function TwoFactorSheet({ open, onClose, done, enabled, accountName }: Sh
           <Cta full label={busy ? 'در حال آماده‌سازی…' : 'شروع فعال‌سازی'} busy={busy} onPress={() => void begin()} />
         </>
       )}
+    </>
+  );
+}
+
+export function RenameSheet(p: Parameters<typeof RenameSheetBody>[0] & { open: boolean }) {
+  return (
+    <Sheet open={p.open} onClose={p.onClose} title="ویرایش نام" subtitle="نامی که در حساب و فاکتورها می‌بینید" icon="user">
+      {p.open ? <RenameSheetBody {...p} /> : null}
+    </Sheet>
+  );
+}
+
+export function PhoneSheet(p: Parameters<typeof PhoneSheetBody>[0] & { open: boolean }) {
+  return (
+    <Sheet open={p.open} onClose={p.onClose} title="تأیید شماره‌ی موبایل" subtitle="کد تأیید یک‌بار برای شما پیامک می‌شود" icon="phone">
+      {p.open ? <PhoneSheetBody {...p} /> : null}
+    </Sheet>
+  );
+}
+
+export function PasswordSheet(p: Parameters<typeof PasswordSheetBody>[0] & { open: boolean }) {
+  return (
+    <Sheet open={p.open} onClose={p.onClose} title={p.hasPassword ? 'تغییر رمز عبور' : 'ساخت رمز عبور'} subtitle={p.phoneVerified ? 'برای امنیت بیشتر، کد پیامکی هم لازم است' : 'رمز تازه جایگزین رمز قبلی می‌شود'} icon="shield">
+      {p.open ? <PasswordSheetBody {...p} /> : null}
+    </Sheet>
+  );
+}
+
+export function TwoFactorSheet(p: Parameters<typeof TwoFactorSheetBody>[0] & { open: boolean }) {
+  return (
+    <Sheet open={p.open} onClose={p.onClose} title="ورود دومرحله‌ای" subtitle="کد برنامه‌ی تأیید هویت، علاوه بر رمز عبور" icon="shieldS">
+      {p.open ? <TwoFactorSheetBody {...p} /> : null}
     </Sheet>
   );
 }

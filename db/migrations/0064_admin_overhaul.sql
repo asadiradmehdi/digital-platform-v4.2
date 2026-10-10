@@ -253,7 +253,6 @@ AS $$
 #variable_conflict use_column
 DECLARE
   prev text := current_setting('app.rls_system_read', true);
-  n integer := LEAST(GREATEST(COALESCE(p_days, 14), 1), 90);
   since timestamptz := (date_trunc('day', now() AT TIME ZONE 'Asia/Tehran') - make_interval(days => LEAST(GREATEST(COALESCE(p_days, 14), 1), 90) - 1)) AT TIME ZONE 'Asia/Tehran';
 BEGIN
   PERFORM set_config('app.rls_system_read', 'on', true);
