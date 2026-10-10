@@ -11,6 +11,8 @@ export type AppService = {
   id: string; slug: string; name: string; description: string | null; category: string;
   /** Name inside its category («سیو» on the Instagram page); `brand` is set for AI plans. */
   short: string; brand: BrandLogo | null; perLabel: string;
+  /** Second order step: services sharing a `base` are variants of one offer (ایرانی / خارجی / اقتصادی…). */
+  base: string; variant: { key: string; label: string; hint: string; order: number };
   group: string; unit: string; icon: IconName; per: number; unitPriceToman: number; quantities: number[];
   /** `required` is false for optional targets (design / AI content: page or site is a hint). */
   target: { label: string; placeholder: string; ltr: boolean; required?: boolean };

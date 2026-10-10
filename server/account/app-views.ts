@@ -1,6 +1,6 @@
 // View models for the native app: the server owns pricing, stages, loyalty level and wording,
 // so the mobile client only renders (no domain logic is duplicated in React Native).
-import { CATEGORIES, categoryMeta, isHiddenCategory, isTeamFulfilled, orderForm, perLabel, serviceBrand, serviceIcon, serviceMeta, shortServiceName, sortServices } from '../../lib/catalog-ui';
+import { CATEGORIES, baseSlug, categoryMeta, variantOf, isHiddenCategory, isTeamFulfilled, orderForm, perLabel, serviceBrand, serviceIcon, serviceMeta, shortServiceName, sortServices } from '../../lib/catalog-ui';
 import { formatQuantityWords, formatWhen, orderCode, toToman } from '../../lib/format';
 import { orderStage } from '../../lib/order-progress';
 import { tierFor } from '../../lib/tiers';
@@ -16,6 +16,7 @@ export function catalogView(items: CatalogItem[]) {
     const quantities = kind.quantities.filter(q => q >= min && q <= max);
     return {
       id: i.id, slug: i.slug, name: i.name, description: i.description, category: i.productSlug,
+      base: baseSlug(i.slug), variant: variantOf(i.slug),
       short: shortServiceName(i.name, categoryMeta(i.productSlug)?.name ?? ''), brand: serviceBrand(i.slug) ?? null, perLabel: perLabel(kind),
       group: kind.group, unit: kind.unit, icon: serviceIcon(i.slug), per: kind.per,
       unitPriceToman: Number(i.unitPriceMinor),

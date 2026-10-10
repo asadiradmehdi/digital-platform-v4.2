@@ -79,8 +79,30 @@ export const KINDS: Record<ServiceKind, KindMeta> = {
   other: { group: 'سرویس‌ها', unit: 'عدد', icon: 'box', quantities: UNIT_Q, per: 1 },
 };
 
+/**
+ * Variants (second step of the order path, e.g. Instagram followers → Iranian / foreign / economy) are ordinary
+ * service rows whose slug is `<base>--<variant>`; the plain base slug is the «استاندارد» variant. Prices, availability
+ * and routing are per row, so the admin manages every variant like any other service.
+ */
+export const VARIANTS = {
+  iranian: { label: 'ایرانی', hint: 'پروفایل‌های فارسی‌زبان ایرانی', order: 1 },
+  foreign: { label: 'خارجی', hint: 'پروفایل‌های بین‌المللی', order: 2 },
+  economy: { label: 'اقتصادی', hint: 'ارزان‌ترین گزینه برای شروع', order: 3 },
+  premium: { label: 'ویژه', hint: 'کیفیت و ماندگاری بالاتر', order: 4 },
+} as const;
+export type VariantKey = keyof typeof VARIANTS;
+export const STANDARD_VARIANT = { key: 'standard', label: 'استاندارد', hint: 'گزینه‌ی پیش‌فرض', order: 0 } as const;
+
+export const baseSlug = (slug: string) => slug.split('--')[0];
+export function variantOf(slug: string): { key: string; label: string; hint: string; order: number } {
+  const key = slug.split('--')[1];
+  return key && key in VARIANTS ? { key, ...VARIANTS[key as VariantKey] } : STANDARD_VARIANT;
+}
+const variantRank = (slug: string) => variantOf(slug).order;
+
 /** Derive the presentation kind from a catalogue slug such as `ig-story-views`, `tg-bot-starts` or `sub-claude-pro`. */
 export function serviceKind(slug: string): ServiceKind {
+  slug = baseSlug(slug);
   const creative = CREATIVE_SERVICES[slug];
   if (creative) return creative.kind;
   if (/^sub-/.test(slug)) return 'months';
@@ -109,6 +131,7 @@ const BRAND_BY_SLUG: Array<[RegExp, BrandLogo]> = [
   [/^sub-copilot-/, 'copilot'], [/^sub-elevenlabs-/, 'elevenlabs'], [/^sub-suno-/, 'suno'],
 ];
 export function serviceBrand(slug: string): BrandLogo | undefined {
+  slug = baseSlug(slug);
   return BRAND_BY_SLUG.find(([rx]) => rx.test(slug))?.[1];
 }
 
@@ -123,8 +146,8 @@ const KIND_ORDER: ServiceKind[] = ['months', 'followers', 'members', 'subscriber
 /** Stable display order inside a category: by kind (followers before likes …), then the catalogue order. */
 export function sortServices<T extends { slug: string }>(items: T[]): T[] {
   const order = [...SERVICE_ORDER, ...CREATIVE_ORDER()];
-  const pos = (slug: string) => { const i = order.indexOf(slug); return i < 0 ? order.length + KIND_ORDER.indexOf(serviceKind(slug)) : i; };
-  return items.map((it, i) => ({ it, i })).sort((a, b) => pos(a.it.slug) - pos(b.it.slug) || a.i - b.i).map(x => x.it);
+  const pos = (slug: string) => { const i = order.indexOf(baseSlug(slug)); return i < 0 ? order.length + KIND_ORDER.indexOf(serviceKind(slug)) : i; };
+  return items.map((it, i) => ({ it, i })).sort((a, b) => pos(a.it.slug) - pos(b.it.slug) || variantRank(a.it.slug) - variantRank(b.it.slug) || a.i - b.i).map(x => x.it);
 }
 
 /** Display order inside each category: what customers ask for most comes first. Unlisted slugs follow, by kind. */
@@ -143,6 +166,7 @@ const CREATIVE_ORDER = (): string[] => Object.keys(CREATIVE_SERVICES);
 
 /** Glyph for one service: a few services read better with their own icon than their kind's. */
 export function serviceIcon(slug: string): IconName {
+  slug = baseSlug(slug);
   const creative = CREATIVE_SERVICES[slug];
   if (creative) return creative.icon;
   if (/story-views$/.test(slug)) return 'story';
@@ -160,6 +184,7 @@ export function perLabel(kind: KindMeta): string {
 
 /** Order-form target field, by category and kind. The value is sent as `parameters.target`. */
 export function targetField(category: string, kind: ServiceKind, slug = ''): TargetSpec {
+  slug = baseSlug(slug);
   const creative = CREATIVE_SERVICES[slug];
   if (creative) return creative.target;
   return { ...socialTarget(category, kind, slug), required: true };
@@ -279,6 +304,7 @@ export const CREATIVE_SERVICES: Record<string, CreativeService> = {
 
 /** Presentation unit, presets and icon for one service (creative services override their kind's defaults). */
 export function serviceMeta(slug: string): KindMeta {
+  slug = baseSlug(slug);
   const creative = CREATIVE_SERVICES[slug];
   const kind = KINDS[serviceKind(slug)];
   return creative ? { ...kind, unit: creative.unit, quantities: creative.quantities, icon: creative.icon } : kind;
@@ -290,6 +316,7 @@ const faInt = (n: number) => new Intl.NumberFormat('fa-IR').format(n);
 export type OrderFact = { icon: IconName; text: string };
 export type OrderForm = { target: TargetSpec; brief: BriefSpec | null; facts: OrderFact[]; refund: string };
 export function orderForm(category: string, slug: string): OrderForm {
+  slug = baseSlug(slug);
   const creative = CREATIVE_SERVICES[slug];
   const target = targetField(category, serviceKind(slug), slug);
   if (!creative) return { target, brief: null, facts: [], refund: 'بازگشت وجه در صورت لغو' };
