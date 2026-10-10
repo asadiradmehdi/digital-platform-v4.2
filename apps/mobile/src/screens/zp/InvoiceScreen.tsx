@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Linking, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { errorText, siteUrl } from '../../api/app';
-import { invoicesApi, type AppInvoice, type AppInvoiceField } from '../../api/invoices';
+import { invoicesApi, type AppInvoice } from '../../api/invoices';
 import { formatTomanNumber } from '../../format';
 import { useRemote } from '../../hooks/useRemote';
 import { C, RTL, card, faNum, right, row } from '../../zp/base';
@@ -14,30 +14,6 @@ import { SubScreen } from '../../zp/Shell';
 import { Async, Cta, EmptyState, ErrorBox, Star, T } from '../../zp/ui';
 import { ltr } from './InvoicesScreen';
 
-const show = (f: AppInvoiceField) => (f.ltr ? ltr(f.value) : f.value);
-
-function Fields({ fields }: { fields: AppInvoiceField[] }) {
-  return (
-    <>
-      {fields.map(f => (
-        <View key={f.label} style={{ flexDirection: row, justifyContent: 'space-between', gap: 10 }}>
-          <T size={12} color={C.muted}>{f.label}</T>
-          <T w="sb" size={12} style={{ flexShrink: 1 }}>{show(f)}</T>
-        </View>
-      ))}
-    </>
-  );
-}
-
-function Head({ title }: { title: string }) {
-  return (
-    <View style={{ flexDirection: row, alignItems: 'center', gap: 6 }}>
-      <Star size={11} />
-      <T w="b" size={11.5} color={C.goldText}>{title}</T>
-    </View>
-  );
-}
-
 function Line({ label, toman, strong, minus }: { label: string; toman: number; strong?: boolean; minus?: boolean }) {
   return (
     <View style={{ flexDirection: row, justifyContent: 'space-between', alignItems: 'baseline', paddingVertical: 8, paddingHorizontal: 14, borderTopWidth: 1, borderTopColor: C.line }}>
@@ -47,99 +23,93 @@ function Line({ label, toman, strong, minus }: { label: string; toman: number; s
   );
 }
 
+function Cell({ k, v, strong, flex = 1 }: { k: string; v: string; strong?: boolean; flex?: number }) {
+  return (
+    <View style={{ flex, gap: 2 }}>
+      <T size={9.5} color={C.muted}>{k}</T>
+      <T w={strong ? 'b' : 'sb'} size={12} numberOfLines={1}>{v}</T>
+    </View>
+  );
+}
+
+/** One screen, no scrolling: brand header, amount, the order line, parties, payment and the accepted-terms line. */
 function Document({ inv }: { inv: AppInvoice }) {
   const receipt = inv.type === 'TOPUP_RECEIPT';
   const t = inv.totals;
-  const panel: StyleProp<ViewStyle> = [{ borderRadius: 18, padding: 14, gap: 6 }, card];
+  const first = inv.items[0];
+  const more = inv.items.length - 1;
+  const target = first?.details.find(d => d.ltr);
+  const sellerId = inv.seller.fields.find(f => f.label === 'شناسه ملی');
+  const terms = inv.notes.find(n => n.includes('قوانین'));
   return (
-    <>
-      <Enamel radius={26} style={{ padding: 18, gap: 16 }}>
+    <View style={{ flex: 1, gap: 10 }}>
+      <Enamel radius={24} style={{ padding: 16, gap: 12 }}>
         <Ornament w={400} h={200} cx={60} cy={220} rot={-14} color={C.gold1} alpha={0.5} />
-        <View style={{ flexDirection: row, alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+        <View style={{ flexDirection: row, alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
           <View style={{ flexDirection: row, alignItems: 'center', gap: 8 }}>
-            <BrandMark size={40} />
-            <T w="dx" size={19} color="#fff">زُحل <T w="dx" size={19} color={C.gold1}>پی</T></T>
+            <BrandMark size={34} />
+            <T w="dx" size={17} color="#fff">زُحل <T w="dx" size={17} color={C.gold1}>پی</T></T>
           </View>
-          <View style={{ alignItems: left, gap: 6 }}>
-            <T w="dx" size={17} color={C.gold1} accessibilityRole="header">{inv.typeLabel}</T>
-            <View style={{ borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: C.rim }}>
-              <T w="sb" size={12} color="rgba(255,255,255,0.9)">{ltr(inv.number)}</T>
-            </View>
+          <View style={{ alignItems: left, gap: 4 }}>
+            <T w="dx" size={15} color={C.gold1} accessibilityRole="header">{inv.typeLabel}</T>
+            <T w="sb" size={11} color="rgba(255,255,255,0.85)">{ltr(inv.number)}</T>
           </View>
         </View>
+        <View style={{ alignItems: 'center', gap: 2 }}>
+          <T size={10.5} color="rgba(255,255,255,0.68)">{receipt ? 'مبلغ واریزی' : 'مبلغ پرداخت‌شده'}</T>
+          <T w="dx" size={30} color="#fff" style={{ lineHeight: 42 }}>{formatTomanNumber(t.totalToman)} <T size={12} color={C.gold1}>تومان</T></T>
+          <T size={10.5} color="rgba(255,255,255,0.72)" style={{ textAlign: 'center' }} numberOfLines={2}>{t.totalWords}</T>
+        </View>
         <View style={{ flexDirection: row, gap: 6 }}>
-          {[['تاریخ صدور', inv.dateLabel], ['ساعت', inv.timeLabel], ['وضعیت', inv.statusLabel]].map(([k, v]) => (
-            <View key={k} style={{ flex: 1, gap: 3, padding: 9, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(242,211,144,0.22)' }}>
-              <T size={10} color="rgba(255,255,255,0.66)">{k}</T>
-              <T w="b" size={12.5} color={k === 'وضعیت' ? C.gold1 : '#fff'} numberOfLines={1}>{v}</T>
+          {[['تاریخ (تهران)', inv.dateLabel], ['ساعت', inv.timeLabel], ['وضعیت', inv.statusLabel]].map(([k, v]) => (
+            <View key={k} style={{ flex: 1, gap: 2, padding: 8, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(242,211,144,0.22)' }}>
+              <T size={9.5} color="rgba(255,255,255,0.66)">{k}</T>
+              <T w="b" size={12} color={k === 'وضعیت' ? C.gold1 : '#fff'} numberOfLines={1}>{v}</T>
             </View>
           ))}
         </View>
       </Enamel>
 
-      <View style={panel}>
-        <Head title={receipt ? 'دریافت‌کننده' : 'فروشنده'} />
-        <T w="b" size={15}>{inv.seller.name}</T>
-        <Fields fields={inv.seller.fields} />
-      </View>
-      <View style={panel}>
-        <Head title={receipt ? 'پرداخت‌کننده' : 'خریدار'} />
-        <T w="b" size={15}>{inv.buyer.name}</T>
-        <Fields fields={inv.buyer.fields} />
-      </View>
-
-      <View style={[{ borderRadius: 18, paddingVertical: 4 }, card]}>
-        {inv.items.map((it, i) => (
-          <View key={it.row} style={{ padding: 14, gap: 5, borderTopWidth: i ? 1 : 0, borderTopColor: C.line, borderStyle: 'dashed' }}>
-            <View style={{ flexDirection: row, gap: 8, alignItems: 'baseline' }}>
-              <T size={11} color={C.subtle}>{faNum(it.row)}</T>
-              <T w="b" size={14} style={{ flex: 1 }}>{it.description}</T>
+      <View style={[{ borderRadius: 18, padding: 13, gap: 9 }, card]}>
+        {first ? (
+          <>
+            <View style={{ flexDirection: row, alignItems: 'center', gap: 6 }}>
+              <Star size={10} />
+              <T w="b" size={13.5} style={{ flex: 1 }} numberOfLines={2}>{first.description}</T>
             </View>
-            {it.details.map(d => <T key={d.label} size={11.5} color={C.muted}>{d.label}: {show(d)}</T>)}
-            <View style={{ flexDirection: row, justifyContent: 'space-between' }}>
-              <T size={12} color={C.muted}>تعداد</T><T w="sb" size={12}>{it.quantityLabel}</T>
+            <View style={{ flexDirection: row, gap: 8 }}>
+              <Cell k="تعداد" v={first.quantityLabel} />
+              <Cell k="مبلغ واحد" v={`${formatTomanNumber(first.unitPriceToman)} تومان`} />
+              <Cell k="مبلغ کل" v={`${formatTomanNumber(first.totalToman)} تومان`} strong />
             </View>
-            <View style={{ flexDirection: row, justifyContent: 'space-between' }}>
-              <T size={12} color={C.muted}>مبلغ واحد</T><T w="sb" size={12}>{formatTomanNumber(it.unitPriceToman)} تومان</T>
-            </View>
-            <View style={{ flexDirection: row, justifyContent: 'space-between' }}>
-              <T size={12} color={C.muted}>مبلغ کل</T><T w="b" size={12.5}>{formatTomanNumber(it.totalToman)} تومان</T>
-            </View>
-          </View>
-        ))}
-      </View>
-
-      <View style={[{ borderRadius: 18, overflow: 'hidden' }, card]}>
-        <View style={{ paddingVertical: 8, paddingHorizontal: 14, flexDirection: row, justifyContent: 'space-between' }}>
-          <T size={12} color={C.muted}>جمع اقلام</T>
-          <T w="sb" size={12.5}>{formatTomanNumber(t.subtotalToman)} <T size={9.5} color={C.muted}>تومان</T></T>
-        </View>
+            {target ? <T size={11} color={C.muted} numberOfLines={1}>{target.label}: {ltr(target.value)}</T> : null}
+            {more > 0 ? <T size={10.5} color={C.goldText}>و {faNum(more)} قلم دیگر در همین فاکتور</T> : null}
+          </>
+        ) : null}
         {t.discountToman > 0 ? <Line label="تخفیف" toman={t.discountToman} minus /> : null}
-        {t.vat ? <Line label="مبلغ پیش از مالیات" toman={t.vat.netToman} /> : null}
         {t.vat ? <Line label={`مالیات بر ارزش افزوده (${t.vat.rateLabel})`} toman={t.vat.amountToman} /> : null}
-        <View style={{ backgroundColor: C.accentStrong, paddingVertical: 12, paddingHorizontal: 14, flexDirection: row, justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <T w="b" size={12.5} color={C.gold1}>{receipt ? 'مبلغ واریزی' : 'مبلغ پرداخت‌شده'}</T>
-          <T w="b" size={19} color="#fff">{formatTomanNumber(t.totalToman)} <T size={10} color="rgba(255,255,255,0.7)">تومان</T></T>
-        </View>
-      </View>
-      <View style={{ borderRadius: 16, padding: 12, gap: 3, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, ...(RTL ? { borderLeftWidth: 3, borderLeftColor: C.gold2 } : { borderRightWidth: 3, borderRightColor: C.gold2 }) }}>
-        <T size={10.5} color={C.muted}>مبلغ به حروف</T>
-        <T w="b" size={13.5} style={{ lineHeight: 26 }}>{t.totalWords}</T>
       </View>
 
-      <View style={panel}>
-        <Head title="جزئیات پرداخت" />
-        <Fields fields={[
-          { label: 'روش پرداخت', value: inv.payment.methodLabel },
-          { label: 'زمان پرداخت', value: inv.payment.paidLabel },
-          ...(inv.payment.orderCode ? [{ label: 'کد پیگیری سفارش', value: inv.payment.orderCode, ltr: true }] : []),
-          ...(inv.payment.reference ? [{ label: 'شماره مرجع', value: inv.payment.reference, ltr: true }] : []),
-        ]} />
+      <View style={[{ borderRadius: 18, padding: 13, gap: 9 }, card]}>
+        <View style={{ flexDirection: row, gap: 8 }}>
+          <Cell flex={1} k={receipt ? 'دریافت‌کننده' : 'فروشنده'} v={inv.seller.name} strong />
+          <Cell flex={1} k={receipt ? 'پرداخت‌کننده' : 'خریدار'} v={inv.buyer.name} strong />
+        </View>
+        <View style={{ flexDirection: row, gap: 8 }}>
+          <Cell k="روش پرداخت" v={inv.payment.methodLabel} />
+          <Cell k="زمان پرداخت" v={inv.payment.paidLabel} />
+        </View>
+        <View style={{ flexDirection: row, gap: 8 }}>
+          {inv.payment.orderCode ? <Cell k="کد پیگیری سفارش" v={ltr(inv.payment.orderCode)} /> : null}
+          {inv.payment.reference ? <Cell k="شماره مرجع" v={ltr(inv.payment.reference)} /> : null}
+          {!inv.payment.orderCode && !inv.payment.reference && sellerId ? <Cell k={sellerId.label} v={ltr(sellerId.value)} /> : null}
+        </View>
       </View>
-      <View style={{ gap: 2, alignItems: right }}>
-        {inv.notes.map(n => <T key={n} size={11} color={C.muted} style={{ lineHeight: 20 }}>{n}</T>)}
+
+      <View style={{ borderRadius: 14, padding: 10, gap: 2, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, ...(RTL ? { borderLeftWidth: 3, borderLeftColor: C.gold2 } : { borderRightWidth: 3, borderRightColor: C.gold2 }) }}>
+        <T size={10.5} color={C.muted} style={{ lineHeight: 17 }}>{terms ?? inv.notes[0]}</T>
       </View>
-    </>
+    </View>
   );
 }
 
@@ -164,6 +134,7 @@ export function InvoiceScreen() {
   return (
     <SubScreen
       title={data.data?.invoice.typeLabel ?? 'فاکتور'}
+      fixed
       footer={data.status === 'success' ? <View style={{ gap: 8 }}>{error ? <ErrorBox text={error} /> : null}<Cta full icon="share" label="اشتراک‌گذاری / ذخیره PDF" busy={busy} onPress={openPdf} /></View> : undefined}
     >
       {!ws ? (

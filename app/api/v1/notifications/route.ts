@@ -1,7 +1,9 @@
 import { NextRequest } from 'next/server';
 import { withUserTransaction } from '../../../../server/core/db';
+import { AppError } from '../../../../server/core/errors';
 import { correlationId, handleRouteError, json } from '../../../../server/core/http';
 import { requireRequestUser } from '../../../../server/identity/request-user';
+import { assertSameOrigin } from '../../../../server/core/security-boundary';
 
 export async function GET(request: NextRequest) {
   const id = correlationId(request);
@@ -25,6 +27,22 @@ export async function GET(request: NextRequest) {
       LIMIT 50
     `, [userId]));
     return json({ items: result.rows, nextCursor: null }, { correlationId: id, headers: { 'cache-control': 'private, no-store' } });
+  } catch (error) {
+    return handleRouteError(error, id);
+  }
+}
+
+/** PATCH /api/v1/notifications { action: 'read_all' }: marks every unread notification of the signed-in user as read. */
+export async function PATCH(request: NextRequest) {
+  const id = correlationId(request);
+  try {
+    assertSameOrigin(request);
+    const userId = await requireRequestUser(request);
+    const body = await request.json().catch(() => ({})) as Record<string, unknown>;
+    if (body.action !== 'read_all') throw new AppError('VALIDATION_ERROR', "action must be 'read_all'.");
+    const r = await withUserTransaction(userId, client => client.query(
+      `UPDATE notifications SET read_at=now() WHERE user_id=$1 AND read_at IS NULL`, [userId]));
+    return json({ ok: true, updated: r.rowCount ?? 0 }, { correlationId: id });
   } catch (error) {
     return handleRouteError(error, id);
   }
