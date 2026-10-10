@@ -2,7 +2,7 @@
 // bottom sheet, toast, progress track and the empty / error / loading states.
 import { useEffect, useRef, useState, type PropsWithChildren, type ReactNode } from 'react';
 import {
-  ActivityIndicator, Animated, Easing, Modal, Pressable, StyleSheet, Text, View,
+  ActivityIndicator, Animated, Easing, Modal, Platform, Pressable, StyleSheet, Text, Vibration, View,
   type StyleProp, type TextProps, type TextStyle, type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,17 +18,30 @@ export function T({ w = 'm', size = 14, color = C.ink, style, ...rest }: TextPro
 const APressable = Animated.createAnimatedComponent(Pressable);
 
 /** Pressable with a springy press: dips on touch, settles back with a tiny overshoot (the web .zp-press). */
-export function Press({ style, children, onPressIn, onPressOut, ...rest }: PropsWithChildren<Omit<React.ComponentProps<typeof Pressable>, 'style' | 'children'> & { style?: StyleProp<ViewStyle> }>) {
+export function Press({ style, children, onPressIn, onPressOut, depth = 0.955, haptic, ...rest }: PropsWithChildren<Omit<React.ComponentProps<typeof Pressable>, 'style' | 'children'> & { style?: StyleProp<ViewStyle>; depth?: number; haptic?: boolean }>) {
   const [scale] = useState(() => new Animated.Value(1));
   const to = (v: number, bounce: boolean) => Animated.spring(scale, { toValue: v, useNativeDriver: true, speed: bounce ? 22 : 40, bounciness: bounce ? 9 : 0 }).start();
   return (
     <APressable {...rest}
-      onPressIn={e => { to(0.955, false); onPressIn?.(e); }}
+      onPressIn={e => { to(depth, false); if (haptic && Platform.OS === 'android') Vibration.vibrate(8); onPressIn?.(e); }}
       onPressOut={e => { to(1, true); onPressOut?.(e); }}
       style={[style, { transform: [{ scale }] }]}>
       {children}
     </APressable>
   );
+}
+
+/** Counts a number up from zero to `value` when it first appears, and glides to new values (balances). */
+export function CountUp({ value, format, ...text }: { value: number; format: (n: number) => string } & Omit<React.ComponentProps<typeof T>, 'children'>) {
+  const [shown, setShown] = useState(0);
+  const from = useRef(0);
+  useEffect(() => {
+    const v = new Animated.Value(0);
+    const id = v.addListener(({ value: t }) => setShown(Math.round(from.current + (value - from.current) * t)));
+    Animated.timing(v, { toValue: 1, duration: 900, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start(() => { from.current = value; });
+    return () => v.removeListener(id);
+  }, [value]);
+  return <T {...text}>{format(shown)}</T>;
 }
 
 /** Fades and lifts its child in once on mount; `delay` staggers lists into a gentle cascade. */
@@ -60,14 +73,18 @@ export function Pulse({ size = 92, color = C.gold2 }: { size?: number; color?: s
 export function Cta({ label, onPress, icon, full, big, small, disabled, busy, accessibilityLabel }: {
   label: string; onPress?: () => void; icon?: IconName; full?: boolean; big?: boolean; small?: boolean; disabled?: boolean; busy?: boolean; accessibilityLabel?: string;
 }) {
+  const [sweep] = useState(() => new Animated.Value(0));
+  const [w, setW] = useState(0);
+  const shine = () => { sweep.setValue(0); Animated.timing(sweep, { toValue: 1, duration: 520, easing: Easing.out(Easing.quad), useNativeDriver: true }).start(); };
   const pad = full ? { paddingVertical: 15, borderRadius: 18 } : big ? { paddingVertical: 14, paddingHorizontal: 20, borderRadius: 16 } : small ? { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12 } : { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 14 };
   return (
     <Press
       accessibilityRole="button" accessibilityLabel={accessibilityLabel ?? label} accessibilityState={{ disabled: disabled || busy, busy }}
-      disabled={disabled || busy} onPress={onPress}
+      disabled={disabled || busy} onPress={onPress} haptic depth={0.94} onPressIn={shine} onLayout={e => setW(e.nativeEvent.layout.width)}
       style={[{ overflow: 'hidden', alignItems: 'center', justifyContent: 'center', flexDirection: row, gap: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)', backgroundColor: G.metal[G.metal.length - 1] }, pad, full && { alignSelf: 'stretch' }, (disabled || busy) && { opacity: 0.55 }, shadow(8, 16, 0.35, '#7a5218')]}
     >
       <Fill kind="metal" vertical />
+      <Animated.View pointerEvents="none" style={{ position: 'absolute', top: -10, bottom: -10, width: 46, backgroundColor: 'rgba(255,255,255,0.45)', opacity: sweep.interpolate({ inputRange: [0, 0.15, 0.85, 1], outputRange: [0, 1, 1, 0] }), transform: [{ translateX: sweep.interpolate({ inputRange: [0, 1], outputRange: [-60, Math.max(w, 80) + 20] }) }, { skewX: '-20deg' }] }} />
       {busy ? <ActivityIndicator color={C.onGold} size="small" /> : null}
       <T w="b" size={full ? 16 : big ? 15 : small ? 12.5 : 13.5} color={C.onGold} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ zIndex: 1 }}>{label}</T>
       {icon && !busy ? <View style={{ position: 'relative', zIndex: 1 }}><Icon name={icon} size={18} color={C.onGold} stroke={2.6} /></View> : null}
@@ -77,7 +94,7 @@ export function Cta({ label, onPress, icon, full, big, small, disabled, busy, ac
 
 export function IconBtn({ icon, label, onPress, size = 42, dot }: { icon: IconName; label: string; onPress?: () => void; size?: number; dot?: boolean }) {
   return (
-    <Press accessibilityRole="button" accessibilityLabel={label} onPress={onPress} hitSlop={6}
+    <Press accessibilityRole="button" accessibilityLabel={label} onPress={onPress} hitSlop={6} depth={0.86}
       style={[{ width: size, height: size, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }, card, { shadowOpacity: 0.06 }]}>
       <Icon name={icon} size={21} color={C.ink} />
       {dot ? <View style={{ position: 'absolute', top: 10, ...atRight(11), width: 8, height: 8, borderRadius: 4, backgroundColor: C.vermilion, borderWidth: 2, borderColor: C.surface }} /> : null}

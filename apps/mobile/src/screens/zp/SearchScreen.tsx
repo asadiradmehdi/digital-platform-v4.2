@@ -9,7 +9,7 @@ import { BrandTile, Tile } from '../../zp/brand';
 import { Icon } from '../../zp/Icon';
 import { bestSellers, searchServices } from '../../zp/search';
 import { SubScreen } from '../../zp/Shell';
-import { Async, EmptyState, Press, Star, T } from '../../zp/ui';
+import { Async, EmptyState, Press, Rise, Star, T } from '../../zp/ui';
 
 function ServiceRow({ s, catalogName, hot }: { s: AppService; catalogName: string; hot?: boolean }) {
   const router = useRouter();
@@ -57,7 +57,7 @@ export function SearchScreen() {
                 <Star size={11} />
                 <T w="b" size={12} color={C.goldText}>{typed ? 'نتیجه‌ها' : 'پرفروش‌ترین‌ها'}</T>
               </View>
-              {list.map((s, i) => <ServiceRow key={s.slug} s={s} catalogName={name(s.category)} hot={!typed && i < 3} />)}
+              {list.map((s, i) => <Rise key={s.slug} delay={Math.min(i, 8) * 45}><ServiceRow s={s} catalogName={name(s.category)} hot={!typed && i < 3} /></Rise>)}
             </View>
           );
         }}

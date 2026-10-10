@@ -8,7 +8,7 @@ import { useRemote } from '../../hooks/useRemote';
 import { C, RTL, back, card, faNum, fwd, right, row } from '../../zp/base';
 import { Tile } from '../../zp/brand';
 import { SubScreen } from '../../zp/Shell';
-import { Async, EmptyState, IconBtn, Press, SecHead, T } from '../../zp/ui';
+import { Async, EmptyState, IconBtn, Press, Rise, SecHead, T } from '../../zp/ui';
 
 /** Unicode isolate so IDs/codes keep their LTR order inside a Persian line. */
 export const ltr = (s: string) => `⁦${s}⁩`;
@@ -43,8 +43,10 @@ function InvoiceList({ workspaceId }: { workspaceId: string }) {
         <>
           <T size={12} color={C.muted} style={{ lineHeight: 22 }}>پس از هر پرداخت، فاکتور خرید یا رسید شارژ کیف پول به‌صورت خودکار اینجا صادر می‌شود.</T>
           <View style={{ gap: 10 }}>
-            {l.items.map(inv => (
-              <InvoiceRow key={inv.id} inv={inv} onPress={() => router.navigate({ pathname: '/invoices/[id]', params: { id: inv.id, ws: workspaceId } })} />
+            {l.items.map((inv, i) => (
+              <Rise key={inv.id} delay={Math.min(i, 8) * 60}>
+                <InvoiceRow inv={inv} onPress={() => router.navigate({ pathname: '/invoices/[id]', params: { id: inv.id, ws: workspaceId } })} />
+              </Rise>
             ))}
           </View>
           {page > 0 || l.hasMore ? (

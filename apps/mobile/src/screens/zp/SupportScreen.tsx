@@ -8,7 +8,7 @@ import { C, RTL, card, right, row } from '../../zp/base';
 import { Enamel, Ornament, Tile } from '../../zp/brand';
 import { Icon } from '../../zp/Icon';
 import { SubScreen } from '../../zp/Shell';
-import { Async, Cta, EmptyState, Press, SecHead, StatusPill, T, useToast } from '../../zp/ui';
+import { Async, Cta, EmptyState, Press, Rise, SecHead, StatusPill, T, useToast } from '../../zp/ui';
 
 export function SupportContactCard({ phones, hours, onNewTicket, onDialError }: {
   phones: AppSupportPhone[]; hours: string; onNewTicket: () => void; onDialError: () => void;
@@ -98,7 +98,7 @@ function Body({ d, notify }: { d: AppSupport; notify: (m: string) => void }) {
         <>
           <SecHead title="تیکت‌های من" link="+ تیکت جدید" onLink={() => newTicket()} />
           <View style={{ gap: 10 }}>
-            {d.tickets.map(t => <TicketRow key={t.id} t={t} onPress={() => router.push({ pathname: '/support/[id]', params: { id: t.id } })} />)}
+            {d.tickets.map((t, i) => <Rise key={t.id} delay={Math.min(i, 8) * 60}><TicketRow t={t} onPress={() => router.push({ pathname: '/support/[id]', params: { id: t.id } })} /></Rise>)}
           </View>
         </>
       ) : (

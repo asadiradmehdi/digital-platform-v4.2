@@ -151,7 +151,22 @@ const TAB_META: Record<string, { label: string; icon: IconName }> = {
   account: { label: 'حساب من', icon: 'tMe' },
 };
 
-/** Bottom tab bar: paper surface, gold glyph + metal notch on the active tab. */
+function TabItem({ on, meta, onPress }: { on: boolean; meta: { label: string; icon: IconName }; onPress: () => void }) {
+  const [v] = useState(() => new Animated.Value(on ? 1 : 0));
+  useEffect(() => { Animated.spring(v, { toValue: on ? 1 : 0, useNativeDriver: true, speed: 14, bounciness: 14 }).start(); }, [on, v]);
+  return (
+    <Press accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={meta.label} onPress={onPress} depth={0.9} haptic
+      style={{ flex: 1, alignItems: 'center', gap: 3, paddingVertical: 6 }}>
+      <Animated.View pointerEvents="none" style={{ position: 'absolute', top: -10, width: 18, height: 3, borderBottomLeftRadius: 3, borderBottomRightRadius: 3, backgroundColor: C.gold2, opacity: v, transform: [{ scaleX: v.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1] }) }] }} />
+      <Animated.View style={{ transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [0, -2] }) }, { scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] }) }] }}>
+        <Icon name={meta.icon} size={24} color={on ? C.gold3 : C.muted} duo={on ? 0.38 : 0} stroke={1.9} />
+      </Animated.View>
+      <T w="b" size={11.5} color={on ? C.ink : C.muted} style={{ textAlign: 'center' }}>{meta.label}</T>
+    </Press>
+  );
+}
+
+/** Bottom tab bar: paper surface, gold glyph + metal notch on the active tab; the active tab lifts with a spring. */
 export function TabBar({ state, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
   return (
@@ -161,18 +176,10 @@ export function TabBar({ state, navigation }: TabBarProps) {
         if (!meta) return null;
         const on = state.index === i;
         return (
-          <Pressable
-            key={r.key} accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={meta.label}
-            onPress={() => {
-              const e = navigation.emit({ type: 'tabPress', target: r.key, canPreventDefault: true });
-              if (!on && !e.defaultPrevented) navigation.navigate(r.name);
-            }}
-            style={{ flex: 1, alignItems: 'center', gap: 3, paddingVertical: 6 }}
-          >
-            {on ? <View style={{ position: 'absolute', top: -10, width: 18, height: 3, borderBottomLeftRadius: 3, borderBottomRightRadius: 3, backgroundColor: C.gold2 }} /> : null}
-            <Icon name={meta.icon} size={24} color={on ? C.gold3 : C.muted} duo={on ? 0.38 : 0} stroke={1.9} />
-            <T w="b" size={11.5} color={on ? C.ink : C.muted} style={{ textAlign: 'center' }}>{meta.label}</T>
-          </Pressable>
+          <TabItem key={r.key} on={on} meta={meta} onPress={() => {
+            const e = navigation.emit({ type: 'tabPress', target: r.key, canPreventDefault: true });
+            if (!on && !e.defaultPrevented) navigation.navigate(r.name);
+          }} />
         );
       })}
     </View>

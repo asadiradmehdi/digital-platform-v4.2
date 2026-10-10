@@ -6,7 +6,7 @@ import type { AppCategory, AppOrderCard } from '../api/app';
 import { formatTomanNumber } from '../format';
 import { C, G, card, right, row } from './base';
 import { Enamel, Fill, Ornament, Tile } from './brand';
-import { Cta, Press, Progress, Rise, Star, StatusPill, T } from './ui';
+import { Cta, CountUp, Press, Progress, Rise, Star, StatusPill, T } from './ui';
 
 /** Service grid, three per row in priority order. Cards keep the web's compact size and type; the rows spread evenly over the height the screen leaves, so the page never scrolls. */
 export function CategoryGrid({ categories }: { categories: AppCategory[] }) {
@@ -87,7 +87,7 @@ export function WalletStrip({ balanceToman, tierName }: { balanceToman: number |
           {tierName && !narrow ? <View style={{ backgroundColor: C.gold1, borderRadius: 999, paddingHorizontal: 8 }}><T w="b" size={9.5} color={C.accentStrong}>سطح {tierName}</T></View> : null}
         </View>
         <View style={{ flexDirection: row, alignItems: 'baseline', gap: 4 }}>
-          <T w="b" size={17.5} color="#fff">{balanceToman == null ? '—' : formatTomanNumber(balanceToman)}</T>
+          {balanceToman == null ? <T w="b" size={17.5} color="#fff">—</T> : <CountUp w="b" size={17.5} color="#fff" value={balanceToman} format={formatTomanNumber} />}
           <T size={10.5} color="rgba(255,255,255,0.65)">تومان</T>
         </View>
       </View>
@@ -111,7 +111,7 @@ export function WalletCard({ balanceToman, tierName, tail }: { balanceToman: num
       <View style={{ alignItems: right, gap: 4 }}>
         <T size={11} color="rgba(255,255,255,0.7)">موجودی کیف پول</T>
         <View style={{ flexDirection: row, alignItems: 'baseline', gap: 6 }}>
-          <T w="b" size={32} color="#fff" style={{ lineHeight: 42 }}>{balanceToman == null ? '—' : formatTomanNumber(balanceToman)}</T>
+          {balanceToman == null ? <T w="b" size={32} color="#fff" style={{ lineHeight: 42 }}>—</T> : <CountUp w="b" size={32} color="#fff" style={{ lineHeight: 42 }} value={balanceToman} format={formatTomanNumber} />}
           <T size={12.5} color="rgba(255,255,255,0.7)">تومان</T>
         </View>
       </View>

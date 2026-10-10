@@ -6,7 +6,7 @@ import { useRemote } from '../../hooks/useRemote';
 import { C, back, faNum, fwd, row } from '../../zp/base';
 import { OrderCard } from '../../zp/cards';
 import { AppScreen } from '../../zp/Shell';
-import { Async, EmptyState, IconBtn, SecHead, T } from '../../zp/ui';
+import { Async, EmptyState, IconBtn, Rise, SecHead, T } from '../../zp/ui';
 
 function OrderList({ workspaceId }: { workspaceId: string }) {
   const router = useRouter();
@@ -16,7 +16,7 @@ function OrderList({ workspaceId }: { workspaceId: string }) {
     <Async state={orders} retry={orders.retry}>
       {o => o.items.length ? (
         <>
-          <View style={{ gap: 10 }}>{o.items.map(x => <OrderCard key={x.id} order={x} />)}</View>
+          <View style={{ gap: 10 }}>{o.items.map((x, i) => <Rise key={x.id} delay={Math.min(i, 8) * 60}><OrderCard order={x} /></Rise>)}</View>
           {page > 0 || o.hasMore ? (
             <View style={{ flexDirection: row, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
               <IconBtn icon={back} label="سفارش‌های جدیدتر" size={34} onPress={() => page > 0 && setPage(page - 1)} />

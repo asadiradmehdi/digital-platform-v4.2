@@ -8,7 +8,7 @@ import { C, card, fwd, right, row } from '../../zp/base';
 import { BrandTile, Tile } from '../../zp/brand';
 import { Icon } from '../../zp/Icon';
 import { SubScreen } from '../../zp/Shell';
-import { Async, EmptyState, Press, Star, T } from '../../zp/ui';
+import { Async, EmptyState, Press, Rise, Star, T } from '../../zp/ui';
 import { groupServices } from './CategoryScreen';
 
 export function VariantScreen() {
@@ -33,8 +33,9 @@ export function VariantScreen() {
               </View>
               <View style={{ flexDirection: row, alignItems: 'center', gap: 6 }}><Star size={11} /><T w="b" size={12} color={C.goldText}>نوع خدمت</T></View>
               <View style={{ gap: 8 }}>
-                {group.members.map(m => (
-                  <Press key={m.slug} accessibilityRole="link" accessibilityLabel={`${m.variant.label}، ${m.perLabel} ${formatTomanNumber(m.unitPriceToman * m.per)} تومان`}
+                {group.members.map((m, i) => (
+                  <Rise key={m.slug} delay={i * 80}>
+                  <Press accessibilityRole="link" accessibilityLabel={`${m.variant.label}، ${m.perLabel} ${formatTomanNumber(m.unitPriceToman * m.per)} تومان`}
                     onPress={() => router.navigate({ pathname: '/order/[service]', params: { service: m.slug } })}
                     style={[{ flexDirection: row, alignItems: 'center', gap: 12, borderRadius: 18, paddingVertical: 12, paddingHorizontal: 14 }, card]}>
                     <View style={{ flex: 1, alignItems: right, gap: 2 }}>
@@ -47,6 +48,7 @@ export function VariantScreen() {
                     </View>
                     <Icon name={fwd} size={16} color={C.muted} stroke={2.4} />
                   </Press>
+                  </Rise>
                 ))}
               </View>
             </>
