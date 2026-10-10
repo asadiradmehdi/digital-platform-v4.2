@@ -1,3 +1,4 @@
+import { assertNotInMaintenance } from '../core/site-switches';
 import { createHash } from 'node:crypto';
 import { withWorkspaceTransaction } from '../core/db';
 import { AppError } from '../core/errors';
@@ -26,6 +27,7 @@ export async function createCheckout(input: {
   idempotencyKey: string;
   expiresInSeconds?: number;
 }) {
+  await assertNotInMaintenance();
   requireIdempotencyKey(input.idempotencyKey);
   if (input.items.length === 0) throw new AppError('VALIDATION_ERROR', 'Checkout must contain at least one item.');
   return withWorkspaceTransaction(input.workspaceId, undefined, async client => {

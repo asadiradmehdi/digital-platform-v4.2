@@ -1,3 +1,4 @@
+import { assertNotInMaintenance } from '../core/site-switches';
 import { withWorkspaceTransaction } from '../core/db';
 import { AppError } from '../core/errors';
 import { assertOrderTransition, type OrderStatus } from '../core/order-state';
@@ -9,6 +10,7 @@ import { resolvePackageTotal } from '../pricing/package-price';
 
 export type CreateOrderInput = { workspaceId: string; serviceId: string; quantity: bigint; parameters: Record<string, unknown>; idempotencyKey: string; riskState?: RiskState };
 export async function createOrder(input: CreateOrderInput) {
+  await assertNotInMaintenance();
   requireIdempotencyKey(input.idempotencyKey); assertActionAllowed(input.riskState ?? 'NORMAL');
   return withWorkspaceTransaction(input.workspaceId, undefined, async (client) => {
     const existing = await client.query<{ id: string; status: OrderStatus }>(`SELECT id,status FROM orders WHERE workspace_id=$1 AND idempotency_key=$2`, [input.workspaceId,input.idempotencyKey]);

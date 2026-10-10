@@ -1,6 +1,7 @@
 // Account creation shared by every signup path (email + password, phone code, Google). Ids are minted up
 // front so the whole signup runs inside the new workspace's RLS context (wallets and ledger accounts are
 // tenant-protected), and the invite code is attached in the same transaction.
+import { assertSignupsOpen } from '../core/site-switches';
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { withTenantTransaction } from '../core/db';
@@ -39,6 +40,7 @@ export type NewAccountInput = {
 };
 
 export async function createAccountWithWorkspace(input: NewAccountInput) {
+  await assertSignupsOpen();
   if (!input.email && !input.phone) throw new Error('An account needs an email or a phone.');
   const name = input.displayName.trim().slice(0, 120) || 'کاربر زُحل پی';
   const userId = randomUUID();
