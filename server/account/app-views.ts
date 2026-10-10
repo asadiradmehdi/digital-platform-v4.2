@@ -3,7 +3,7 @@
 import { CATEGORIES, baseSlug, categoryMeta, variantOf, isHiddenCategory, isTeamFulfilled, orderForm, perLabel, serviceBrand, serviceIcon, serviceMeta, shortServiceName, sortServices } from '../../lib/catalog-ui';
 import { formatQuantityWords, formatWhen, orderCode, toToman } from '../../lib/format';
 import { orderStage } from '../../lib/order-progress';
-import { tierFor } from '../../lib/tiers';
+import { getTierLadder, tierForLadder } from '../loyalty/tier-ladder';
 import { pinnedPricesFromRows } from '../../lib/package-price';
 import type { CatalogItem, OrderCard, WalletEntry } from './overview';
 
@@ -64,7 +64,7 @@ export function walletEntryView(e: WalletEntry) {
   };
 }
 
-export function tierView(spentToman: number) {
-  const t = tierFor(spentToman);
+export async function tierView(spentToman: number) {
+  const t = tierForLadder(await getTierLadder(), spentToman);
   return { name: t.tier.name, level: t.level, levels: t.levels, next: t.next?.name ?? null, progress: t.progress, remainingToman: t.remainingToman };
 }

@@ -8,7 +8,7 @@ import { CategoryGrid } from '../../components/zp/CategoryGrid';
 import { SecHead } from '../../components/zp/cards';
 import { CATEGORIES } from '../../lib/catalog-ui';
 import { formatTomanNumber, toToman } from '../../lib/format';
-import { tierFor } from '../../lib/tiers';
+import { getTierLadder, tierForLadder } from '../../server/loyalty/tier-ladder';
 import { requireViewer } from '../../server/account/page-context';
 import { getAccountStats, getWalletSummary, listCatalogWithPrices } from '../../server/account/overview';
 
@@ -30,7 +30,7 @@ export default async function Dashboard() {
     ws ? getAccountStats(ws) : null,
   ]);
   const live = new Set(catalog.filter(c => c.unitPriceMinor).map(c => c.productSlug));
-  const tier = tierFor(stats?.spentToman ?? 0).tier.name;
+  const tier = tierForLadder(await getTierLadder(), stats?.spentToman ?? 0).tier.name;
 
   return (
     <AppShell aside={<ShellAside workspaceId={ws} />}>

@@ -13,7 +13,7 @@ export type AppService = {
   short: string; brand: BrandLogo | null; perLabel: string;
   /** Second order step: services sharing a `base` are variants of one offer (ایرانی / خارجی / اقتصادی…). */
   base: string; variant: { key: string; label: string; hint: string; order: number };
-  group: string; unit: string; icon: IconName; per: number; unitPriceToman: number; quantities: number[];
+  group: string; unit: string; icon: IconName; per: number; unitPriceToman: number; /** Owner-pinned package prices (quantity → toman); others cost quantity × unit. */ packagePrices?: Record<string, number>; quantities: number[];
   /** `required` is false for optional targets (design / AI content: page or site is a hint). */
   target: { label: string; placeholder: string; ltr: boolean; required?: boolean };
   /** Team-fulfilled services (design, automation, AI content) ask for a written brief. */

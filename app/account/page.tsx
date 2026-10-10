@@ -5,7 +5,7 @@ import { ShellAside } from '../../components/zp/ShellAside';
 import { Ornament, Tile } from '../../components/zp/brand';
 import { ZIcon, type IconName } from '../../components/zp/ZIcon';
 import { formatQuantityWords } from '../../lib/format';
-import { tierFor } from '../../lib/tiers';
+import { getTierLadder, tierForLadder } from '../../server/loyalty/tier-ladder';
 import { requireViewer } from '../../server/account/page-context';
 import { getAccountStats, hasEnabledMfa } from '../../server/account/overview';
 import { LogoutRow } from './LogoutRow';
@@ -20,7 +20,7 @@ export default async function Account() {
     viewer.workspaceId ? getAccountStats(viewer.workspaceId) : { totalOrders: 0, activeOrders: 0, spentToman: 0 },
     hasEnabledMfa(viewer.userId).catch(() => false),
   ]);
-  const t = tierFor(stats.spentToman);
+  const t = tierForLadder(await getTierLadder(), stats.spentToman);
   const contact = viewer.phone ?? viewer.email ?? '';
 
   const rows: Array<{ href: string; icon: IconName; label: string; note?: string; tag?: boolean }> = [

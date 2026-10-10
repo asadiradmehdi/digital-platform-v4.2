@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { AppShell } from '../../components/AppShell';
 import { EmptyState, OrderItem, SecHead, WalletCard } from '../../components/zp/cards';
 import { formatTomanNumber, formatWhen, toToman } from '../../lib/format';
-import { tierFor } from '../../lib/tiers';
+import { getTierLadder, tierForLadder } from '../../server/loyalty/tier-ladder';
 import { requireViewer } from '../../server/account/page-context';
 import { getAccountStats, getWalletSummary, listOrderCards, type WalletEntry } from '../../server/account/overview';
 import { WalletPanel, type TxView } from './WalletPanel';
@@ -36,7 +36,7 @@ export default async function Wallet({ searchParams }: { searchParams: Promise<{
   const [wallet, stats, live] = ws
     ? await Promise.all([getWalletSummary(ws, 20), getAccountStats(ws), listOrderCards(ws, { limit: 3, activeOnly: true })])
     : [null, null, { items: [], hasMore: false }];
-  const tier = tierFor(stats?.spentToman ?? 0).tier.name;
+  const tier = tierForLadder(await getTierLadder(), stats?.spentToman ?? 0).tier.name;
 
   const aside = (
     <>

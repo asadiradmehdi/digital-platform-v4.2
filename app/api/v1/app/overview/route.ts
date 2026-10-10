@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       } : null,
       activeOrders: active.items.map(orderCardView),
       stats,
-      tier: tierView(stats.spentToman),
+      tier: await tierView(stats.spentToman),
       mfa,
     }, { correlationId: id });
   } catch (e) { return handleRouteError(e, id); }

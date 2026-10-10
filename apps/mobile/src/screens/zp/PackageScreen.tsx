@@ -69,9 +69,10 @@ function Picker({ service, workspaceId, walletToman, reload, initialQty }: { ini
   const idem = useRef<string | null>(null);
 
   // Short ladders (AI plans: 1/3/6/12 months) sit in a 2×2 block instead of a sparse 3×3.
+  const packagePrice = (q: number) => { const own = service.packagePrices?.[q]; return own && own > 0 ? own : q * service.unitPriceToman; };
   const few = service.quantities.length <= 4;
   const list = useMemo(() => service.quantities.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE), [service.quantities, page]);
-  const price = qty ? qty * service.unitPriceToman : 0;
+  const price = qty ? packagePrice(qty) : 0;
   const label = qty ? `${formatQuantityWords(qty)} ${service.unit} · ${service.name}` : '';
   const short = walletToman != null && qty != null && walletToman < price;
   const shortfall = short ? suggestedTopupToman(price - (walletToman ?? 0)) : 0;
@@ -154,7 +155,7 @@ function Picker({ service, workspaceId, walletToman, reload, initialQty }: { ini
               const on = qty === q;
               return (
                 <Press key={c} accessibilityRole="radio" accessibilityState={{ checked: on }}
-                  accessibilityLabel={`${formatQuantityWords(q)} ${service.unit}، ${formatTomanNumber(q * service.unitPriceToman)} تومان`}
+                  accessibilityLabel={`${formatQuantityWords(q)} ${service.unit}، ${formatTomanNumber(packagePrice(q))} تومان`}
                   onPress={() => setQty(q)}
                   style={[{ flex: 1, borderRadius: 20, alignItems: 'center', justifyContent: 'center', gap: 2, paddingHorizontal: 4 }, card, on && [{ borderWidth: 2, borderColor: C.gold2 }, shadow(10, 22, 0.4, '#7a5218')]]}>
                   {on ? (
@@ -169,7 +170,7 @@ function Picker({ service, workspaceId, walletToman, reload, initialQty }: { ini
                   </View>
                   <T size={10.5} color={C.muted}>{service.unit}</T>
                   <View style={{ flexDirection: row, alignItems: 'baseline', gap: 3, marginTop: 6 }}>
-                    <T w="b" size={13}>{formatTomanNumber(q * service.unitPriceToman)}</T>
+                    <T w="b" size={13}>{formatTomanNumber(packagePrice(q))}</T>
                     <T w="sb" size={9.5} color={C.goldText}>تومان</T>
                   </View>
                 </Press>
