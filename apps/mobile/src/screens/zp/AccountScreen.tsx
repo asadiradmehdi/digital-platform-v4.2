@@ -77,7 +77,7 @@ export function AccountScreen() {
                   <Tile icon="shamseh" size={42} />
                   <View style={{ flex: 1, alignItems: right }}>
                     <T w="dx" size={17} color={C.accentStrong} style={{ lineHeight: 26 }}>سطح {t.name}</T>
-                    <T w="sb" size={11} color={C.gold4}>بر اساس مجموع خریدهای شما</T>
+                    <T w="sb" size={11} color={C.gold4}>بر اساس مجموع خریدهای پرداخت‌شده شما</T>
                   </View>
                   <View style={{ backgroundColor: C.accentStrong, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 }}>
                     <T w="b" size={10.5} color={C.gold1}>سطح {faNum(t.level)} از {faNum(t.levels)}</T>
@@ -85,7 +85,7 @@ export function AccountScreen() {
                 </View>
                 <View style={{ flexDirection: row, alignItems: 'center', gap: 10 }}>
                   <Progress value={t.progress} track="rgba(122,82,24,0.18)" fill="enamel" />
-                  <T w="sb" size={10.5} color={C.gold4}>{t.next ? `${faNum(Math.round(t.progress * 100))}٪ تا سطح ${t.next}` : 'بالاترین سطح'}</T>
+                  <T w="sb" size={10.5} color={C.gold4}>{t.next ? `${formatQuantityWords(t.remainingToman)} تومان خرید دیگر تا سطح ${t.next}` : 'بالاترین سطح'}</T>
                 </View>
               </Enamel>
 

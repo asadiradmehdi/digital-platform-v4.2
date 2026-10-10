@@ -11,28 +11,14 @@ import { apiFetch } from '../../api/client';
 import { errorText, siteUrl } from '../../api/app';
 import { useAuth, type SignInResult } from '../../auth/AuthProvider';
 import { googleErrorText, openGoogleSignIn, parseGoogleReturn, redeemGoogleHandoff } from '../../auth/google';
-import { C, F, card, faNum, right, row, shadow, tRight } from '../../zp/base';
+import { C, F, card, faNum, right, row, shadow } from '../../zp/base';
 import { BrandMark, Fill, Ornament, Wordmark } from '../../zp/brand';
 import { Icon } from '../../zp/Icon';
 import { CodeBoxes } from '../../zp/CodeBoxes';
+import { Field } from '../../zp/Field';
 import { Cta, ErrorBox, Press, T } from '../../zp/ui';
 
-const ltrAlign = tRight === 'right' ? 'left' : 'right';
 type Step = 'phone' | 'code' | 'password' | 'register' | 'mfa' | 'forgot' | 'reset';
-
-function Field({ label, focused, ltr = true, ...rest }: React.ComponentProps<typeof TextInput> & { label: string; focused: boolean; ltr?: boolean }) {
-  return (
-    <View style={{ gap: 7 }}>
-      <T w="sb" size={12.5} color={C.ink2}>{label}</T>
-      <TextInput
-        {...rest}
-        accessibilityLabel={label}
-        placeholderTextColor={C.subtle}
-        style={{ fontFamily: F.m, fontSize: 15, color: C.ink, backgroundColor: C.surface2, borderWidth: 1.5, borderColor: focused ? C.gold2 : C.line, borderRadius: 14, padding: 14, textAlign: ltr ? ltrAlign : tRight, writingDirection: ltr ? 'ltr' : 'rtl' }}
-      />
-    </View>
-  );
-}
 
 function GoogleMark() {
   return (

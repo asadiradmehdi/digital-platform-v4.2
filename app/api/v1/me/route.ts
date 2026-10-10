@@ -15,7 +15,8 @@ export async function GET(request: NextRequest) {
     const userId = await requireRequestUser(request);
     const result = await query(
       `SELECT id,email,phone,display_name AS "displayName",status,created_at AS "createdAt",
-              (phone_verified_at IS NOT NULL) AS "phoneVerified", (email_verified_at IS NOT NULL) AS "emailVerified"
+              (phone_verified_at IS NOT NULL) AS "phoneVerified", (email_verified_at IS NOT NULL) AS "emailVerified",
+              EXISTS(SELECT 1 FROM user_credentials c WHERE c.user_id=users.id AND c.credential_type='password') AS "hasPassword"
          FROM users WHERE id=$1`, [userId]);
     if (!result.rows[0]) throw new Error('User not found');
     const workspaces = await query(`SELECT w.id,w.name,w.slug,w.status,wm.status AS "memberStatus" FROM workspaces w JOIN workspace_members wm ON wm.workspace_id=w.id WHERE wm.user_id=$1 AND wm.status='ACTIVE' ORDER BY w.created_at`, [userId]);

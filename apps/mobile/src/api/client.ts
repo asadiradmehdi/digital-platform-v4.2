@@ -61,7 +61,7 @@ export const auth = {
 
 // Me
 export const me = {
-  get: () => apiFetch<{ user: { id: string; email: string | null; phone: string | null; displayName: string | null; phoneVerified: boolean; emailVerified: boolean } }>(`${V1}/me`),
+  get: () => apiFetch<{ user: { id: string; email: string | null; phone: string | null; displayName: string | null; phoneVerified: boolean; emailVerified: boolean; hasPassword: boolean } }>(`${V1}/me`),
 };
 
 // Notification preferences (channel × category switches; `locked` pairs are never switchable)
@@ -235,4 +235,22 @@ export const auditEvents = {
 // Health
 export const health = {
   get: () => apiFetch<{ status: string; version: string }>(`${V1}/health`),
+};
+
+// Account: profile edits, phone proof (SMS code), password and two-step sign-in. Same server rules as the web settings.
+export type OtpChallenge = { challengeId: string; expiresIn: number; resendIn: number; maskedPhone: string };
+export const account = {
+  rename: (displayName: string) => apiFetch<{ ok: true }>(`${V1}/me`, { method: 'PATCH', body: JSON.stringify({ displayName }) }),
+  otpRequest: (purpose: 'REAUTH' | 'PHONE_CHANGE', phone?: string) =>
+    apiFetch<OtpChallenge>(`${V1}/me/otp/request`, { method: 'POST', body: JSON.stringify({ purpose, ...(phone ? { phone } : {}) }) }),
+  otpVerify: (purpose: 'REAUTH' | 'PHONE_CHANGE', challengeId: string, code: string) =>
+    apiFetch<{ proof: string }>(`${V1}/me/otp/verify`, { method: 'POST', body: JSON.stringify({ purpose, challengeId, code }) }),
+  setPhone: (proof: string, reauthProof?: string) =>
+    apiFetch<{ ok: true; phone: string }>(`${V1}/me/phone`, { method: 'PUT', body: JSON.stringify({ proof, ...(reauthProof ? { reauthProof } : {}) }) }),
+  changePassword: (body: { currentPassword?: string; newPassword: string; otpProof?: string }) =>
+    apiFetch<{ ok: true }>(`${V1}/me/password`, { method: 'PATCH', body: JSON.stringify(body) }),
+  mfaStatus: () => apiFetch<{ mfaEnabled: boolean }>(`${V1}/auth/mfa/status`),
+  totpBegin: (label: string) => apiFetch<{ uri: string; secret: string }>(`${V1}/auth/mfa/totp/begin`, { method: 'POST', body: JSON.stringify({ label }) }),
+  totpConfirm: (code: string) => apiFetch<{ recoveryCodes: string[] }>(`${V1}/auth/mfa/totp/confirm`, { method: 'POST', body: JSON.stringify({ code }) }),
+  totpDisable: (code: string) => apiFetch<{ ok: true }>(`${V1}/auth/mfa/totp/disable`, { method: 'POST', body: JSON.stringify({ code }) }),
 };

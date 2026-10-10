@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import { errorText } from '../../api/app';
-import { auditEvents, sessions } from '../../api/client';
+import { account, auditEvents, me, sessions } from '../../api/client';
+import { PasswordSheet, TwoFactorSheet } from './AccountSheets';
 import { useRemote } from '../../hooks/useRemote';
 import { C, card, right, row, shadow } from '../../zp/base';
 import { Enamel, Ornament, Tile } from '../../zp/brand';
 import type { IconName } from '../../zp/Icon';
 import { SubScreen } from '../../zp/Shell';
 import { Async, Cta, EmptyState, ErrorBox, Press, SecHead, StatusPill, T, useToast } from '../../zp/ui';
+import { fwd } from '../../zp/base';
+import { Icon } from '../../zp/Icon';
 
 const AUDIT: Record<string, { label: string; icon: IconName }> = {
   LOGIN: { label: 'ورود به حساب', icon: 'user' },
@@ -100,11 +103,38 @@ function Activity() {
   );
 }
 
-const INFO: Array<{ icon: IconName; label: string; note: string }> = [
-  { icon: 'shield', label: 'تغییر رمز عبور', note: 'از نسخه‌ی وب در بخش امنیت و ورود' },
-  { icon: 'shieldS', label: 'ورود دومرحله‌ای', note: 'از نسخه‌ی وب در بخش امنیت و ورود' },
-  { icon: 'user', label: 'ورود با اثر انگشت یا چهره', note: 'از نسخه‌ی وب در بخش امنیت و ورود' },
-];
+function ActionRow({ icon, label, note, status, onPress }: { icon: IconName; label: string; note: string; status?: { label: string; tone: 'ok' | 'idle' }; onPress: () => void }) {
+  return (
+    <Press accessibilityRole="button" accessibilityLabel={label} onPress={onPress}
+      style={[{ flexDirection: row, alignItems: 'center', gap: 12, borderRadius: 16, padding: 10 }, card, { shadowOpacity: 0.06 }]}>
+      <Tile icon={icon} size={36} />
+      <View style={{ flex: 1, alignItems: right }}>
+        <T w="sb" size={13.5}>{label}</T>
+        <T size={11} color={C.muted}>{note}</T>
+      </View>
+      {status ? <StatusPill label={status.label} tone={status.tone} /> : null}
+      <Icon name={fwd} size={16} color={C.muted} stroke={2.2} />
+    </Press>
+  );
+}
+
+/** Password and two-step sign-in, fully inside the app. */
+function SignInSettings({ notify }: { notify: (m: string) => void }) {
+  const profile = useRemote(me.get);
+  const mfa = useRemote(account.mfaStatus);
+  const [pw, setPw] = useState(false);
+  const [tf, setTf] = useState(false);
+  const u = profile.data?.user;
+  return (
+    <View style={{ gap: 8 }}>
+      <ActionRow icon="shield" label={u && !u.hasPassword ? 'ساخت رمز عبور' : 'تغییر رمز عبور'} note="رمز تازه با کد پیامکی تأیید می‌شود" onPress={() => setPw(true)} />
+      <ActionRow icon="shieldS" label="ورود دومرحله‌ای" note="کد برنامه‌ی تأیید هویت، علاوه بر رمز"
+        status={mfa.data ? (mfa.data.mfaEnabled ? { label: 'فعال', tone: 'ok' } : { label: 'غیرفعال', tone: 'idle' }) : undefined} onPress={() => setTf(true)} />
+      <PasswordSheet open={pw} onClose={() => setPw(false)} done={notify} hasPassword={u?.hasPassword ?? true} phoneVerified={u?.phoneVerified ?? false} />
+      <TwoFactorSheet open={tf} onClose={() => { setTf(false); mfa.reload(); }} done={m => { notify(m); mfa.reload(); }} enabled={mfa.data?.mfaEnabled ?? false} accountName={u?.email ?? u?.phone ?? ''} />
+    </View>
+  );
+}
 
 /** «امنیت و ورود»: signed-in devices (revocable), recent account activity, and pointers to web-only settings. */
 export function SecurityScreen() {
@@ -115,8 +145,8 @@ export function SecurityScreen() {
         <Ornament w={400} h={100} cx={60} cy={110} rot={10} color={C.gold1} alpha={0.55} />
         <Tile icon="shieldS" variant="gold" size={46} />
         <View style={{ flex: 1, alignItems: right }}>
-          <T w="b" size={16} color="#fff">حساب شما زیر نظر است</T>
-          <T size={11.5} color="rgba(255,255,255,0.74)" style={{ lineHeight: 20 }}>دستگاه‌های واردشده و فعالیت‌های اخیر را بررسی کنید.</T>
+          <T w="b" size={16} color="#fff">امنیت حسابتان در دست خودتان است</T>
+          <T size={11.5} color="rgba(255,255,255,0.74)" style={{ lineHeight: 20 }}>دستگاه‌های واردشده و فعالیت‌های اخیر را همین‌جا ببینید و مدیریت کنید.</T>
         </View>
       </Enamel>
 
@@ -126,18 +156,8 @@ export function SecurityScreen() {
       <SecHead title="فعالیت‌های اخیر" />
       <Activity />
 
-      <SecHead title="تنظیمات ورود" />
-      <View style={{ gap: 8 }}>
-        {INFO.map(r => (
-          <View key={r.label} style={[{ flexDirection: row, alignItems: 'center', gap: 12, borderRadius: 16, padding: 10 }, card, { shadowOpacity: 0.06 }]}>
-            <Tile icon={r.icon} size={36} />
-            <View style={{ flex: 1, alignItems: right }}>
-              <T w="sb" size={13.5}>{r.label}</T>
-              <T size={11} color={C.muted}>{r.note}</T>
-            </View>
-          </View>
-        ))}
-      </View>
+      <SecHead title="رمز و ورود" />
+      <SignInSettings notify={toast.show} />
     </SubScreen>
   );
 }

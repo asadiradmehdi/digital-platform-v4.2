@@ -62,5 +62,5 @@ export function walletEntryView(e: WalletEntry) {
 
 export function tierView(spentToman: number) {
   const t = tierFor(spentToman);
-  return { name: t.tier.name, level: t.level, levels: t.levels, next: t.next?.name ?? null, progress: t.progress };
+  return { name: t.tier.name, level: t.level, levels: t.levels, next: t.next?.name ?? null, progress: t.progress, remainingToman: t.remainingToman };
 }

@@ -15,5 +15,7 @@ export function tierFor(spentToman: number) {
   while (i + 1 < TIERS.length && spentToman >= TIERS[i + 1].minToman) i++;
   const next = TIERS[i + 1] ?? null;
   const progress = next ? (spentToman - TIERS[i].minToman) / (next.minToman - TIERS[i].minToman) : 1;
-  return { tier: TIERS[i], level: i + 1, levels: TIERS.length, next, progress: Math.max(0, Math.min(1, progress)) };
+  // `remainingToman` is what is still to be spent for the next level, so the wording can say it plainly.
+  const remainingToman = next ? Math.max(0, next.minToman - spentToman) : 0;
+  return { tier: TIERS[i], level: i + 1, levels: TIERS.length, next, progress: Math.max(0, Math.min(1, progress)), remainingToman };
 }

@@ -7,7 +7,8 @@ import { C, card, row, right, shadow } from '../../zp/base';
 import { Enamel, Fill, Ornament, Tile } from '../../zp/brand';
 import { Icon, type IconName } from '../../zp/Icon';
 import { SubScreen } from '../../zp/Shell';
-import { Async, SecHead, StatusPill, T, useToast } from '../../zp/ui';
+import { Async, Press, SecHead, StatusPill, T, useToast } from '../../zp/ui';
+import { PhoneSheet, RenameSheet } from './AccountSheets';
 
 const CHANNELS = [
   { key: 'email', label: 'ایمیل' },
@@ -25,7 +26,9 @@ const CATEGORIES: Array<{ key: string; label: string; desc: string; locked?: boo
 
 const defaultOn = (channel: string, category: string) => category === 'security' || (channel === 'email' && category !== 'updates');
 
-function InfoRow({ icon, label, value, verified }: { icon: IconName; label: string; value: string | null; verified?: boolean }) {
+function InfoRow({ icon, label, value, badge, action }: {
+  icon: IconName; label: string; value: string | null; badge?: { label: string; tone: 'ok' | 'idle' }; action?: { label: string; onPress: () => void };
+}) {
   return (
     <View style={{ flexDirection: row, alignItems: 'center', gap: 12, paddingVertical: 10 }}>
       <Tile icon={icon} size={36} />
@@ -33,13 +36,21 @@ function InfoRow({ icon, label, value, verified }: { icon: IconName; label: stri
         <T size={11} color={C.muted}>{label}</T>
         <T w="sb" size={14} numberOfLines={1}>{value ?? 'ثبت نشده'}</T>
       </View>
-      {value ? <StatusPill label={verified ? 'تأییدشده' : 'تأییدنشده'} tone={verified ? 'ok' : 'idle'} /> : null}
+      {badge ? <StatusPill label={badge.label} tone={badge.tone} /> : null}
+      {action ? (
+        <Press accessibilityRole="button" accessibilityLabel={action.label} onPress={action.onPress}
+          style={{ backgroundColor: C.surface2, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 }}>
+          <T w="b" size={12} color={C.goldText}>{action.label}</T>
+        </Press>
+      ) : null}
     </View>
   );
 }
 
-function Profile() {
+function Profile({ notify }: { notify: (m: string) => void }) {
   const q = useRemote(me.get);
+  const [rename, setRename] = useState(false);
+  const [phone, setPhone] = useState(false);
   return (
     <Async state={q} retry={q.retry}>
       {({ user }) => {
@@ -60,13 +71,21 @@ function Profile() {
               </View>
             </Enamel>
             <View style={[{ borderRadius: 18, paddingHorizontal: 14, paddingVertical: 4 }, card]}>
-              <InfoRow icon="user" label="نام" value={user.displayName?.trim() || null} />
+              <InfoRow icon="user" label="نام" value={user.displayName?.trim() || null} action={{ label: 'ویرایش', onPress: () => setRename(true) }} />
               <View style={{ height: 1, backgroundColor: C.line }} />
-              <InfoRow icon="phone" label="شماره موبایل" value={user.phone} verified={user.phoneVerified} />
+              <InfoRow icon="phone" label="شماره موبایل" value={user.phone}
+                badge={user.phone ? (user.phoneVerified ? { label: 'تأییدشده', tone: 'ok' } : { label: 'تأییدنشده', tone: 'idle' }) : undefined}
+                action={user.phoneVerified ? undefined : { label: user.phone ? 'تأیید شماره' : 'افزودن شماره', onPress: () => setPhone(true) }} />
               <View style={{ height: 1, backgroundColor: C.line }} />
-              <InfoRow icon="doc" label="ایمیل" value={user.email} verified={user.emailVerified} />
+              <InfoRow icon="doc" label="ایمیل" value={user.email} />
             </View>
-            <T size={11.5} color={C.muted} style={{ lineHeight: 20 }}>تغییر نام، شماره و ایمیل نیازمند تأیید با کد پیامکی است و از نسخه‌ی وب در بخش حساب کاربری انجام می‌شود.</T>
+            <T size={11.5} color={C.muted} style={{ lineHeight: 20 }}>
+              {user.phoneVerified
+                ? 'شماره‌ی تأییدشده برای ورود با پیامک، بازیابی رمز و تأیید کارهای حساس استفاده می‌شود. برای تغییر شماره یا ایمیل با پشتیبانی در تماس باشید.'
+                : 'با تأیید شماره‌ی موبایل، ورود با پیامک و بازیابی رمز عبور برایتان فعال می‌شود.'}
+            </T>
+            <RenameSheet open={rename} onClose={() => setRename(false)} current={user.displayName?.trim() ?? ''} done={m => { notify(m); q.reload(); }} />
+            <PhoneSheet open={phone} onClose={() => setPhone(false)} done={m => { notify(m); q.reload(); }} />
           </>
         );
       }}
@@ -138,7 +157,7 @@ export function SettingsScreen() {
   const toast = useToast();
   return (
     <SubScreen title="اطلاعات حساب و اعلان‌ها" overlay={toast.node}>
-      <Profile />
+      <Profile notify={toast.show} />
       <SecHead title="اعلان‌ها" note="هر دسته را جداگانه تنظیم کنید" />
       <Notifications notify={toast.show} />
     </SubScreen>

@@ -39,4 +39,11 @@ describe('formatWhen', () => {
     const { formatWhen } = await import('../../lib/format');
     expect(formatWhen('2026-10-08T05:34:00Z')).toBe('۱۶ مهر · ۰۹:۰۴');
   });
+  it('reports the toman still needed, so the bar and the wording never disagree', () => {
+    expect(tierFor(0).remainingToman).toBe(1_000_000);
+    const t = tierFor(200_000); // 20% of the way to تتیس, 800k to go
+    expect(t.progress).toBeCloseTo(0.2);
+    expect(t.remainingToman).toBe(800_000);
+    expect(tierFor(900_000_000).remainingToman).toBe(0);
+  });
 });

@@ -34,7 +34,7 @@ export type AppOverview = {
   wallet: { walletId: string; currency: string; balanceToman: number; entries: AppWalletEntry[] } | null;
   activeOrders: AppOrderCard[];
   stats: { totalOrders: number; activeOrders: number; spentToman: number };
-  tier: { name: string; level: number; levels: number; next: string | null; progress: number };
+  tier: { name: string; level: number; levels: number; next: string | null; progress: number; remainingToman: number };
   mfa: boolean;
 };
 
