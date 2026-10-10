@@ -2,6 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { formatFa } from '../../../../../lib/admin-pricing';
+import { VARIANTS } from '../../../../../lib/catalog-ui';
 import { adminSend } from '../../adminFetch';
 import { ConfirmSheet, NumInput, SaveBar, useToast } from '../../kit';
 
@@ -117,6 +118,61 @@ export function BasePriceTools({ draft, priceId, confirmed }: { draft: { id: str
           </div>
         ) : null}
       </div>
+    </section>
+  );
+}
+
+/** Base service only: adds a variant (ایرانی / خارجی …). It starts as an inactive draft until its price is approved. */
+export function AddVariant({ serviceId, existing }: { serviceId: string; existing: string[] }) {
+  const router = useRouter();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const free = Object.entries(VARIANTS).filter(([k]) => !existing.includes(k));
+  if (free.length === 0) return null;
+  async function add(variant: string) {
+    setBusy(true);
+    const r = await adminSend(`/api/v1/admin/catalog/services/${serviceId}/variants`, { variant });
+    setBusy(false);
+    if (r.ok) { toast.ok('نسخه ساخته شد؛ قیمت‌اش را بررسی و تأیید کنید'); router.push(`/admin/catalog/${(r.data as { id: string }).id}`); } else toast.err(r.message);
+  }
+  return (
+    <section className="zpa-sec" aria-labelledby="av-h">
+      <h2 id="av-h">نسخه‌های این خدمت</h2>
+      <div className="zpa-panel zpa-stack">
+        <p style={{ margin: 0 }}>مشتری بعد از انتخاب خدمت، نسخه را انتخاب می‌کند. نسخه‌ی جدید با قیمت پیش‌نویس ساخته می‌شود و تا تأیید قیمت دیده نمی‌شود.</p>
+        <div className="zpa-row-flex">
+          {free.map(([k, v]) => <button key={k} type="button" className="zpa-btn ghost" disabled={busy} onClick={() => add(k)}>+ {v.label}</button>)}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** Proposes a new base price and/or quantity limits as a draft; it goes live only after «تأیید». */
+export function LimitsForm({ serviceId, unitToman, min, max, unitLabel }: { serviceId: string; unitToman: number | null; min: number | null; max: number | null; unitLabel: string }) {
+  const router = useRouter();
+  const toast = useToast();
+  const [u, setU] = useState<number | null>(unitToman);
+  const [lo, setLo] = useState<number | null>(min);
+  const [hi, setHi] = useState<number | null>(max);
+  const [busy, setBusy] = useState(false);
+  const dirty = u !== unitToman || lo !== min || hi !== max;
+  const bad = u === null || (lo !== null && hi !== null && hi < lo);
+  async function save() {
+    setBusy(true);
+    const r = await adminSend('/api/v1/admin/catalog/prices', { serviceId, unitToman: u, min: lo, max: hi });
+    setBusy(false);
+    if (r.ok) { toast.ok('پیش‌نویس ذخیره شد؛ برای اعمال، تأییدش کنید'); router.refresh(); } else toast.err(r.message);
+  }
+  return (
+    <section className="zpa-sec" aria-labelledby="lim-h">
+      <h2 id="lim-h">قیمت پایه و محدودیت تعداد</h2>
+      <div className="zpa-panel zpa-stack">
+        <NumInput label={`قیمت هر ${unitLabel} (تومان)`} value={u} suffix="تومان" onChange={setU} max={100_000_000} />
+        <NumInput label="حداقل تعداد" value={lo} onChange={setLo} hint="خالی = بدون حداقل" />
+        <NumInput label="حداکثر تعداد" value={hi} onChange={setHi} error={lo !== null && hi !== null && hi < lo ? 'حداکثر نباید از حداقل کمتر باشد' : null} hint="خالی = بدون حداکثر" />
+      </div>
+      <SaveBar show={dirty} summary="تغییر قیمت یا محدودیت (به‌صورت پیش‌نویس)" onSave={save} onDiscard={() => { setU(unitToman); setLo(min); setHi(max); }} busy={busy} disabled={bad} saveLabel="ذخیره‌ی پیش‌نویس" />
     </section>
   );
 }

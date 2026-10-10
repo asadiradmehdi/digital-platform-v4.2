@@ -2,9 +2,21 @@ import Link from 'next/link';
 import { requireCurrentUser } from '../../../../server/identity/request-user';
 import { listAdminServices } from '../../../../server/admin/catalog';
 import { getCatalogSummaries } from '../../../../server/admin/packages';
-import { isHiddenCategory, perLabel, serviceMeta } from '../../../../lib/catalog-ui';
+import { isHiddenCategory, variantOf, perLabel, serviceMeta } from '../../../../lib/catalog-ui';
 import { EmptyState, PageHead, categoryName, fa, toman } from '../ui';
 import { ApproveDrafts, BulkTool, CategorySwitch } from './CategoryTools';
+
+/** Base services in catalogue order, each followed by its variants. */
+function groupVariants<T extends { slug: string }>(items: T[]): T[] {
+  const bases = items.filter(i => !i.slug.includes('--'));
+  const out: T[] = [];
+  const used = new Set<T>();
+  for (const b of bases) {
+    out.push(b); used.add(b);
+    items.filter(i => i.slug.startsWith(`${b.slug}--`)).sort((x, y) => variantOf(x.slug).order - variantOf(y.slug).order).forEach(v => { out.push(v); used.add(v); });
+  }
+  return [...out, ...items.filter(i => !used.has(i))];
+}
 
 export default async function CatalogPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const userId = await requireCurrentUser();
@@ -43,14 +55,15 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
                 {drafts ? <ApproveDrafts slug={slug} label={`«${categoryName(slug)}»`} count={drafts} /> : null}
               </div>
               <ul className="zpa-list">
-                {items.map(s => {
+                {groupVariants(items).map(s => {
+                  const isVar = s.slug.includes('--');
                   const sum = summaries.get(s.id);
                   const kind = serviceMeta(s.slug);
                   return (
-                    <li key={s.id}>
+                    <li key={s.id} style={isVar ? { marginInlineStart: 20 } : undefined}>
                       <Link className="zpa-item" href={`/admin/catalog/${s.id}`}>
                         <div className="zpa-item-top">
-                          <b>{s.name}</b>
+                          <b>{isVar ? <span className="zpa-tag" style={{ marginInlineEnd: 6 }}>{variantOf(s.slug).label}</span> : null}{s.name}</b>
                           <span className="zpa-item-end">{s.price ? toman(s.price.unitToman * kind.per) : '—'}</span>
                         </div>
                         <div className="zpa-item-sub">

@@ -3,18 +3,24 @@ import { requireCurrentUser } from '../../../../../server/identity/request-user'
 import { getServicePackages } from '../../../../../server/admin/packages';
 import { listAdminServices } from '../../../../../server/admin/catalog';
 import { AppError } from '../../../../../server/core/errors';
+import Link from 'next/link';
+import { baseSlug, variantOf } from '../../../../../lib/catalog-ui';
 import { formatQuantityWords } from '../../../../../lib/format';
 import { EmptyState, PageHead, faDate, fa, toman } from '../../ui';
 import { PackageEditor } from './PackageEditor';
-import { ActiveSwitch, BasePriceTools, CostForm, DetailsForm } from './ServiceForms';
+import { AddVariant, ActiveSwitch, BasePriceTools, CostForm, DetailsForm, LimitsForm } from './ServiceForms';
 
 export default async function ServicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const userId = await requireCurrentUser();
   let data;
   try { data = await getServicePackages(userId, id); } catch (e) { if (e instanceof AppError && (e.code === 'NOT_FOUND' || e.code === 'VALIDATION_ERROR')) notFound(); throw e; }
-  const row = (await listAdminServices(userId)).find(s => s.id === id);
   const { service, kind, history } = data;
+  const all = await listAdminServices(userId);
+  const row = all.find(s => s.id === id);
+  const isVariant = service.slug.includes('--');
+  const siblings = all.filter(s => s.slug !== service.slug && baseSlug(s.slug) === baseSlug(service.slug));
+  const existingVariants = all.filter(s => s.slug.startsWith(`${service.slug}--`)).map(s => s.slug.split('--')[1]);
   const base = data.packages.find(p => p.quantity === kind.per) ? kind.per : null;
   const label = (q: number) => `${formatQuantityWords(q)} ${kind.unit}`;
 
@@ -24,6 +30,12 @@ export default async function ServicePage({ params }: { params: Promise<{ id: st
         <ActiveSwitch serviceId={service.id} name={service.name} active={service.active} />
       </PageHead>
 
+      {siblings.length > 0 ? (
+        <nav className="zpa-row-flex" aria-label="نسخه‌های این خدمت" style={{ marginBottom: 12 }}>
+          {siblings.map(v => <Link key={v.id} className="zpa-tag info" href={`/admin/catalog/${v.id}`}>{variantOf(v.slug).label}{v.active ? '' : ' (غیرفعال)'}</Link>)}
+        </nav>
+      ) : null}
+
       {data.unitToman === null ? (
         <div className="zpa-panel"><EmptyState title="این خدمت هنوز قیمت ندارد" hint="اول باید قیمت پایه‌اش در سیستم ثبت شود (کاتالوگ اولیه)؛ بعد بسته‌ها اینجا قابل ویرایش می‌شوند." /></div>
       ) : (
@@ -31,6 +43,8 @@ export default async function ServicePage({ params }: { params: Promise<{ id: st
           serviceId={service.id} unit={kind.unit} per={kind.per} baseQuantity={base} unitToman={data.unitToman} packages={data.packages} cost={data.cost} lastChangeId={data.undoableBatchId} />
       )}
 
+      {row ? <LimitsForm key={`l${row.price?.unitToman}${row.price?.min}${row.price?.max}`} serviceId={service.id} unitToman={row.price?.unitToman ?? row.draft?.unitToman ?? null} min={row.price?.min ?? row.draft?.min ?? null} max={row.price?.max ?? row.draft?.max ?? null} unitLabel={kind.unit} /> : null}
+      {!isVariant ? <AddVariant serviceId={service.id} existing={existingVariants} /> : null}
       <CostForm key={`c${data.cost?.perUnitToman ?? ''}`} serviceId={service.id} unit={kind.unit} current={data.cost?.source === 'manual' ? data.cost.perUnitToman : null} source={data.cost?.source ?? null} />
       <DetailsForm key={`d${service.name}${service.description}${service.hint}${service.sortOrder}`} serviceId={service.id} name={service.name} description={service.description ?? ''} hint={service.hint ?? ''} sortOrder={service.sortOrder} />
       {row ? <BasePriceTools draft={row.draft ? { id: row.draft.id, unitToman: row.draft.unitToman } : null} priceId={row.price?.id} confirmed={row.price?.confirmed ?? true} /> : null}
