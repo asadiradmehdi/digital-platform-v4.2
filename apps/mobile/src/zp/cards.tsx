@@ -8,35 +8,36 @@ import { C, G, card, right, row } from './base';
 import { Enamel, Fill, Ornament, Tile } from './brand';
 import { Cta, Press, Progress, Rise, Star, StatusPill, T } from './ui';
 
-/** Service grid, three per row in priority order; fills the height the screen leaves so it never scrolls. */
+/** Service grid, three per row in priority order. Cards keep the web's compact size and type; the rows spread evenly over the height the screen leaves, so the page never scrolls. */
 export function CategoryGrid({ categories }: { categories: AppCategory[] }) {
   const router = useRouter();
-  const gap = 10;
+  const { width, height: winH } = useWindowDimensions();
   const [h, setH] = useState(0);
   const rows = Math.max(1, Math.ceil(categories.length / 3));
-  // The grid takes whatever height the screen leaves, so cards stay roomy on tall phones and never push the page into a scroll.
-  const cardH = h > 0 ? Math.floor((h - gap * (rows - 1)) / rows) : 0;
-  const tile = Math.round(Math.max(34, Math.min(60, cardH * 0.4)));
-  const roomy = cardH >= 104;
+  const gap = 8;
+  // Same rule as the web: clamp(44px, min(13vw, 6.4vh), 56px); shrinks only when the space left is really short.
+  let tile = Math.round(Math.max(44, Math.min(width * 0.13, winH * 0.064, 56)));
+  const chrome = 10 * 2 + 6 + 16 + 11; // padding, gap, label line, hint line
+  if (h > 0 && rows * (tile + chrome) > h) tile = Math.max(30, Math.floor(h / rows - chrome));
   const lines = Array.from({ length: rows }, (_, r) => categories.slice(r * 3, r * 3 + 3));
   return (
-    <View accessibilityRole="menu" accessibilityLabel="دسته‌های خدمات" onLayout={e => setH(Math.floor(e.nativeEvent.layout.height))} style={{ flex: 1, minHeight: 230, gap }}>
-      {cardH > 0 ? lines.map((line, r) => (
-        <View key={r} style={{ flexDirection: row, gap, height: cardH }}>
+    <View accessibilityRole="menu" accessibilityLabel="دسته‌های خدمات" onLayout={e => setH(Math.floor(e.nativeEvent.layout.height))} style={{ flex: 1, justifyContent: 'space-evenly' }}>
+      {lines.map((line, r) => (
+        <View key={r} style={{ flexDirection: row, gap }}>
           {line.map((c, i) => (
             <Rise key={c.key} delay={80 + (r * 3 + i) * 45} style={{ flex: 1 }}>
               <Press accessibilityRole="menuitem" accessibilityLabel={c.live ? `${c.name}، ${c.hint ?? ''}` : `${c.name}، به‌زودی`}
                 onPress={() => router.navigate({ pathname: '/services/[category]', params: { category: c.key } })}
-                style={[{ width: '100%', height: cardH, alignItems: 'center', justifyContent: 'center', gap: roomy ? 7 : 4, paddingHorizontal: 3, borderRadius: 20, opacity: c.live ? 1 : 0.82 }, card]}>
+                style={[{ alignItems: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 4, borderRadius: 18, opacity: c.live ? 1 : 0.82 }, card]}>
                 <Tile icon={c.icon} size={tile} badge={c.live ? undefined : 'به‌زودی'} />
-                <T w="b" size={c.name.length > 12 ? 10.2 : 13} color={C.ink} numberOfLines={1} ellipsizeMode="clip" style={{ textAlign: 'center', alignSelf: 'stretch' }}>{c.name}</T>
-                {c.hint ? <T size={10.2} color={C.muted} numberOfLines={1} style={{ textAlign: 'center', alignSelf: 'stretch', marginTop: -2 }}>{c.hint}</T> : null}
+                <T w="b" size={c.name.length > 12 ? 10.6 : 12.5} color={C.ink} numberOfLines={1} ellipsizeMode="clip" style={{ textAlign: 'center', alignSelf: 'stretch', lineHeight: 17 }}>{c.name}</T>
+                {c.hint ? <T size={10.4} color={C.muted} numberOfLines={1} style={{ textAlign: 'center', alignSelf: 'stretch', marginTop: -3, lineHeight: 14 }}>{c.hint}</T> : null}
               </Press>
             </Rise>
           ))}
           {line.length < 3 ? Array.from({ length: 3 - line.length }, (_, k) => <View key={`pad${k}`} style={{ flex: 1 }} />) : null}
         </View>
-      )) : null}
+      ))}
     </View>
   );
 }

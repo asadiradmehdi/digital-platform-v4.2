@@ -154,11 +154,27 @@ export function ErrorBox({ text, action }: { text: string; action?: { label: str
   );
 }
 
-export function Loading({ label = 'در حال دریافت…' }: { label?: string }) {
+/** Breathing placeholder block: the layout appears at once and fills in, with no «loading» wording. */
+export function Skel({ h = 16, w = '100%', r = 12, style }: { h?: number; w?: number | `${number}%`; r?: number; style?: StyleProp<ViewStyle> }) {
+  const [v] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(v, { toValue: 1, duration: 750, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+      Animated.timing(v, { toValue: 0, duration: 750, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, [v]);
+  return <Animated.View style={[{ height: h, width: w, borderRadius: r, backgroundColor: C.surface3, opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.45, 0.95] }) }, style]} />;
+}
+
+/** Screen placeholder: a title line, a hero block and a few cards in the brand's paper tones. */
+export function Loading({ label = 'در حال آماده‌سازی' }: { label?: string }) {
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 }} accessibilityLabel={label}>
-      <ActivityIndicator color={C.accent} />
-      <T size={12.5} color={C.muted}>{label}</T>
+    <View accessible accessibilityLabel={label} accessibilityRole="progressbar" style={{ gap: 14 }}>
+      <Skel h={104} r={22} />
+      <Skel h={20} w="42%" />
+      {[0, 1, 2].map(i => <Skel key={i} h={72} r={18} />)}
     </View>
   );
 }

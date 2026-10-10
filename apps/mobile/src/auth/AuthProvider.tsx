@@ -1,3 +1,4 @@
+import { clearRemoteCache } from '../hooks/useRemote';
 import * as Crypto from 'expo-crypto';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const finish = async (r: SessionReply): Promise<SignInResult> => {
       if (r.mfaRequired && r.challengeToken) return { kind: 'mfa', challengeToken: r.challengeToken };
       if (!r.accessToken) throw new Error('ورود انجام نشد. دوباره تلاش کنید.');
+      clearRemoteCache();
       await setAccessToken(r.accessToken);
       setAuthenticated(true);
       return { kind: 'done', created: Boolean(r.created) };
@@ -56,7 +58,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       completeMfa: async (challengeToken, code) => finish(await post('/api/v1/auth/mobile/mfa', { challengeToken, code })),
       exchangeGoogleHandoff: async (handoff, verifier) => finish(await post('/api/v1/auth/google/mobile/exchange', { handoff, verifier })),
       async signOut() {
-        try { await apiFetch('/api/v1/auth/mobile/logout', { method: 'POST' }); } finally { await clearAccessToken(); setAuthenticated(false); }
+        try { await apiFetch('/api/v1/auth/mobile/logout', { method: 'POST' }); } finally { await clearAccessToken(); clearRemoteCache(); setAuthenticated(false); }
       },
     };
   }, [ready, authenticated]);

@@ -4,12 +4,22 @@ import { errorText } from '../api/app';
 
 export type Remote<T> = { status: 'loading' | 'success' | 'error'; data: T | null; error: string | null };
 
+// Last good answer per query, so opening a screen again paints at once and refreshes quietly behind it.
+const cache = new Map<string, unknown>();
+/** Called on sign-out so the next account never sees the previous one's data. */
+export function clearRemoteCache() { cache.clear(); }
+
 /**
  * Fetches when the screen gains focus and keeps the last good data while refreshing,
  * so returning to a tab never flashes a spinner over content that is already on screen.
  */
 export function useRemote<T>(fetcher: () => Promise<T>, deps: unknown[] = []) {
-  const [state, setState] = useState<Remote<T>>({ status: 'loading', data: null, error: null });
+  const cacheKey = `${fetcher.toString()}|${JSON.stringify(deps)}`;
+  const [state, setState] = useState<Remote<T>>(() => (cache.has(cacheKey)
+    ? { status: 'success', data: cache.get(cacheKey) as T, error: null }
+    : { status: 'loading', data: null, error: null }));
+  const keyRef = useRef(cacheKey);
+  useEffect(() => { keyRef.current = cacheKey; });
   const ref = useRef(fetcher);
   // Keep the latest fetcher without touching the ref during render; this runs before the focus effect below.
   useEffect(() => { ref.current = fetcher; });
@@ -18,7 +28,7 @@ export function useRemote<T>(fetcher: () => Promise<T>, deps: unknown[] = []) {
 
   const load = useCallback(() => {
     ref.current()
-      .then(data => { if (alive.current) setState({ status: 'success', data, error: null }); })
+      .then(data => { cache.set(keyRef.current, data); if (alive.current) setState({ status: 'success', data, error: null }); })
       .catch((e: unknown) => {
         if (!alive.current) return;
         setState(s => (s.data != null ? s : { status: 'error', data: null, error: errorText(e, 'دریافت اطلاعات انجام نشد.') }));

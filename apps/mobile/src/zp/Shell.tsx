@@ -1,7 +1,7 @@
 // App chrome for the Kayvan screens: top bar (wordmark, bell, menu) with the side drawer,
 // sub-page bar (back + title), and the four-tab bottom bar.
 import { useEffect, useState, type PropsWithChildren, type ReactNode } from 'react';
-import { Animated, Dimensions, Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, Dimensions, Easing, Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, F, RTL, atRight, back, fwd, leftRadii, row, right, shadow } from './base';
@@ -80,17 +80,19 @@ function Drawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   );
 }
 
-/** Screen body. `fixed` pages are a plain flex column that shares the leftover height, so they never scroll. */
+/** Screen body. `fixed` pages are a plain flex column that shares the leftover height, so they never scroll. Content glides in on mount. */
 function Body({ fixed, children }: PropsWithChildren<{ fixed?: boolean }>) {
-  if (fixed) return <View style={{ flex: 1, paddingHorizontal: 18, paddingTop: 4, paddingBottom: 14, gap: 14 }}>{children}</View>;
+  const [v] = useState(() => new Animated.Value(0));
+  useEffect(() => { Animated.timing(v, { toValue: 1, duration: 340, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(); }, [v]);
+  const glide = { opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] };
+  if (fixed) return <Animated.View style={[{ flex: 1, paddingHorizontal: 18, paddingTop: 4, paddingBottom: 14, gap: 14 }, glide]}>{children}</Animated.View>;
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 18, paddingTop: 4, paddingBottom: 14, gap: 14 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-      {children}
+      <Animated.View style={[{ gap: 14, flexGrow: 1 }, glide]}>{children}</Animated.View>
     </ScrollView>
   );
 }
 
-/** Tab-level screen: wordmark bar + drawer. Body keeps a scroll fallback for very short phones. */
 export function AppScreen({ children, overlay, fixed }: PropsWithChildren<{ overlay?: ReactNode; fixed?: boolean }>) {
   const [drawer, setDrawer] = useState(false);
   return (
@@ -159,7 +161,7 @@ export function TabBar({ state, navigation }: TabBarProps) {
           >
             {on ? <View style={{ position: 'absolute', top: -10, width: 18, height: 3, borderBottomLeftRadius: 3, borderBottomRightRadius: 3, backgroundColor: C.gold2 }} /> : null}
             <Icon name={meta.icon} size={24} color={on ? C.gold3 : C.muted} duo={on ? 0.38 : 0} stroke={1.9} />
-            <T w={on ? 'b' : 'm'} size={11} color={on ? C.ink : C.muted} style={{ textAlign: 'center' }}>{meta.label}</T>
+            <T w="b" size={11.5} color={on ? C.ink : C.muted} style={{ textAlign: 'center' }}>{meta.label}</T>
           </Pressable>
         );
       })}
