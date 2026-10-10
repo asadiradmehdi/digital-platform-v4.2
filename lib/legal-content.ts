@@ -3,7 +3,7 @@
 // These texts were drafted by the product team and still need a review by the company's lawyer before launch.
 import { ENTITY_FACTS } from './seo/entity';
 
-export const TERMS_VERSION = '2026-10-10';
+export const TERMS_VERSION = '2026-10-11';
 
 export type LegalSection = { title: string; lines: string[] };
 export type LegalDoc = { key: 'terms' | 'privacy' | 'about'; title: string; summary: string; version?: string; updatedLabel?: string; sections: LegalSection[] };
@@ -87,19 +87,6 @@ const TERMS: LegalDoc = {
       lines: [
         'اعلان‌های سفارش، پرداخت و امنیت از طریق پیامک، ایمیل یا اعلان درون‌برنامه‌ای برای شما ارسال می‌شود و برای ارائه‌ی خدمت ضروری است.',
         'پشتیبانی از طریق تیکت در حساب کاربری انجام می‌شود و پاسخ‌ها در همان تیکت ثبت می‌شود.',
-      ],
-    },
-    {
-      title: 'مالکیت فکری',
-      lines: [
-        'نام، نشان، طراحی و محتوای زُحل پی متعلق به این مجموعه است و بدون اجازه‌ی کتبی قابل استفاده یا کپی نیست.',
-      ],
-    },
-    {
-      title: 'قانون حاکم و حل اختلاف',
-      lines: [
-        'این قوانین تابع قوانین جمهوری اسلامی ایران است.',
-        'در صورت اختلاف، ابتدا از طریق پشتیبانی پیگیری کنید. اگر نتیجه نگرفتید، مراجع صالح قانونی ملاک است.',
       ],
     },
   ],

@@ -8,6 +8,11 @@ import { C, G, card, right, row } from './base';
 import { Enamel, Fill, Ornament, Tile } from './brand';
 import { Cta, CountUp, Press, Progress, Rise, Star, StatusPill, T } from './ui';
 
+/** Long category names get a short card label so every card shows the same type size. */
+const shortName = (n: string) => (n.includes('هوش مصنوعی') ? 'هوش مصنوعی' : n);
+/** Hints end in «و…» on the server; the card shows only the first two examples so nothing is cut mid-word. */
+const shortHint = (h: string) => h.replace(/\s*و\s*(…|\.\.\.)\s*$/, '').split(/[،,]|\s+و\s+/).slice(0, 2).map(x => x.trim()).filter(Boolean).join('، ');
+
 /** Service grid, three per row in priority order. Cards keep the web's compact size and type; the rows spread evenly over the height the screen leaves, so the page never scrolls. */
 export function CategoryGrid({ categories }: { categories: AppCategory[] }) {
   const router = useRouter();
@@ -31,8 +36,8 @@ export function CategoryGrid({ categories }: { categories: AppCategory[] }) {
                 onPress={() => router.navigate({ pathname: '/services/[category]', params: { category: c.key } })}
                 style={[{ alignItems: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 4, borderRadius: 18, opacity: c.live ? 1 : 0.82 }, card]}>
                 <Tile icon={c.icon} size={tile} badge={c.live ? undefined : 'به‌زودی'} />
-                <T w="b" size={12.5} color={C.ink} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.78} style={{ textAlign: 'center', alignSelf: 'stretch', lineHeight: 17 }}>{c.name}</T>
-                {c.hint ? <T size={11.5} color={C.muted} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.78} style={{ textAlign: 'center', alignSelf: 'stretch', marginTop: -3, lineHeight: 16 }}>{c.hint}</T> : null}
+                <T w="b" size={12.5} color={C.ink} numberOfLines={1} style={{ textAlign: 'center', alignSelf: 'stretch', lineHeight: 17 }}>{shortName(c.name)}</T>
+                {c.hint ? <T size={11} color={C.muted} numberOfLines={1} style={{ textAlign: 'center', alignSelf: 'stretch', marginTop: -3, lineHeight: 16 }}>{shortHint(c.hint)}</T> : null}
               </Press>
             </Rise>
           ))}
@@ -85,7 +90,7 @@ export function WalletStrip({ balanceToman, tierName }: { balanceToman: number |
       <View style={{ flex: 1, alignItems: right }}>
         <View style={{ flexDirection: row, alignItems: 'center', gap: 6 }}>
           <T size={11.5} color="rgba(255,255,255,0.72)" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1 }}>موجودی شما</T>
-          {tierName && !narrow ? <View style={{ backgroundColor: C.gold1, borderRadius: 999, paddingHorizontal: 8 }}><T w="b" size={9.5} color={C.accentStrong}>سطح {tierName}</T></View> : null}
+          {tierName && !narrow ? <View style={{ backgroundColor: C.gold1, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 1 }}><T w="dx" size={9.5} color={C.accentStrong} style={{ lineHeight: 15 }}>سطح {tierName}</T></View> : null}
         </View>
         <View style={{ flexDirection: row, alignItems: 'baseline', gap: 4 }}>
           {balanceToman == null ? <T w="b" size={17.5} color="#fff">—</T> : <CountUp w="b" size={17.5} color="#fff" value={balanceToman} format={formatTomanNumber} />}

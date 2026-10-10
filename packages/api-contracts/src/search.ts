@@ -33,29 +33,25 @@ const SYNONYMS: Array<[RegExp, string]> = [
   [/tiktok|تیک تاک|تیکتاک/, 'تیک‌تاک'],
 ];
 
-/** Best-seller priority (Ali 2026-10-10): AI subscription first, then the Instagram staples, Telegram… */
-const BEST_SELLERS: Array<{ category: string; group?: string }> = [
-  { category: 'ai-subscriptions' },
-  { category: 'instagram', group: 'فالوور' },
-  { category: 'instagram', group: 'لایک' },
-  { category: 'instagram', group: 'بازدید' },
-  { category: 'telegram', group: 'ممبر' },
-  { category: 'telegram', group: 'بازدید' },
-  { category: 'youtube', group: 'سابسکرایبر' },
-  { category: 'tiktok', group: 'فالوور' },
-  { category: 'youtube', group: 'بازدید' },
-  { category: 'tiktok', group: 'لایک' },
+/** Best-seller order (Ali 2026-10-10, from the Iranian market): Instagram followers, likes, Claude Pro, ChatGPT Plus, views, Telegram, then the rest. Variants (`base--iranian`) rank with their base. */
+const BEST_SELLER_SLUGS = [
+  'ig-followers', 'ig-likes', 'sub-claude-pro', 'sub-chatgpt-plus', 'ig-views', 'tg-members', 'ig-comments', 'sub-gemini-pro',
+  'tt-followers', 'yt-subscribers', 'tg-views', 'ig-story-views', 'tt-likes', 'sub-perplexity-pro', 'sub-cursor-pro', 'yt-views',
+  'tt-views', 'ig-saves', 'tg-reactions', 'sub-claude-max', 'sub-chatgpt-pro', 'sub-midjourney-standard', 'sub-copilot-pro', 'sub-suno-pro',
+  'sub-elevenlabs-creator', 'rb-members', 'rb-followers', 'yt-likes', 'ig-shares',
 ];
 
 /** Rank used to order services when nothing is typed or when scores tie (lower = sells better). */
-export function sellerRank(s: Pick<AppService, 'category' | 'group'>): number {
-  const i = BEST_SELLERS.findIndex(b => b.category === s.category && (!b.group || b.group === s.group));
-  return i === -1 ? BEST_SELLERS.length + 1 : i;
+export function sellerRank(s: Pick<AppService, 'slug'>): number {
+  const i = BEST_SELLER_SLUGS.indexOf(s.slug.split('--')[0]);
+  return i === -1 ? BEST_SELLER_SLUGS.length + 1 : i;
 }
 
 export function bestSellers<S extends AppService>(catalog: AppCatalog<S>, limit = 8): S[] {
+  const seen = new Set<string>();
   return [...catalog.services]
     .sort((a, b) => sellerRank(a) - sellerRank(b) || a.unitPriceToman * a.per - b.unitPriceToman * b.per)
+    .filter(s => { const base = s.slug.split('--')[0]; if (seen.has(base)) return false; seen.add(base); return true; })
     .slice(0, limit);
 }
 

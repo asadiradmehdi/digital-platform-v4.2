@@ -6,7 +6,7 @@ import { useRemote } from '../../hooks/useRemote';
 import { C, card, faNum, right, row } from '../../zp/base';
 import { BrandTile, Tile } from '../../zp/brand';
 import { SubScreen } from '../../zp/Shell';
-import { Async, EmptyState, Press, T } from '../../zp/ui';
+import { Async, EmptyState, LiveDot, Press, T } from '../../zp/ui';
 
 export type ServiceGroup = { base: string; name: string; members: AppService[]; first: AppService; fromPrice: number };
 
@@ -37,12 +37,14 @@ function ServiceGrid({ services }: { services: AppService[] }) {
         const s = g.first;
         const multi = g.members.length > 1;
         return (
-        <Press key={g.base} accessibilityRole="link" accessibilityLabel={`${g.name}، ${multi ? `${g.members.length} نوع، از ` : ''}${s.perLabel} ${formatTomanNumber(g.fromPrice)} تومان`}
+        <Press key={g.base} accessibilityRole="link" accessibilityLabel={`${g.name}، ${multi ? `${g.members.length} سرویس، از ` : ''}${s.perLabel} ${formatTomanNumber(g.fromPrice)} تومان`}
           onPress={() => (multi ? router.navigate({ pathname: '/variants/[base]', params: { base: g.base } }) : router.navigate({ pathname: '/order/[service]', params: { service: s.slug } }))}
           style={[{ width: w, alignItems: 'center', gap: 2, borderRadius: 20, paddingTop: compact ? 9 : 12, paddingBottom: compact ? 8 : 10, paddingHorizontal: 6 }, card]}>
           <View style={{ marginBottom: compact ? 3 : 5 }}>{s.brand ? <BrandTile brand={s.brand} size={tile} /> : <Tile icon={s.icon} size={tile} />}</View>
           <T w="b" size={compact ? 12 : 12.8} numberOfLines={compact ? 1 : 2} style={{ textAlign: 'center', lineHeight: 19, minHeight: undefined }}>{g.name}</T>
-          <T size={10} color={multi ? C.goldText : C.muted} numberOfLines={1} style={{ textAlign: 'center' }}>{multi ? `${faNum(g.members.length)} نوع` : s.perLabel}</T>
+          {multi
+            ? <View style={{ flexDirection: row, alignItems: 'center', gap: 2 }}><LiveDot size={6} /><T w="sb" size={10.5} color={C.turquoiseInk} numberOfLines={1}>{faNum(g.members.length)} سرویس</T></View>
+            : <T size={10} color={C.muted} numberOfLines={1} style={{ textAlign: 'center' }}>{s.perLabel}</T>}
           <View style={{ flexDirection: row, alignItems: 'baseline', gap: 3 }}>
             {multi ? <T size={9.5} color={C.muted}>از</T> : null}
             <T w="b" size={13.5}>{formatTomanNumber(g.fromPrice)}</T>
@@ -73,7 +75,7 @@ export function CategoryScreen() {
                 <View style={{ flex: 1, alignItems: right }}>
                   <T w="dx" size={20.5} numberOfLines={1} adjustsFontSizeToFit style={{ lineHeight: 30 }}>{cat.title ?? `خدمات ${cat.name}`}</T>
                   {items.length
-                    ? <T size={12} color={C.muted} numberOfLines={2}><T w="b" size={12} color={C.goldText}>{faNum(items.length)} سرویس فعال</T> | {cat.note ?? 'قیمت شفاف، پرداخت از کیف پول'}</T>
+                    ? <T size={12} color={C.muted} numberOfLines={2}><LiveDot size={6} /> <T w="b" size={12} color={C.turquoiseInk}>{faNum(items.length)} سرویس فعال</T> | {cat.note ?? 'قیمت شفاف، پرداخت از کیف پول'}</T>
                     : <T size={12} color={C.muted}>به‌زودی در زُحل پی</T>}
                 </View>
               </View>

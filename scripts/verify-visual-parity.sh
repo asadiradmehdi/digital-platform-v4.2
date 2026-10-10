@@ -34,6 +34,6 @@ for p in "${pairs[@]}"; do
   grep -Fq -- "${k}:'${v}'" <<<"$tok_flat" || { echo "VISUAL_PARITY_FAIL: $TOKENS missing ${key}: '${val}'"; exit 1; }
 done
 grep -Fq "color-scheme:light" <<<"$css_flat" || { echo "VISUAL_PARITY_FAIL: color-scheme"; exit 1; }
-grep -Fq "ibmplexsansarabic" <<<"$css_flat" || { echo "VISUAL_PARITY_FAIL: web font"; exit 1; }
-grep -Fq "ibmplexsansarabic" <<<"$tok_flat" || { echo "VISUAL_PARITY_FAIL: token font"; exit 1; }
+grep -Fq "vazirmatn" <<<"$css_flat" || { echo "VISUAL_PARITY_FAIL: web font"; exit 1; }
+grep -Fq "vazirmatn" <<<"$tok_flat" || { echo "VISUAL_PARITY_FAIL: token font"; exit 1; }
 echo 'VISUAL_PARITY_STATIC=PASS'

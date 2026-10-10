@@ -48,13 +48,30 @@ export function CountUp({ value, format, ...text }: { value: number; format: (n:
 }
 
 /** Fades and lifts its child in once on mount; `delay` staggers lists into a gentle cascade. */
-export function Rise({ delay = 0, distance = 14, style, children }: PropsWithChildren<{ delay?: number; distance?: number; style?: StyleProp<ViewStyle> }>) {
+export function Rise({ delay = 0, distance = 10, style, children }: PropsWithChildren<{ delay?: number; distance?: number; style?: StyleProp<ViewStyle> }>) {
   const [v] = useState(() => new Animated.Value(0));
-  useEffect(() => { Animated.timing(v, { toValue: 1, duration: 420, delay, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(); }, [v, delay]);
+  useEffect(() => { Animated.timing(v, { toValue: 1, duration: 240, delay: Math.min(delay, 120), easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(); }, [v, delay]);
   return (
     <Animated.View style={[style, { opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [distance, 0] }) }] }]}>
       {children}
     </Animated.View>
+  );
+}
+
+/** Small blinking green lamp (brand turquoise) marking a service as live; native-driven, loops softly. */
+export function LiveDot({ size = 7 }: { size?: number }) {
+  const [v] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    const loop = Animated.loop(Animated.timing(v, { toValue: 1, duration: 1500, easing: Easing.out(Easing.quad), useNativeDriver: true }));
+    loop.start();
+    return () => loop.stop();
+  }, [v]);
+  const box = size * 2.6;
+  return (
+    <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ width: box, height: box, alignItems: 'center', justifyContent: 'center' }}>
+      <Animated.View style={{ position: 'absolute', width: size, height: size, borderRadius: size / 2, backgroundColor: C.turquoise, opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.55, 0] }), transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 2.6] }) }] }} />
+      <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: C.turquoise }} />
+    </View>
   );
 }
 
@@ -136,7 +153,7 @@ export function Star({ size = 13, color = C.gold2 }: { size?: number; color?: st
   );
 }
 
-export function SecHead({ title, note, link, onLink }: { title: string; note?: string; link?: string; onLink?: () => void }) {
+export function SecHead({ title, note, link, onLink, dot }: { title: string; note?: string; link?: string; onLink?: () => void; dot?: boolean }) {
   return (
     <View style={{ flexDirection: row, alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
       <View style={{ flexDirection: row, alignItems: 'center', gap: 8 }}>
@@ -145,7 +162,7 @@ export function SecHead({ title, note, link, onLink }: { title: string; note?: s
       </View>
       {link ? (
         <Pressable accessibilityRole="link" onPress={onLink} hitSlop={8}><T w="b" size={11.5} color={C.goldText}>{link}</T></Pressable>
-      ) : note ? <T size={11.5} color={C.muted}>{note}</T> : null}
+      ) : note ? <View style={{ flexDirection: row, alignItems: 'center', gap: 3 }}>{dot ? <LiveDot size={6} /> : null}<T size={11.5} color={C.muted}>{note}</T></View> : null}
     </View>
   );
 }

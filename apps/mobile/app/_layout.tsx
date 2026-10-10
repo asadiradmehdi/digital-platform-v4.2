@@ -49,7 +49,7 @@ export default function Layout() {
     <AuthProvider>
       <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
       <SessionGate />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg }, animation: 'fade_from_bottom', animationDuration: 260 }}>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg }, animation: 'fade', animationDuration: 140 }}>
         <Stack.Screen name="login" />
         <Stack.Screen name="auth/google" />
         <Stack.Screen name="(tabs)" />

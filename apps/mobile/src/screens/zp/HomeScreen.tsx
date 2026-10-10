@@ -27,7 +27,7 @@ export function HomeScreen() {
       <Async state={catalog} retry={catalog.retry}>
         {c => (
           <>
-            <SecHead title="خدمات" note={`${faNum(c.categories.length)} دسته | ${faNum(c.services.length)} سرویس فعال`} />
+            <SecHead title="خدمات" note={`${faNum(c.categories.length)} دسته | ${faNum(c.services.length)} سرویس فعال`} dot />
             <CategoryGrid categories={c.categories} />
           </>
         )}

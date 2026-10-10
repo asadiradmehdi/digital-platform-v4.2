@@ -5,7 +5,7 @@ import { appApi } from '../../api/app';
 import { useAuth } from '../../auth/AuthProvider';
 import { formatQuantityWords } from '../../format';
 import { useRemote } from '../../hooks/useRemote';
-import { C, F, card, faNum, fwd, right, row, shadow } from '../../zp/base';
+import { C, F, card, faNum, fwd, right, row, tRight, shadow } from '../../zp/base';
 import { Enamel, Fill, Ornament, Tile, type TileVariant } from '../../zp/brand';
 import { Icon, type IconName } from '../../zp/Icon';
 import { AppScreen } from '../../zp/Shell';
@@ -16,10 +16,11 @@ function MenuRow({ icon, label, note, tag, onPress, variant, busy }: { icon: Ico
     <Press accessibilityRole="button" accessibilityLabel={note ? `${label}، ${note}` : label} accessibilityState={{ busy }} disabled={busy} onPress={onPress}
       style={[{ flexDirection: row, alignItems: 'center', gap: 12, borderRadius: 16, paddingVertical: 8, paddingHorizontal: 10 }, card, { shadowOpacity: 0.06 }]}>
       <Tile icon={icon} size={36} variant={variant} />
-      <T w="sb" size={14} style={{ flex: 1 }}>{label}</T>
+      <T w="sb" size={13} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={{ flexShrink: 0 }}>{label}</T>
+      <View style={{ flex: 1 }} />
       {note ? (
         <View style={tag ? { backgroundColor: C.turquoiseSoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 } : undefined}>
-          <T w={tag ? 'b' : 'm'} size={10.5} color={tag ? C.turquoiseInk : C.muted}>{note}</T>
+          <T w={tag ? 'b' : 'm'} size={10} color={tag ? C.turquoiseInk : C.muted} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{note}</T>
         </View>
       ) : null}
       <Icon name={fwd} size={16} color={C.muted} stroke={2.4} />
@@ -74,18 +75,18 @@ export function AccountScreen() {
               <Enamel kind="goldLight" radius={22} style={[{ paddingVertical: 14, paddingHorizontal: 16, gap: 10 }, shadow(14, 26, 0.35, '#7a5218')]}>
                 <Ornament w={400} h={130} cx={60} cy={140} rot={12} color={C.gold4} alpha={0.5} />
                 <View style={{ flexDirection: row, alignItems: 'center', gap: 10 }}>
-                  <Tile icon="shamseh" size={42} />
+                  <Tile icon="planet" size={42} />
                   <View style={{ flex: 1, alignItems: right }}>
                     <T w="dx" size={17} color={C.accentStrong} style={{ lineHeight: 26 }}>سطح {t.name}</T>
-                    <T w="sb" size={12.5} color="#5b3b0c">بر اساس مجموع خریدهای پرداخت‌شده شما</T>
+                    <T w="sb" size={11} color="#5b3b0c" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ alignSelf: 'stretch', textAlign: tRight }}>بر اساس مجموع خریدهای پرداخت‌شده شما</T>
                   </View>
                   <View style={{ backgroundColor: C.accentStrong, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 }}>
-                    <T w="b" size={10.5} color={C.gold1}>سطح {faNum(t.level)} از {faNum(t.levels)}</T>
+                    <T w="b" size={10} color={C.gold1}>سطح {faNum(t.level)} از {faNum(t.levels)}</T>
                   </View>
                 </View>
                 <View style={{ flexDirection: row, alignItems: 'center', gap: 10 }}>
                   <Progress value={t.progress} track="rgba(122,82,24,0.18)" fill="enamel" />
-                  <T w="sb" size={12} color="#5b3b0c">{t.next ? `${formatQuantityWords(t.remainingToman)} تومان خرید دیگر تا سطح ${t.next}` : 'بالاترین سطح'}</T>
+                  <T w="sb" size={11} color="#5b3b0c" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{t.next ? `${formatQuantityWords(t.remainingToman)} تومان خرید دیگر تا سطح ${t.next}` : 'بالاترین سطح'}</T>
                 </View>
               </Enamel>
 
@@ -97,7 +98,7 @@ export function AccountScreen() {
                 ].map(([v, l]) => (
                   <View key={l} style={[{ flex: 1, borderRadius: 16, paddingVertical: 9, paddingHorizontal: 6, alignItems: 'center' }, card]}>
                     <T w="b" size={16.5} style={{ textAlign: 'center' }}>{v}</T>
-                    <T w="sb" size={12} color={C.muted} style={{ textAlign: 'center' }}>{l}</T>
+                    <T w="sb" size={11} color={C.muted} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ textAlign: 'center' }}>{l}</T>
                   </View>
                 ))}
               </View>

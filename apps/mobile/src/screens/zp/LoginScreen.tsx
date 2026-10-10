@@ -335,7 +335,7 @@ export function LoginScreen() {
             {step === 'register' && (
               <>
                 <Field label="نام و نام خانوادگی" ltr={false} focused={focus === 'nm'} value={name} onChangeText={setName}
-                  onFocus={() => setFocus('nm')} onBlur={() => setFocus(null)} autoComplete="name" textContentType="name" placeholder="علی اسدی" returnKeyType="next"
+                  onFocus={() => setFocus('nm')} onBlur={() => setFocus(null)} autoComplete="name" textContentType="name" placeholder="نام و نام خانوادگی" returnKeyType="next"
                   submitBehavior="submit" onSubmitEditing={() => regEmailRef.current?.focus()} />
                 <Field inputRef={regEmailRef} label="ایمیل" focused={focus === 're'} value={regEmail} onChangeText={setRegEmail}
                   onFocus={() => setFocus('re')} onBlur={() => setFocus(null)} autoCapitalize="none" autoCorrect={false}
