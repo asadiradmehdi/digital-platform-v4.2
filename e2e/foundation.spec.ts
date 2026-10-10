@@ -10,12 +10,17 @@ test.describe('foundation', () => {
   test('auth page is noindex and exposes login surface', async ({ page }) => {
     await page.goto('/auth');
     await expect(page.locator('html')).toHaveAttribute('lang','fa');
-    await expect(page.getByText('ورود به حساب')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'به زُحل پی خوش آمدید' })).toBeVisible();
+  });
+  test('hidden sections are not offered to visitors', async ({ page }) => {
+    // AI content, automation and design are hidden from customers until they are ready to sell (HIDDEN_CATEGORIES).
+    await page.goto('/ai/writing');
+    await expect(page).not.toHaveURL(/\/ai\//);
   });
   test('public entity routes are indexable', async ({ page }) => {
-    await page.goto('/ai/writing');
-    await expect(page).toHaveTitle(/دستیار نوشتاری/);
-    await expect(page.locator('script[type="application/ld+json"]')).toHaveCount(2);
+    await page.goto('/about');
+    await expect(page.locator('script[type="application/ld+json"]').first()).toBeAttached();
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', /\/about$/);
   });
   test('service catalogue is public, indexable and fits phones', async ({ page }) => {
     await page.goto('/services');
