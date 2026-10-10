@@ -10,7 +10,7 @@ import { writeAudit } from '../core/audit';
  * in one transaction, with order events and an audit record. Idempotent for an already completed order.
  * Refusals: provider-fulfilled services (their status comes from the provider) and any other status.
  */
-export async function completeManualOrder(input: { orderId: string; workspaceId: string; actorUserId: string; note?: string }) {
+export async function completeManualOrder(input: { orderId: string; workspaceId: string; actorUserId: string; note?: string; proofUrl?: string }) {
   return withWorkspaceTransaction(input.workspaceId, input.actorUserId, async client => {
     const r = await client.query<{ status: OrderStatus; fulfillment_mode: string }>(
       `SELECT o.status, s.fulfillment_mode
@@ -34,11 +34,11 @@ export async function completeManualOrder(input: { orderId: string; workspaceId:
       await client.query(`UPDATE orders SET status=$2,updated_at=now() WHERE id=$1`, [input.orderId, to]);
       await client.query(
         `INSERT INTO order_events(order_id,from_status,to_status,actor_user_id,metadata) VALUES($1,$2,$3,$4,$5)`,
-        [input.orderId, from, to, input.actorUserId, { source: 'manual_fulfilment' }],
+        [input.orderId, from, to, input.actorUserId, { source: 'manual_fulfilment', ...(to === 'COMPLETED' && input.proofUrl ? { proofUrl: input.proofUrl } : {}), ...(to === 'COMPLETED' && input.note ? { note: input.note } : {}) }],
       );
       from = to;
     }
-    await writeAudit({ workspaceId: input.workspaceId, actorUserId: input.actorUserId, action: 'order.fulfilled_manually', entityType: 'order', entityId: input.orderId, metadata: { from: row.status, note: input.note ?? null } }, client);
+    await writeAudit({ workspaceId: input.workspaceId, actorUserId: input.actorUserId, action: 'order.fulfilled_manually', entityType: 'order', entityId: input.orderId, metadata: { from: row.status, note: input.note ?? null, proofUrl: input.proofUrl ?? null } }, client);
     return { id: input.orderId, status: 'COMPLETED' as const, changed: true };
   });
 }

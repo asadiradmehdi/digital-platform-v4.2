@@ -49,3 +49,8 @@ export function parsePercent(input: string): number | null {
   if (!/^-?\d{1,3}(\.\d{1,2})?$/.test(t)) return null;
   return Number(t);
 }
+
+/** Converts Persian/Arabic digits to Latin inside free text (search boxes), leaving everything else as typed. */
+export function normalizeDigits(input: string): string {
+  return input.replace(/[۰-۹]/g, d => String(FA.indexOf(d))).replace(/[٠-٩]/g, d => String(AR.indexOf(d)));
+}
