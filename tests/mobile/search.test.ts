@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bestSellers, normalize, searchServices } from '../../apps/mobile/src/zp/search';
+import { bestSellers, normalize, searchServices } from '../../packages/api-contracts/src/search';
 
 const svc = (slug: string, name: string, category: string, group: string, price = 100) => ({
   id: slug, slug, name, description: null as string | null, category, short: name, group, unit: group,

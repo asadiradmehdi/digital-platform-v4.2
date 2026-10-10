@@ -6,6 +6,8 @@ import type { ReactNode } from 'react';
 import { ZIcon, type IconName } from './zp/ZIcon';
 import { Ornament, Tile, Wordmark } from './zp/brand';
 import { NotificationBell } from './zp/NotificationBell';
+import { HelpMenu } from './zp/HelpMenu';
+import './zp/help.css';
 
 const TABS: Array<{ href: string; label: string; icon: IconName; match: (p: string) => boolean }> = [
   { href: '/dashboard', label: 'خانه', icon: 'tHome', match: p => p === '/dashboard' || p.startsWith('/services') || p.startsWith('/orders/new') },
@@ -68,6 +70,8 @@ export function AppShell({ children, title, back, aside }: AppShellProps) {
           ) : (
             <Link href="/dashboard" className="zp-logo" aria-label="زُحل پی، خانه"><Wordmark id="bar-mark" /></Link>
           )}
+          {!sub && <Link href="/search" className="zp-ibtn zp-press" aria-label="جستجو"><ZIcon name="search" /></Link>}
+          {!sub && <HelpMenu />}
           {!sub && <NotificationBell />}
           <button type="button" className="zp-ibtn zp-press" aria-label="منو" aria-expanded={drawer} onClick={() => setDrawer(true)}><ZIcon name="menu" /></button>
         </header>
@@ -100,6 +104,9 @@ export function AppShell({ children, title, back, aside }: AppShellProps) {
             </Link>
           ))}
         </nav>
+        <Link href="/search" className="zp-press zp-dsearch" onClick={() => setDrawer(false)} tabIndex={drawer ? 0 : -1}>
+          <Tile icon="search" gold /><span className="lb">جستجو در همه‌ی خدمات</span><ZIcon name="chevL" className="zp-chev" />
+        </Link>
         <div className="zp-help">
           <Ornament id="help-orn" w={300} h={90} cx={250} cy={80} rot={-12} color="#f2d390" alpha={0.6} girih={false} />
           <Tile icon="chat" gold size={40} />

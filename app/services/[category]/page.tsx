@@ -7,7 +7,7 @@ import { Tile } from '../../../components/zp/brand';
 import { EmptyState } from '../../../components/zp/cards';
 import { SiteShell } from '../../../components/site/SiteShell';
 import { Mixed, Breadcrumbs, CtaBand, FaqList, LdScript, PriceTable, SectionTitle, Steps, TrustStrip } from '../../../components/site/bits';
-import { CATEGORIES, categoryMeta, isHiddenCategory, perLabel, serviceBrand, serviceIcon, serviceMeta, shortServiceName, sortServices } from '../../../lib/catalog-ui';
+import { CATEGORIES, baseSlug, categoryMeta, variantOf, isHiddenCategory, perLabel, serviceBrand, serviceIcon, serviceMeta, shortServiceName, sortServices } from '../../../lib/catalog-ui';
 import { formatTomanNumber } from '../../../lib/format';
 import { categoryCopy, categoryFaq, fromPrice, isSocialCategory, servicesIn } from '../../../lib/seo/catalog-seo';
 import { breadcrumbLd, faqLd, graph, organizationLd, serviceListLd, webPageLd } from '../../../lib/seo/jsonld';
@@ -53,6 +53,9 @@ async function MemberCategory({ catKey, workspaceId }: { catKey: string; workspa
     const kind = serviceMeta(it.slug);
     return {
       slug: it.slug,
+      base: baseSlug(it.slug),
+      variant: variantOf(it.slug).label,
+      priceValue: Number(it.unitPriceMinor) * kind.per,
       name: shortServiceName(it.name, cat.name),
       icon: serviceIcon(it.slug),
       brand: serviceBrand(it.slug),
