@@ -19,22 +19,22 @@ export function CategoryGrid({ categories }: { categories: AppCategory[] }) {
   const { width, height: winH } = useWindowDimensions();
   const [h, setH] = useState(0);
   const rows = Math.max(1, Math.ceil(categories.length / 3));
-  const gap = 10;
-  const rowGap = 16; // breathing room between card rows: the icon shrinks before the rows are allowed to touch
+  const gap = 12;
+  const rowGap = 14; // breathing room between card rows: the icon shrinks before the rows are allowed to touch
   // Same rule as the web: clamp(44px, min(13vw, 6.4vh), 56px); shrinks only when the space left is really short.
   let tile = Math.round(Math.max(44, Math.min(width * 0.13, winH * 0.064, 56)));
-  const chrome = 12 * 2 + 8 + 17 + 12; // padding, gap, label line, hint line
+  const chrome = 12 * 2 + 8 + 17 + 13; // padding, gap, label line, hint line (hint sits 3px closer)
   if (h > 0 && rows * (tile + chrome) + (rows - 1) * rowGap > h) tile = Math.max(30, Math.floor((h - (rows - 1) * rowGap) / rows - chrome));
   const lines = Array.from({ length: rows }, (_, r) => categories.slice(r * 3, r * 3 + 3));
   return (
-    <View accessibilityRole="menu" accessibilityLabel="دسته‌های خدمات" onLayout={e => setH(Math.floor(e.nativeEvent.layout.height))} style={{ flex: 1, justifyContent: 'space-evenly', paddingVertical: 2 }}>
+    <View accessibilityRole="menu" accessibilityLabel="دسته‌های خدمات" onLayout={e => setH(Math.floor(e.nativeEvent.layout.height))} style={{ flex: 1, justifyContent: 'flex-start', gap: rowGap, paddingVertical: 4 }}>
       {lines.map((line, r) => (
         <View key={r} style={{ flexDirection: row, gap }}>
           {line.map((c, i) => (
             <Rise key={c.key} delay={80 + (r * 3 + i) * 45} style={{ flex: 1 }}>
               <Press accessibilityRole="menuitem" accessibilityLabel={c.live ? `${c.name}، ${c.hint ?? ''}` : `${c.name}، به‌زودی`}
                 onPress={() => router.navigate({ pathname: '/services/[category]', params: { category: c.key } })}
-                style={[{ alignItems: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 4, borderRadius: 18, opacity: c.live ? 1 : 0.82 }, card]}>
+                style={[{ alignItems: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 4, borderRadius: 18, opacity: c.live ? 1 : 0.82 }, card, { shadowOpacity: 0.13, borderColor: '#D9CCB2' }]}>
                 <Tile icon={c.icon} size={tile} badge={c.live ? undefined : 'به‌زودی'} />
                 <T w="b" size={12.5} color={C.ink} numberOfLines={1} style={{ textAlign: 'center', alignSelf: 'stretch', lineHeight: 17 }}>{shortName(c.name)}</T>
                 {c.hint ? <T size={11} color={C.muted} numberOfLines={1} style={{ textAlign: 'center', alignSelf: 'stretch', marginTop: -3, lineHeight: 16 }}>{shortHint(c.hint)}</T> : null}
@@ -93,7 +93,7 @@ export function WalletStrip({ balanceToman, tierName }: { balanceToman: number |
           {tierName && !narrow ? <View style={{ backgroundColor: C.gold1, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 1 }}><T w="dx" size={9.5} color={C.accentStrong} style={{ lineHeight: 15 }}>سطح {tierName}</T></View> : null}
         </View>
         <View style={{ flexDirection: row, alignItems: 'baseline', gap: 4 }}>
-          {balanceToman == null ? <T w="b" size={17.5} color="#fff">—</T> : <CountUp w="b" size={17.5} color="#fff" value={balanceToman} format={formatTomanNumber} />}
+          {balanceToman == null ? <T w="b" size={17.5} color="#fff">—</T> : <CountUp w={balanceToman === 0 ? 'brand' : 'b'} size={balanceToman === 0 ? 19 : 17.5} color="#fff" value={balanceToman} format={formatTomanNumber} />}
           <T size={10.5} color="rgba(255,255,255,0.65)">تومان</T>
         </View>
       </View>
@@ -117,7 +117,7 @@ export function WalletCard({ balanceToman, tierName, tail }: { balanceToman: num
       <View style={{ alignItems: right, gap: 4 }}>
         <T size={11} color="rgba(255,255,255,0.7)">موجودی کیف پول</T>
         <View style={{ flexDirection: row, alignItems: 'baseline', gap: 6 }}>
-          {balanceToman == null ? <T w="b" size={32} color="#fff" style={{ lineHeight: 42 }}>—</T> : <CountUp w="b" size={32} color="#fff" style={{ lineHeight: 42 }} value={balanceToman} format={formatTomanNumber} />}
+          {balanceToman == null ? <T w="b" size={32} color="#fff" style={{ lineHeight: 42 }}>—</T> : <CountUp w={balanceToman === 0 ? 'brand' : 'b'} size={32} color="#fff" style={{ lineHeight: 42 }} value={balanceToman} format={formatTomanNumber} />}
           <T size={12.5} color="rgba(255,255,255,0.7)">تومان</T>
         </View>
       </View>

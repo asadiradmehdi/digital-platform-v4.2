@@ -16,13 +16,14 @@ function MenuRow({ icon, label, note, tag, onPress, variant, busy }: { icon: Ico
     <Press accessibilityRole="button" accessibilityLabel={note ? `${label}، ${note}` : label} accessibilityState={{ busy }} disabled={busy} onPress={onPress}
       style={[{ flexDirection: row, alignItems: 'center', gap: 12, borderRadius: 16, paddingVertical: 8, paddingHorizontal: 10 }, card, { shadowOpacity: 0.06 }]}>
       <Tile icon={icon} size={36} variant={variant} />
-      <T w="sb" size={13} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={{ flexShrink: 0 }}>{label}</T>
-      <View style={{ flex: 1 }} />
+      <T w="sb" size={13.5} numberOfLines={1} style={{ flexShrink: 0 }}>{label}</T>
       {note ? (
-        <View style={tag ? { backgroundColor: C.turquoiseSoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 } : undefined}>
-          <T w={tag ? 'b' : 'm'} size={10} color={tag ? C.turquoiseInk : C.muted} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{note}</T>
-        </View>
-      ) : null}
+        tag ? (
+          <View style={{ flex: 1 }}><View style={{ marginRight: 'auto', backgroundColor: C.turquoiseSoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 1 }}><T w="b" tiny size={10} color={C.turquoiseInk} numberOfLines={1}>{note}</T></View></View>
+        ) : (
+          <T w="m" tiny size={10} color={C.muted} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>{note}</T>
+        )
+      ) : <View style={{ flex: 1 }} />}
       <Icon name={fwd} size={16} color={C.muted} stroke={2.4} />
     </Press>
   );
@@ -72,21 +73,34 @@ export function AccountScreen() {
                 <IconBtn icon="edit" label="ویرایش اطلاعات" size={38} onPress={() => router.navigate('/settings')} />
               </View>
 
-              <Enamel kind="goldLight" radius={22} style={[{ paddingVertical: 14, paddingHorizontal: 16, gap: 10 }, shadow(14, 26, 0.35, '#7a5218')]}>
-                <Ornament w={400} h={130} cx={60} cy={140} rot={12} color={C.gold4} alpha={0.5} />
-                <View style={{ flexDirection: row, alignItems: 'center', gap: 10 }}>
-                  <Tile icon="planet" size={42} />
-                  <View style={{ flex: 1, alignItems: right }}>
-                    <T w="dx" size={17} color={C.accentStrong} style={{ lineHeight: 26 }}>سطح {t.name}</T>
-                    <T w="sb" size={11} color="#5b3b0c" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ alignSelf: 'stretch', textAlign: tRight }}>بر اساس مجموع خریدهای پرداخت‌شده شما</T>
+              <Enamel kind="goldLight" radius={26} style={[{ paddingVertical: 18, paddingHorizontal: 18, gap: 14 }, shadow(16, 28, 0.38, '#7a5218')]}>
+                <Ornament w={400} h={170} cx={70} cy={170} rot={12} color={C.gold4} alpha={0.55} />
+                <View style={{ flexDirection: row, alignItems: 'center', gap: 12 }}>
+                  <Tile icon="planet" size={52} />
+                  <View style={{ flex: 1, alignItems: right, gap: 2 }}>
+                    <T w="brand" size={24} color={C.accentStrong} style={{ lineHeight: 36 }}>{t.name}</T>
+                    <T w="sb" tiny size={10.5} color="#6b4710" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>سطح وفاداری شما، بر اساس مجموع خریدهای پرداخت‌شده</T>
                   </View>
-                  <View style={{ backgroundColor: C.accentStrong, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 }}>
-                    <T w="b" size={10} color={C.gold1}>سطح {faNum(t.level)} از {faNum(t.levels)}</T>
+                  <View style={{ backgroundColor: C.accentStrong, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 4 }}>
+                    <T w="b" tiny size={10.5} color={C.gold1} style={{ lineHeight: 16 }}>{faNum(t.level)} از {faNum(t.levels)}</T>
                   </View>
                 </View>
-                <View style={{ flexDirection: row, alignItems: 'center', gap: 10 }}>
-                  <Progress value={t.progress} track="rgba(122,82,24,0.18)" fill="enamel" />
-                  <T w="sb" size={11} color="#5b3b0c" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{t.next ? `${formatQuantityWords(t.remainingToman)} تومان خرید دیگر تا سطح ${t.next}` : 'بالاترین سطح'}</T>
+                <View style={{ gap: 7 }}>
+                  <View style={{ height: 14, justifyContent: 'center' }}>
+                    <View style={{ height: 8, borderRadius: 8, backgroundColor: 'rgba(60,38,6,0.22)', overflow: 'hidden', flexDirection: row }}>
+                      <View style={{ width: `${Math.max(0.06, Math.min(1, t.progress)) * 100}%`, height: '100%', borderRadius: 8, overflow: 'hidden', backgroundColor: C.accentStrong }}>
+                        <Fill kind="enamel" />
+                        <View style={{ position: 'absolute', top: 1, left: 4, right: 4, height: 2, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.35)' }} />
+                      </View>
+                    </View>
+                    {Array.from({ length: Math.max(0, t.levels - 1) }, (_, i) => (
+                      <View key={i} style={{ position: 'absolute', top: 0, bottom: 0, width: 2, right: `${((i + 1) / t.levels) * 100}%`, backgroundColor: 'rgba(255,248,230,0.7)' }} />
+                    ))}
+                  </View>
+                  <View style={{ flexDirection: row, justifyContent: 'space-between', alignItems: 'center' }}>
+                    <T w="b" tiny size={11} color="#4a2f06" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1 }}>{t.next ? `${formatQuantityWords(t.remainingToman)} تومان خرید دیگر تا ${t.next}` : 'بالاترین سطح'}</T>
+                    <T w="brand" tiny size={11} color="#4a2f06" style={{ lineHeight: 16 }}>{faNum(Math.round(t.progress * 100))}٪</T>
+                  </View>
                 </View>
               </Enamel>
 
@@ -98,7 +112,7 @@ export function AccountScreen() {
                 ].map(([v, l]) => (
                   <View key={l} style={[{ flex: 1, borderRadius: 16, paddingVertical: 9, paddingHorizontal: 6, alignItems: 'center' }, card]}>
                     <T w="b" size={16.5} style={{ textAlign: 'center' }}>{v}</T>
-                    <T w="sb" size={11} color={C.muted} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ textAlign: 'center' }}>{l}</T>
+                    <T w="sb" tiny size={10.5} color={C.muted} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ textAlign: 'center' }}>{l}</T>
                   </View>
                 ))}
               </View>

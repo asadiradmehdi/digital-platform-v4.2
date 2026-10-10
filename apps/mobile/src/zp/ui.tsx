@@ -11,11 +11,11 @@ import { atRight, C, F, G, row, right, shadow, tRight, card } from './base';
 import { Fill, Tile } from './brand';
 import { Icon, type IconName } from './Icon';
 
-export function T({ w = 'm', size = 14, color = C.ink, style, ...rest }: TextProps & { w?: keyof typeof F; size?: number; color?: string; style?: StyleProp<TextStyle> }) {
+export function T({ w = 'm', size = 14, color = C.ink, style, tiny, ...rest }: TextProps & { w?: keyof typeof F; size?: number; color?: string; style?: StyleProp<TextStyle>; tiny?: boolean }) {
   // Small print stays crisp: nothing under 11.5, and thin weights step up one notch below 13 (small Persian glyphs wash out otherwise).
-  const fs = Math.max(size, 11.5);
+  const fs = tiny ? size : Math.max(size, 11.5);
   const weight: keyof typeof F = fs < 13 ? (w === 'r' ? 'm' : w === 'm' ? 'sb' : w) : w;
-  return <Text {...rest} style={[{ fontFamily: F[weight], fontSize: fs, color, textAlign: tRight, lineHeight: Math.round(fs * 1.4) }, style]} />;
+  return <Text {...rest} style={[{ fontFamily: F[weight], fontSize: fs, color, textAlign: tRight, lineHeight: Math.round(fs * 1.45) }, style]} />;
 }
 
 const APressable = Animated.createAnimatedComponent(Pressable);
