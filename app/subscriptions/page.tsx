@@ -86,7 +86,7 @@ export default async function Subscriptions() {
         <main className="workspace-page-content">
           <header className="page-header" style={{ marginBottom: 28 }}>
             <div>
-              <span className="eyebrow">مالی · اشتراک‌ها</span>
+              <span className="eyebrow">مالی | اشتراک‌ها</span>
               <h1>اشتراک‌ها</h1>
             </div>
             <Link className="button secondary" href="/pricing">
@@ -153,7 +153,7 @@ export default async function Subscriptions() {
       <main className="workspace-page-content">
         <header className="page-header" style={{ marginBottom: 28 }}>
           <div>
-            <span className="eyebrow">مالی · اشتراک‌ها</span>
+            <span className="eyebrow">مالی | اشتراک‌ها</span>
             <h1>اشتراک‌ها</h1>
           </div>
           <Link className="button secondary" href="/pricing">

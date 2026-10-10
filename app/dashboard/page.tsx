@@ -15,7 +15,7 @@ import { getAccountStats, getWalletSummary, listCatalogWithPrices } from '../../
 export const metadata: Metadata = { title: 'خانه', robots: { index: false, follow: false } };
 
 const SLIDES: PromoSlide[] = [
-  { kicker: 'پرفروش‌ترین', title: 'فالوور اینستاگرام', text: 'ثبت در چند ثانیه · پیگیری لحظه‌ای وضعیت', icon: 'user', href: '/orders/new?service=ig-followers', goldTile: true },
+  { kicker: 'پرفروش‌ترین', title: 'فالوور اینستاگرام', text: 'ثبت در چند ثانیه | پیگیری لحظه‌ای وضعیت', icon: 'user', href: '/orders/new?service=ig-followers', goldTile: true },
   { kicker: 'کیف پول زُحل پی', title: 'شارژ کن، بی‌معطلی بخر', text: 'پرداخت سفارش‌ها مستقیم از موجودی', icon: 'wallet', href: '/wallet', tone: 'light' },
   { kicker: 'دعوت از دوستان', title: 'دوستاتو بیار، سهم ببر', text: 'از هر خرید دوستانت، سهمت به کیف پولت میاد', icon: 'gift', href: '/invite', goldTile: true },
   { kicker: 'تلگرام', title: 'ممبر کانال تلگرام', text: 'انتخاب بسته، پرداخت و پیگیری در یک صفحه', icon: 'tg', href: '/orders/new?service=tg-members', tone: 'tq', goldTile: true },
@@ -45,7 +45,7 @@ export default async function Dashboard() {
           </div>
           <Link href="/wallet" className="zp-cta zp-press">افزایش موجودی</Link>
         </div>
-        <SecHead title="خدمات" note={`${new Intl.NumberFormat('fa-IR').format(CATEGORIES.length)} دسته · ${new Intl.NumberFormat('fa-IR').format(catalog.length)} سرویس فعال`} />
+        <SecHead title="خدمات" note={`${new Intl.NumberFormat('fa-IR').format(CATEGORIES.length)} دسته | ${new Intl.NumberFormat('fa-IR').format(catalog.length)} سرویس فعال`} />
         <CategoryGrid live={live} />
       </main>
     </AppShell>

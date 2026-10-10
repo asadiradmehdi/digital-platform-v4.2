@@ -48,7 +48,7 @@ export default async function Support() {
                     <Tile icon={cat.icon} />
                     <span className="t">
                       <b>{t.subject}</b>
-                      <span><span className="zp-code">{t.code}</span> · {t.lastAuthor === 'STAFF' ? 'پشتیبانی: ' : ''}{t.preview ?? cat.label}</span>
+                      <span><span className="zp-code">{t.code}</span> | {t.lastAuthor === 'STAFF' ? 'پشتیبانی: ' : ''}{t.preview ?? cat.label}</span>
                     </span>
                     <span className="s">
                       <span className={`zp-st${st.tone === 'ok' ? ' ok' : st.tone === 'idle' ? ' idle' : ''}`}>{st.label}</span>

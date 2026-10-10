@@ -14,24 +14,25 @@ export function CategoryGrid({ categories }: { categories: AppCategory[] }) {
   const { width, height: winH } = useWindowDimensions();
   const [h, setH] = useState(0);
   const rows = Math.max(1, Math.ceil(categories.length / 3));
-  const gap = 8;
+  const gap = 10;
+  const rowGap = 16; // breathing room between card rows: the icon shrinks before the rows are allowed to touch
   // Same rule as the web: clamp(44px, min(13vw, 6.4vh), 56px); shrinks only when the space left is really short.
   let tile = Math.round(Math.max(44, Math.min(width * 0.13, winH * 0.064, 56)));
-  const chrome = 10 * 2 + 6 + 16 + 11; // padding, gap, label line, hint line
-  if (h > 0 && rows * (tile + chrome) > h) tile = Math.max(30, Math.floor(h / rows - chrome));
+  const chrome = 12 * 2 + 8 + 17 + 12; // padding, gap, label line, hint line
+  if (h > 0 && rows * (tile + chrome) + (rows - 1) * rowGap > h) tile = Math.max(30, Math.floor((h - (rows - 1) * rowGap) / rows - chrome));
   const lines = Array.from({ length: rows }, (_, r) => categories.slice(r * 3, r * 3 + 3));
   return (
-    <View accessibilityRole="menu" accessibilityLabel="دسته‌های خدمات" onLayout={e => setH(Math.floor(e.nativeEvent.layout.height))} style={{ flex: 1, justifyContent: 'space-evenly' }}>
+    <View accessibilityRole="menu" accessibilityLabel="دسته‌های خدمات" onLayout={e => setH(Math.floor(e.nativeEvent.layout.height))} style={{ flex: 1, justifyContent: 'space-evenly', paddingVertical: 2 }}>
       {lines.map((line, r) => (
         <View key={r} style={{ flexDirection: row, gap }}>
           {line.map((c, i) => (
             <Rise key={c.key} delay={80 + (r * 3 + i) * 45} style={{ flex: 1 }}>
               <Press accessibilityRole="menuitem" accessibilityLabel={c.live ? `${c.name}، ${c.hint ?? ''}` : `${c.name}، به‌زودی`}
                 onPress={() => router.navigate({ pathname: '/services/[category]', params: { category: c.key } })}
-                style={[{ alignItems: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 4, borderRadius: 18, opacity: c.live ? 1 : 0.82 }, card]}>
+                style={[{ alignItems: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 4, borderRadius: 18, opacity: c.live ? 1 : 0.82 }, card]}>
                 <Tile icon={c.icon} size={tile} badge={c.live ? undefined : 'به‌زودی'} />
-                <T w="b" size={c.name.length > 12 ? 10.6 : 12.5} color={C.ink} numberOfLines={1} ellipsizeMode="clip" style={{ textAlign: 'center', alignSelf: 'stretch', lineHeight: 17 }}>{c.name}</T>
-                {c.hint ? <T size={10.4} color={C.muted} numberOfLines={1} style={{ textAlign: 'center', alignSelf: 'stretch', marginTop: -3, lineHeight: 14 }}>{c.hint}</T> : null}
+                <T w="b" size={12.5} color={C.ink} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.78} style={{ textAlign: 'center', alignSelf: 'stretch', lineHeight: 17 }}>{c.name}</T>
+                {c.hint ? <T size={11.5} color={C.muted} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.78} style={{ textAlign: 'center', alignSelf: 'stretch', marginTop: -3, lineHeight: 16 }}>{c.hint}</T> : null}
               </Press>
             </Rise>
           ))}
@@ -83,7 +84,7 @@ export function WalletStrip({ balanceToman, tierName }: { balanceToman: number |
       <Tile icon="wallet" size={40} variant="ghost" />
       <View style={{ flex: 1, alignItems: right }}>
         <View style={{ flexDirection: row, alignItems: 'center', gap: 6 }}>
-          <T size={11} color="rgba(255,255,255,0.72)" numberOfLines={1}>موجودی شما</T>
+          <T size={11.5} color="rgba(255,255,255,0.72)" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1 }}>موجودی شما</T>
           {tierName && !narrow ? <View style={{ backgroundColor: C.gold1, borderRadius: 999, paddingHorizontal: 8 }}><T w="b" size={9.5} color={C.accentStrong}>سطح {tierName}</T></View> : null}
         </View>
         <View style={{ flexDirection: row, alignItems: 'baseline', gap: 4 }}>

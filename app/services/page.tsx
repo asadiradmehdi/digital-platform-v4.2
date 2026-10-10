@@ -63,7 +63,7 @@ export default async function ServicesPage() {
         const from = fromPrice(services, c.key);
         return (
           <section key={c.key} aria-labelledby={`cat-${c.key}`}>
-            <SectionTitle id={`cat-${c.key}`} note={<Link href={`/services/${c.key}`}>{from ? `از ${from.text} تومان · ` : ''}همه</Link>}>
+            <SectionTitle id={`cat-${c.key}`} note={<Link href={`/services/${c.key}`}>{from ? `از ${from.text} تومان | ` : ''}همه</Link>}>
               <Link href={`/services/${c.key}`}>{c.title ?? `خدمات ${c.name}`}</Link>
             </SectionTitle>
             <div className="zs-svcs">{services.slice(0, 8).map(s => <ServiceLinkCard key={s.slug} service={s} />)}</div>

@@ -28,7 +28,7 @@ async function load() {
 /** «فرآیندهای خودکار»: workflows and recent runs of the member's workspace (read-only; creation is done with the team). */
 export function AutomationScreen() {
   const router = useRouter();
-  const q = useRemote(load);
+  const q = useRemote('load', load);
   return (
     <SubScreen title="فرآیندهای خودکار">
       <Async state={q} retry={q.retry}>
@@ -59,7 +59,7 @@ export function AutomationScreen() {
                         <Tile icon="au" size={38} />
                         <View style={{ flex: 1, alignItems: right }}>
                           <T w="sb" size={13.5} numberOfLines={1}>{w.name}</T>
-                          <T size={11} color={C.muted}>{TRIGGER[(w.trigger ?? 'manual').toLowerCase()] ?? 'خودکار'}{w.runCount != null ? ` · ${faNum(w.runCount)} اجرا` : ''}</T>
+                          <T size={11} color={C.muted}>{TRIGGER[(w.trigger ?? 'manual').toLowerCase()] ?? 'خودکار'}{w.runCount != null ? ` | ${faNum(w.runCount)} اجرا` : ''}</T>
                         </View>
                         <StatusPill label={label} tone={tone} />
                       </View>

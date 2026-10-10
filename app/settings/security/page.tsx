@@ -51,7 +51,7 @@ export default async function SecuritySettings() {
       <main className="workspace-page-content">
         <header className="page-header">
           <div>
-            <span className="eyebrow">حساب کاربری · امنیت</span>
+            <span className="eyebrow">حساب کاربری | امنیت</span>
             <h1>امنیت حساب</h1>
             <p>رمز عبور، ورود دومرحله‌ای، ورود با اثر انگشت، دستگاه‌های واردشده و دستگاه‌های مورد اعتماد. هر ورود پس از ۷ روز بی‌استفادگی و حداکثر ۳۰ روز پس از ورود بسته می‌شود.</p>
           </div>

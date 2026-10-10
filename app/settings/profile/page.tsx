@@ -32,7 +32,7 @@ export default async function ProfileSettings() {
       <main className="workspace-page-content">
         <header className="page-header">
           <div>
-            <span className="eyebrow">حساب کاربری · پروفایل</span>
+            <span className="eyebrow">حساب کاربری | پروفایل</span>
             <h1>پروفایل</h1>
             <p>هویت، نام نمایشی و اطلاعات پایه حساب.</p>
           </div>

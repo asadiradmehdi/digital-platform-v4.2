@@ -149,9 +149,9 @@ function Body({ catalog, subs, workspaceId, notify, reload }: { catalog: Plan[];
 /** «پلن‌ها و اشتراک»: current subscription plus the public plan catalogue. All prices and limits come from the server. */
 export function SubscriptionsScreen() {
   const toast = useToast();
-  const catalog = useRemote(plansApi.list);
-  const subs = useRemote(subsApi.list);
-  const overview = useRemote(appApi.overview);
+  const catalog = useRemote('plansApi.list', plansApi.list);
+  const subs = useRemote('subsApi.list', subsApi.list);
+  const overview = useRemote('appApi.overview', appApi.overview);
   const reload = () => { subs.reload(); overview.reload(); };
   const failed = [catalog, subs].find(q => q.status === 'error');
   const state = failed ? { status: 'error', data: null, error: failed.error } : catalog.status === 'success' && subs.status === 'success'

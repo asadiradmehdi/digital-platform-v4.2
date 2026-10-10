@@ -26,11 +26,11 @@ export default async function AboutPage() {
     { k: 'نام', v: 'زُحل پی' },
     { k: 'نام لاتین', v: 'ZOHALPAY' },
     { k: 'حوزه', v: 'خدمات رشد شبکه‌های اجتماعی و اشتراک هوش مصنوعی' },
-    { k: 'بازار', v: 'ایران · رابط کاملاً فارسی' },
+    { k: 'بازار', v: 'ایران | رابط کاملاً فارسی' },
     { k: 'خدمات فعال', v: `${fa(catalog.length)} سرویس در ${fa(cats.length)} دسته` },
     { k: 'واحد قیمت', v: 'تومان، برای هر واحد مشخص' },
     { k: 'پرداخت', v: 'آنلاین، از کیف پول زُحل پی' },
-    { k: 'پشتیبانی', v: `تیکت · ${supportHours()}` },
+    { k: 'پشتیبانی', v: `تیکت | ${supportHours()}` },
   ];
 
   return (
@@ -77,7 +77,7 @@ export default async function AboutPage() {
         <p className="zs-p">
           پشتیبانی از طریق تیکت در حساب کاربری انجام می‌شود ({supportHours()}).
           {phones.map(p => <span key={p.tel}> {p.label}: <a href={`tel:${p.tel}`} className="zp-ltr">{p.display}</a>.</span>)}
-          {' '}<Link href="/contact">صفحه‌ی تماس</Link> · وب‌سایت رسمی: <span className="zp-ltr">{absoluteUrl('/').replace(/\/$/, '')}</span>
+          {' '}<Link href="/contact">صفحه‌ی تماس</Link> | وب‌سایت رسمی: <span className="zp-ltr">{absoluteUrl('/').replace(/\/$/, '')}</span>
         </p>
       </section>
 

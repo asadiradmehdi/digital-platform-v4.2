@@ -9,12 +9,19 @@ const cache = new Map<string, unknown>();
 /** Called on sign-out so the next account never sees the previous one's data. */
 export function clearRemoteCache() { cache.clear(); }
 
+/** Warms the cache for a screen's first paint (same name + deps as the screen's own useRemote call); failures are ignored. */
+export function prefetchRemote<T>(name: string, fetcher: () => Promise<T>, deps: unknown[] = []) {
+  fetcher().then(data => { cache.set(`${name}|${JSON.stringify(deps)}`, data); }).catch(() => undefined);
+}
+
 /**
  * Fetches when the screen gains focus and keeps the last good data while refreshing,
  * so returning to a tab never flashes a spinner over content that is already on screen.
  */
-export function useRemote<T>(fetcher: () => Promise<T>, deps: unknown[] = []) {
-  const cacheKey = `${fetcher.toString()}|${JSON.stringify(deps)}`;
+export function useRemote<T>(name: string, fetcher: () => Promise<T>, deps: unknown[] = []) {
+  // The key must be an explicit name: in a release (Hermes bytecode) build every function stringifies the same, so
+  // keying on the function text made unrelated screens share one cache entry and render each other's data.
+  const cacheKey = `${name}|${JSON.stringify(deps)}`;
   const [state, setState] = useState<Remote<T>>(() => (cache.has(cacheKey)
     ? { status: 'success', data: cache.get(cacheKey) as T, error: null }
     : { status: 'loading', data: null, error: null }));

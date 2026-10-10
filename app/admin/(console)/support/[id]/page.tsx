@@ -16,7 +16,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
   const [label, tone] = TICKET_STATUS_FA[t.status] ?? [t.status, ''];
   return (
     <>
-      <PageHead title={t.subject} hint={`${t.code} · ${TICKET_CATEGORY_FA[t.category] ?? t.category} · ${faDate(t.createdAt)}`} back={{ href: '/admin/support', label: 'همه‌ی تیکت‌ها' }}>
+      <PageHead title={t.subject} hint={`${t.code} | ${TICKET_CATEGORY_FA[t.category] ?? t.category} | ${faDate(t.createdAt)}`} back={{ href: '/admin/support', label: 'همه‌ی تیکت‌ها' }}>
         <span className={`zpa-tag ${tone}`}>{label}</span>
       </PageHead>
       <dl className="zpa-panel zpa-kv" style={{ marginBottom: 16 }}>
@@ -27,7 +27,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
         {t.messages.map(m => (
           <div key={m.id} className={`zpa-msg ${m.authorKind === 'STAFF' ? 'staff' : 'cust'}`}>
             <p>{m.body}</p>
-            <small>{m.authorKind === 'STAFF' ? (m.authorName ?? 'پشتیبانی') : (t.customer.name ?? 'مشتری')} · {faDate(m.createdAt)}</small>
+            <small>{m.authorKind === 'STAFF' ? (m.authorName ?? 'پشتیبانی') : (t.customer.name ?? 'مشتری')} | {faDate(m.createdAt)}</small>
           </div>
         ))}
       </section>

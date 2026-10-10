@@ -39,7 +39,7 @@ function LinkRow({ icon, label, path }: { icon: IconName; label: string; path: s
 }
 
 export function LicensesScreen() {
-  const trust = useRemote(supportApi.trust);
+  const trust = useRemote('supportApi.trust', supportApi.trust);
   return (
     <SubScreen title="مجوزها و نمادها">
       <View style={{ flexDirection: row, alignItems: 'center', gap: 14 }}>

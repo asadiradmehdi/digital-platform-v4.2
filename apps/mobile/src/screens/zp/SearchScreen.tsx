@@ -32,7 +32,7 @@ function ServiceRow({ s, catalogName, hot }: { s: AppService; catalogName: strin
 
 /** Search across every service; with nothing typed it lists the best sellers first. */
 export function SearchScreen() {
-  const catalog = useRemote(appApi.catalog);
+  const catalog = useRemote('appApi.catalog', appApi.catalog);
   const [q, setQ] = useState('');
   const [focused, setFocused] = useState(false);
   return (

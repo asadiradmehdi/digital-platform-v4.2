@@ -40,7 +40,7 @@ export default async function ChoosePage({ params }: Params) {
             return (
               <Link key={it.slug} role="listitem" href={`/orders/new?service=${encodeURIComponent(it.slug)}`} className="zp-srow zp-press" aria-label={`${v.label}، ${perLabel(kind)} ${formatTomanNumber(Number(it.unitPriceMinor) * kind.per)} تومان`}>
                 <span className="tx"><b>{v.label}</b><small>{v.hint}</small></span>
-                <span className="pr"><b>{formatTomanNumber(Number(it.unitPriceMinor) * kind.per)}</b><small>تومان · {perLabel(kind)}</small></span>
+                <span className="pr"><b>{formatTomanNumber(Number(it.unitPriceMinor) * kind.per)}</b><small>تومان | {perLabel(kind)}</small></span>
                 <ZIcon name="chevL" className="zp-chev" />
               </Link>
             );

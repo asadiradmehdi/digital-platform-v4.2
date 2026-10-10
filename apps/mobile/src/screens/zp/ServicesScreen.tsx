@@ -7,7 +7,7 @@ import { Async, SecHead } from '../../zp/ui';
 
 /** Drawer «همه‌ی خدمات»: the same 12-category grid as home, on its own page. */
 export function ServicesScreen() {
-  const catalog = useRemote(appApi.catalog);
+  const catalog = useRemote('appApi.catalog', appApi.catalog);
   return (
     <SubScreen fixed title="همه‌ی خدمات">
       <Async state={catalog} retry={catalog.retry}>

@@ -8,13 +8,13 @@ export const G = tokens.gradients;
 
 /** Custom fonts must be selected per weight on Android (fontWeight does not pick a face). */
 export const F = {
-  r: 'IBMPlexSansArabic_400Regular',
-  m: 'IBMPlexSansArabic_500Medium',
-  sb: 'IBMPlexSansArabic_600SemiBold',
-  b: 'IBMPlexSansArabic_700Bold',
+  r: 'Vazirmatn_400Regular',
+  m: 'Vazirmatn_500Medium',
+  sb: 'Vazirmatn_600SemiBold',
+  b: 'Vazirmatn_700Bold',
   /** Headings use the same family as the UI (one calm type system, same as the web). */
-  d: 'IBMPlexSansArabic_700Bold',
-  dx: 'IBMPlexSansArabic_700Bold',
+  d: 'Vazirmatn_700Bold',
+  dx: 'Vazirmatn_700Bold',
   /** Logotype face, for the «زُحل پی» wordmark only. Its digits are Arabic-style. */
   brand: 'Kufam_800ExtraBold',
 } as const;

@@ -69,14 +69,14 @@ function Bubble({ mine, body, when, sending }: { mine: boolean; body: string; wh
           <T size={13.8} style={{ lineHeight: 27, writingDirection: 'auto' }} selectable>{body}</T>
         </View>
       )}
-      <T size={10.4} color={C.muted}>{sending ? 'در حال ارسال…' : mine ? `شما · ${when}` : when}</T>
+      <T size={10.4} color={C.muted}>{sending ? 'در حال ارسال…' : mine ? `شما | ${when}` : when}</T>
     </View>
   );
 }
 
 export function TicketScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const ticket = useRemote(() => supportApi.ticket(id), [id]);
+  const ticket = useRemote('TicketScreen.18', () => supportApi.ticket(id), [id]);
   const toast = useToast();
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState<string | null>(null);

@@ -53,7 +53,7 @@ export function TeamClient({ team }: { team: TeamOverview }) {
 
       <section className="zpa-sec" aria-labelledby="tm-own"><h2 id="tm-own">مالک</h2>
         <ul className="zpa-list">{team.owners.map(o => (
-          <li key={o.userId} className="zpa-item"><div className="zpa-item-top"><b>{o.name}</b><span className="zpa-tag ok">مالک · همه‌ی دسترسی‌ها</span></div>{o.email ? <div className="zpa-item-sub"><span className="zpa-ltr">{o.email}</span></div> : null}</li>
+          <li key={o.userId} className="zpa-item"><div className="zpa-item-top"><b>{o.name}</b><span className="zpa-tag ok">مالک | همه‌ی دسترسی‌ها</span></div>{o.email ? <div className="zpa-item-sub"><span className="zpa-ltr">{o.email}</span></div> : null}</li>
         ))}</ul>
       </section>
 
@@ -63,7 +63,7 @@ export function TeamClient({ team }: { team: TeamOverview }) {
             const preset = matchPreset(m.permissions);
             return (
               <li key={m.userId} className="zpa-item">
-                <div className="zpa-item-top"><b>{m.name}{m.title ? <span style={{ color: 'var(--muted)', fontWeight: 500 }}> · {m.title}</span> : null}</b><span className={`zpa-tag ${m.status === 'ACTIVE' ? 'ok' : 'bad'}`}>{m.status === 'ACTIVE' ? 'فعال' : 'تعلیق'}</span></div>
+                <div className="zpa-item-top"><b>{m.name}{m.title ? <span style={{ color: 'var(--muted)', fontWeight: 500 }}> | {m.title}</span> : null}</b><span className={`zpa-tag ${m.status === 'ACTIVE' ? 'ok' : 'bad'}`}>{m.status === 'ACTIVE' ? 'فعال' : 'تعلیق'}</span></div>
                 <div className="zpa-item-sub">
                   {m.phone ? <span className="zpa-ltr">{m.phone}</span> : m.email ? <span className="zpa-ltr">{m.email}</span> : null}
                   <span>{preset ? preset.label : `${new Intl.NumberFormat('fa-IR').format(m.permissions.length)} دسترسی سفارشی`}</span>

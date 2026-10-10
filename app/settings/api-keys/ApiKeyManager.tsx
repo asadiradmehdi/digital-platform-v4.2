@@ -399,7 +399,7 @@ export function ApiKeyManager({ initialKeys, workspaceId }: { initialKeys: ApiKe
                       </div>
                     )}
                     <p style={{ margin: '7px 0 0', fontSize: 10, color: 'var(--subtle)' }}>
-                      ساخته‌شده: {created} · آخرین استفاده: {lastUsed}
+                      ساخته‌شده: {created} | آخرین استفاده: {lastUsed}
                     </p>
                   </div>
                   <button

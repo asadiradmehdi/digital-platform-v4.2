@@ -111,7 +111,7 @@ function Body({ d, notify }: { d: AppSupport; notify: (m: string) => void }) {
 }
 
 export function SupportScreen() {
-  const support = useRemote(supportApi.overview);
+  const support = useRemote('supportApi.overview', supportApi.overview);
   const toast = useToast();
   return (
     <SubScreen title="پشتیبانی و تیکت" overlay={toast.node}>

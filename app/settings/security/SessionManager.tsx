@@ -102,7 +102,7 @@ export default function SessionManager({ sessions }: { sessions: Session[] }) {
                     marginTop: 3,
                   }}
                 >
-                  {s.method ? `${s.method} · ` : ''}آخرین فعالیت: {s.lastSeen}
+                  {s.method ? `${s.method} | ` : ''}آخرین فعالیت: {s.lastSeen}
                 </small>
                 <small style={{ display: 'block', color: 'var(--subtle)', fontSize: 10.5, marginTop: 2 }}>
                   اعتبار تا {s.expires}

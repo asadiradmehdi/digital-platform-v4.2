@@ -89,7 +89,7 @@ export default async function Analytics() {
       <main className="workspace-page-content">
         <header className="page-header" style={{ marginBottom: 22 }}>
           <div>
-            <span className="eyebrow">عملیات · تحلیل</span>
+            <span className="eyebrow">عملیات | تحلیل</span>
             <h1>تحلیل و گزارش</h1>
             <p>Revenue، هزینه‌ها و contribution margin از رویدادهای عملیاتی سمت سرور.</p>
           </div>

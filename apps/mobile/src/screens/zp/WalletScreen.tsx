@@ -101,7 +101,7 @@ function Panel({ o, reload, initialAmount }: { o: AppOverview; reload: () => voi
           <TxIcon t={last} />
           <View style={{ flex: 1, alignItems: right }}>
             <T w="b" size={13.5}>{last.title}</T>
-            <T size={11} color={C.muted}>آخرین تراکنش · {last.when}</T>
+            <T size={11} color={C.muted}>آخرین تراکنش | {last.when}</T>
           </View>
           <T w="b" size={13.5} color={last.credit ? C.turquoiseInk : C.ink}>{signed(last)}</T>
           <View style={{ width: 1, alignSelf: 'stretch', backgroundColor: C.line }} />
@@ -135,7 +135,7 @@ function Panel({ o, reload, initialAmount }: { o: AppOverview; reload: () => voi
 
 export function WalletScreen() {
   const router = useRouter();
-  const overview = useRemote(appApi.overview);
+  const overview = useRemote('appApi.overview', appApi.overview);
   const { amount } = useLocalSearchParams<{ amount?: string }>();
   const asked = parseTomanInput(amount ?? '');
   const initialAmount = asked && !topupAmountProblem(asked) ? asked : null;

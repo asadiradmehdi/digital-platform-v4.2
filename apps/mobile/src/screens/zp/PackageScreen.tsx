@@ -130,7 +130,7 @@ function Picker({ service, workspaceId, walletToman, reload, initialQty }: { ini
         {service.brand ? <BrandTile brand={service.brand} size={52} /> : <Tile icon={service.icon} size={52} />}
         <View style={{ flex: 1, alignItems: right }}>
           <T w="dx" size={18} style={{ lineHeight: 28 }}>{service.name}</T>
-          <T size={12} color={C.muted} numberOfLines={2}>{service.description ?? 'ثبت آنی · پیگیری لحظه‌ای'}</T>
+          <T size={12} color={C.muted} numberOfLines={2}>{service.description ?? 'ثبت آنی | پیگیری لحظه‌ای'}</T>
         </View>
       </View>
 
@@ -268,7 +268,7 @@ function Picker({ service, workspaceId, walletToman, reload, initialQty }: { ini
         {method === 'wallet' && short ? null : <Cta full label={busy ? (method === 'gateway' ? 'در حال اتصال به درگاه…' : 'در حال ثبت…') : method === 'gateway' ? 'پرداخت آنلاین و ثبت سفارش' : 'پرداخت از کیف پول و ثبت سفارش'} busy={busy} disabled={!workspaceId} onPress={pay} />}
         <View style={{ flexDirection: row, alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: -4 }}>
           <Icon name="shieldS" size={14} color={C.turquoiseInk} />
-          <T size={11} color={C.muted} style={{ textAlign: 'center', flexShrink: 1 }}>{`${method === 'gateway' ? 'پرداخت امن با درگاه بانکی · ثبت سفارش پس از تأیید بانک' : 'پرداخت امن از کیف پول'} · ${service.refund ?? 'بازگشت وجه در صورت لغو'}`}</T>
+          <T size={11} color={C.muted} style={{ textAlign: 'center', flexShrink: 1 }}>{`${method === 'gateway' ? 'پرداخت امن با درگاه بانکی | ثبت سفارش پس از تأیید بانک' : 'پرداخت امن از کیف پول'} | ${service.refund ?? 'بازگشت وجه در صورت لغو'}`}</T>
         </View>
       </Sheet>
 
@@ -281,8 +281,8 @@ function Picker({ service, workspaceId, walletToman, reload, initialQty }: { ini
 export function PackageScreen() {
   const router = useRouter();
   const { service: slug, qty: qtyParam } = useLocalSearchParams<{ service: string; qty?: string }>();
-  const catalog = useRemote(appApi.catalog);
-  const overview = useRemote(appApi.overview);
+  const catalog = useRemote('appApi.catalog', appApi.catalog);
+  const overview = useRemote('appApi.overview', appApi.overview);
   const service = catalog.data?.services.find(s => s.slug === slug);
   return (
     <SubScreen title={service?.name ?? 'سفارش جدید'}>

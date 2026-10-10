@@ -56,7 +56,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             : attn.every(a => a.n === 0) ? <EmptyState title="همه‌چیز مرتب است" hint="سفارش یا تیکتی منتظر تصمیم شما نیست." /> : (
               <nav className="zpa-attn" aria-label="موارد نیازمند توجه">
                 {attn.filter(a => a.n > 0).map(a => (
-                  <Link key={a.label} href={a.href}><span>{a.label}{a.at ? <small style={{ color: 'var(--muted)', fontWeight: 500 }}> · قدیمی‌ترین {ago(a.at)}</small> : null}</span><span className="zpa-tag warn">{fa(a.n)}</span></Link>
+                  <Link key={a.label} href={a.href}><span>{a.label}{a.at ? <small style={{ color: 'var(--muted)', fontWeight: 500 }}> | قدیمی‌ترین {ago(a.at)}</small> : null}</span><span className="zpa-tag warn">{fa(a.n)}</span></Link>
                 ))}
               </nav>
             )}
@@ -69,7 +69,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <div className="zpa-panel">
             <div className="zpa-days" role="img" aria-label="نمودار فروش روزانه">
               {daily.map(d => (
-                <div key={d.date} className="zpa-day" title={`${toman(d.toman)} · ${fa(d.count)} سفارش`}>
+                <div key={d.date} className="zpa-day" title={`${toman(d.toman)} | ${fa(d.count)} سفارش`}>
                   <i style={{ height: `${Math.max(3, Math.round((d.toman / maxDay) * 100))}%` }} />
                   <span>{faShortDay(d.date)}</span>
                 </div>
@@ -86,7 +86,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             {margin.rows.slice(0, 6).map(m => (
               <li key={m.serviceId}><Link className="zpa-item" href={`/admin/catalog/${m.serviceId}`}>
                 <div className="zpa-item-top"><b>{m.name}</b><span className={`zpa-tag ${m.worstMarginPct < 0 ? 'bad' : 'warn'}`}>{fa(m.worstMarginPct)}٪</span></div>
-                <div className="zpa-item-sub"><span>کم‌سودترین بسته: {fa(m.worstQuantity)} عدد</span><span>قیمت {toman(m.priceToman)} · هزینه {toman(m.costToman)}</span></div>
+                <div className="zpa-item-sub"><span>کم‌سودترین بسته: {fa(m.worstQuantity)} عدد</span><span>قیمت {toman(m.priceToman)} | هزینه {toman(m.costToman)}</span></div>
               </Link></li>
             ))}
           </ul>
@@ -118,7 +118,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                   <div className="zpa-row" key={name as string}>
                     <span>{name as string}</span>
                     <div className="zpa-bar" aria-hidden><i style={{ width: `${Math.round((x.toman / payTotal) * 100)}%` }} /></div>
-                    <span className="zpa-num">{toman(x.toman)} · {fa(x.count)} پرداخت</span>
+                    <span className="zpa-num">{toman(x.toman)} | {fa(x.count)} پرداخت</span>
                   </div>
                 );
               })}

@@ -60,6 +60,10 @@ function Divider() {
 }
 
 export function LoginScreen() {
+  // Return on the email field jumps to the password field (no tapping with the keyboard half-closed).
+  const pwRef = useRef<TextInput>(null);
+  const regEmailRef = useRef<TextInput>(null);
+  const regPwRef = useRef<TextInput>(null);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { signIn, register, requestOtp, verifyOtp, completeMfa, exchangeGoogleHandoff } = useAuth();
@@ -316,8 +320,9 @@ export function LoginScreen() {
               <>
                 <Field label="ایمیل یا شماره موبایل" focused={focus === 'id'} value={identifier} onChangeText={setIdentifier}
                   onFocus={() => setFocus('id')} onBlur={() => setFocus(null)} autoCapitalize="none" autoCorrect={false}
-                  keyboardType="email-address" autoComplete="username" textContentType="username" placeholder="email@example.com" returnKeyType="next" />
-                <Field label="رمز عبور" focused={focus === 'pw'} value={password} onChangeText={setPassword}
+                  keyboardType="email-address" autoComplete="username" textContentType="username" placeholder="email@example.com" returnKeyType="next"
+                  submitBehavior="submit" onSubmitEditing={() => pwRef.current?.focus()} />
+                <Field inputRef={pwRef} label="رمز عبور" focused={focus === 'pw'} value={password} onChangeText={setPassword}
                   onFocus={() => setFocus('pw')} onBlur={() => setFocus(null)} secureTextEntry autoComplete="password" textContentType="password"
                   placeholder="••••••••••••" returnKeyType="go" onSubmitEditing={() => void submitPassword()} />
                 <View style={{ alignItems: right }}><Link label="رمز عبور را فراموش کرده‌اید؟" onPress={() => go('forgot')} /></View>
@@ -330,11 +335,13 @@ export function LoginScreen() {
             {step === 'register' && (
               <>
                 <Field label="نام و نام خانوادگی" ltr={false} focused={focus === 'nm'} value={name} onChangeText={setName}
-                  onFocus={() => setFocus('nm')} onBlur={() => setFocus(null)} autoComplete="name" textContentType="name" placeholder="علی اسدی" returnKeyType="next" />
-                <Field label="ایمیل" focused={focus === 're'} value={regEmail} onChangeText={setRegEmail}
+                  onFocus={() => setFocus('nm')} onBlur={() => setFocus(null)} autoComplete="name" textContentType="name" placeholder="علی اسدی" returnKeyType="next"
+                  submitBehavior="submit" onSubmitEditing={() => regEmailRef.current?.focus()} />
+                <Field inputRef={regEmailRef} label="ایمیل" focused={focus === 're'} value={regEmail} onChangeText={setRegEmail}
                   onFocus={() => setFocus('re')} onBlur={() => setFocus(null)} autoCapitalize="none" autoCorrect={false}
-                  keyboardType="email-address" autoComplete="email" textContentType="emailAddress" placeholder="email@example.com" returnKeyType="next" />
-                <Field label="رمز عبور (دست‌کم ۱۴ کاراکتر)" focused={focus === 'rp'} value={regPassword} onChangeText={setRegPassword}
+                  keyboardType="email-address" autoComplete="email" textContentType="emailAddress" placeholder="email@example.com" returnKeyType="next"
+                  submitBehavior="submit" onSubmitEditing={() => regPwRef.current?.focus()} />
+                <Field inputRef={regPwRef} label="رمز عبور (دست‌کم ۱۴ کاراکتر)" focused={focus === 'rp'} value={regPassword} onChangeText={setRegPassword}
                   onFocus={() => setFocus('rp')} onBlur={() => setFocus(null)} secureTextEntry={!showPw} autoComplete="new-password" textContentType="newPassword"
                   placeholder="یک عبارت ساده و به‌یادماندنی" returnKeyType="go" onSubmitEditing={() => void submitRegister()} />
                 <Press accessibilityRole="button" onPress={() => setShowPw(v => !v)} style={{ alignSelf: 'flex-end' }}>

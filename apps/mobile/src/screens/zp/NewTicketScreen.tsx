@@ -124,7 +124,7 @@ function Form({ s, initialCategory }: { s: AppSupport; initialCategory: string |
 
 export function NewTicketScreen() {
   const { category } = useLocalSearchParams<{ category?: string }>();
-  const support = useRemote(supportApi.overview);
+  const support = useRemote('supportApi.overview', supportApi.overview);
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <SubScreen title="تیکت جدید">

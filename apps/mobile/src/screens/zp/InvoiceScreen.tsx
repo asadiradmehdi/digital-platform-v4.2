@@ -116,7 +116,7 @@ function Document({ inv }: { inv: AppInvoice }) {
 /** One invoice / top-up receipt in the v6 brand. «اشتراک‌گذاری / ذخیره PDF» opens the printable web copy. */
 export function InvoiceScreen() {
   const { id, ws } = useLocalSearchParams<{ id: string; ws?: string }>();
-  const data = useRemote(() => invoicesApi.get(String(ws ?? ''), String(id)), [id, ws]);
+  const data = useRemote('InvoiceScreen.30', () => invoicesApi.get(String(ws ?? ''), String(id)), [id, ws]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

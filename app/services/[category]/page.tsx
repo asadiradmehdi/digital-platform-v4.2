@@ -70,7 +70,7 @@ async function MemberCategory({ catKey, workspaceId }: { catKey: string; workspa
           <Tile icon={cat.icon} />
           <div>
             <h1>{cat.title ?? `خدمات ${cat.name}`}</h1>
-            <p>{items.length ? <><b>{new Intl.NumberFormat('fa-IR').format(items.length)} سرویس فعال</b> · {cat.note ?? 'قیمت شفاف، پرداخت از کیف پول'}</> : 'به‌زودی در زُحل پی'}</p>
+            <p>{items.length ? <><b>{new Intl.NumberFormat('fa-IR').format(items.length)} سرویس فعال</b> | {cat.note ?? 'قیمت شفاف، پرداخت از کیف پول'}</> : 'به‌زودی در زُحل پی'}</p>
           </div>
         </div>
         {cards.length ? <ServiceGrid cards={cards} /> : (
@@ -126,7 +126,7 @@ async function PublicCategory({ catKey }: { catKey: string }) {
           <p className="lead"><Mixed text={copy.intro[0]} /></p>
           <p className="meta">
             <b>{fa(services.length)} سرویس فعال</b>
-            {from && <> · شروع قیمت {from.perLabel} <b>{from.text} تومان</b></>}
+            {from && <> | شروع قیمت {from.perLabel} <b>{from.text} تومان</b></>}
           </p>
           <div className="acts">
             <a href="#prices" className="zp-cta zp-press">جدول قیمت‌ها</a>

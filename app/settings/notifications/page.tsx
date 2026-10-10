@@ -99,7 +99,7 @@ export default function NotificationSettings() {
       <main className="workspace-page-content">
         <header className="page-header">
           <div>
-            <span className="eyebrow">حساب کاربری · اعلان‌ها</span>
+            <span className="eyebrow">حساب کاربری | اعلان‌ها</span>
             <h1>اعلان‌ها</h1>
             <p>کانال‌های اطلاع‌رسانی و دسته‌بندی رویدادهایی که می‌خواهید دریافت کنید.</p>
           </div>

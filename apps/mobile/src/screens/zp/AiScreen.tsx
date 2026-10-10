@@ -14,8 +14,8 @@ const AI_CATEGORIES = ['ai', 'ai-subscriptions'];
 /** «ابزارهای هوش مصنوعی»: AI services from the catalogue and whether the member's plan includes AI. */
 export function AiScreen() {
   const router = useRouter();
-  const catalog = useRemote(appApi.catalog);
-  const subs = useRemote(subscriptions.list);
+  const catalog = useRemote('appApi.catalog', appApi.catalog);
+  const subs = useRemote('subscriptions.list', subscriptions.list);
   const hasAi = subs.data?.items.some(s => ['ACTIVE', 'TRIALING'].includes(s.status) && s.entitlements.includes('ai_usage')) ?? false;
 
   return (

@@ -26,7 +26,7 @@ export default async function ServicePage({ params }: { params: Promise<{ id: st
 
   return (
     <>
-      <PageHead title={service.name} hint={`${service.productName} · ${service.fulfillmentMode === 'MANUAL' ? 'انجام دستی توسط تیم' : 'انجام خودکار'}`} back={{ href: '/admin/catalog', label: 'همه‌ی خدمات' }}>
+      <PageHead title={service.name} hint={`${service.productName} | ${service.fulfillmentMode === 'MANUAL' ? 'انجام دستی توسط تیم' : 'انجام خودکار'}`} back={{ href: '/admin/catalog', label: 'همه‌ی خدمات' }}>
         <ActiveSwitch serviceId={service.id} name={service.name} active={service.active} />
       </PageHead>
 

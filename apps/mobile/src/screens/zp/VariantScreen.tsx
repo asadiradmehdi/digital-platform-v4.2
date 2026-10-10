@@ -14,7 +14,7 @@ import { groupServices } from './CategoryScreen';
 export function VariantScreen() {
   const router = useRouter();
   const { base } = useLocalSearchParams<{ base: string }>();
-  const catalog = useRemote(appApi.catalog);
+  const catalog = useRemote('appApi.catalog', appApi.catalog);
   const group = catalog.data ? groupServices(catalog.data.services.filter(s => s.base === base))[0] : undefined;
   return (
     <SubScreen title={group?.name ?? 'انتخاب نوع'}>
@@ -44,7 +44,7 @@ export function VariantScreen() {
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
                       <T w="b" size={14}>{formatTomanNumber(m.unitPriceToman * m.per)}</T>
-                      <T size={10} color={C.muted}>تومان · {m.perLabel}</T>
+                      <T size={10} color={C.muted}>تومان | {m.perLabel}</T>
                     </View>
                     <Icon name={fwd} size={16} color={C.muted} stroke={2.4} />
                   </Press>

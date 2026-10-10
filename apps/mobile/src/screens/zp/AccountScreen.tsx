@@ -30,7 +30,7 @@ function MenuRow({ icon, label, note, tag, onPress, variant, busy }: { icon: Ico
 export function AccountScreen() {
   const router = useRouter();
   const { signOut } = useAuth();
-  const overview = useRemote(appApi.overview);
+  const overview = useRemote('appApi.overview', appApi.overview);
   const [leaving, setLeaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,7 +77,7 @@ export function AccountScreen() {
                   <Tile icon="shamseh" size={42} />
                   <View style={{ flex: 1, alignItems: right }}>
                     <T w="dx" size={17} color={C.accentStrong} style={{ lineHeight: 26 }}>سطح {t.name}</T>
-                    <T w="sb" size={11} color={C.gold4}>بر اساس مجموع خریدهای پرداخت‌شده شما</T>
+                    <T w="sb" size={12.5} color="#5b3b0c">بر اساس مجموع خریدهای پرداخت‌شده شما</T>
                   </View>
                   <View style={{ backgroundColor: C.accentStrong, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 }}>
                     <T w="b" size={10.5} color={C.gold1}>سطح {faNum(t.level)} از {faNum(t.levels)}</T>
@@ -85,7 +85,7 @@ export function AccountScreen() {
                 </View>
                 <View style={{ flexDirection: row, alignItems: 'center', gap: 10 }}>
                   <Progress value={t.progress} track="rgba(122,82,24,0.18)" fill="enamel" />
-                  <T w="sb" size={10.5} color={C.gold4}>{t.next ? `${formatQuantityWords(t.remainingToman)} تومان خرید دیگر تا سطح ${t.next}` : 'بالاترین سطح'}</T>
+                  <T w="sb" size={12} color="#5b3b0c">{t.next ? `${formatQuantityWords(t.remainingToman)} تومان خرید دیگر تا سطح ${t.next}` : 'بالاترین سطح'}</T>
                 </View>
               </Enamel>
 
@@ -97,7 +97,7 @@ export function AccountScreen() {
                 ].map(([v, l]) => (
                   <View key={l} style={[{ flex: 1, borderRadius: 16, paddingVertical: 9, paddingHorizontal: 6, alignItems: 'center' }, card]}>
                     <T w="b" size={16.5} style={{ textAlign: 'center' }}>{v}</T>
-                    <T size={10} color={C.muted} style={{ textAlign: 'center' }}>{l}</T>
+                    <T w="sb" size={12} color={C.muted} style={{ textAlign: 'center' }}>{l}</T>
                   </View>
                 ))}
               </View>

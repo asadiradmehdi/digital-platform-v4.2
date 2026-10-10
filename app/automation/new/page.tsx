@@ -160,7 +160,7 @@ export default function NewWorkflow() {
             }}
           >
             <div>
-              <span className="eyebrow">اتوماسیون · فرآیند جدید</span>
+              <span className="eyebrow">اتوماسیون | فرآیند جدید</span>
               <h1
                 style={{
                   fontSize: 'clamp(22px, 3vw, 30px)',

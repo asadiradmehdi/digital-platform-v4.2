@@ -12,7 +12,7 @@ const pct = (n: number) => `${faNum(n)}٪`;
 
 /** «دعوت از دوستان»: the member's code, current share, share sheet and friends. Mirrors web /invite. */
 export function InviteScreen() {
-  const data = useRemote(appApi.referral);
+  const data = useRemote('appApi.referral', appApi.referral);
   const [error, setError] = useState<string | null>(null);
 
   return (

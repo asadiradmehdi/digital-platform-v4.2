@@ -94,7 +94,7 @@ export function WalletPanel({ workspaceId, tx, initialAmount }: { workspaceId: s
       {last ? (
         <button type="button" className="zp-lasttx zp-press" onClick={() => setHist(true)} aria-haspopup="dialog">
           <span className={`ic${last.credit ? ' in' : ''}`}><ZIcon name={last.icon} /></span>
-          <span className="t"><b>{last.title}</b><span>آخرین تراکنش · {last.when}</span></span>
+          <span className="t"><b>{last.title}</b><span>آخرین تراکنش | {last.when}</span></span>
           <span className={`amt${last.credit ? ' plus' : ''}`}>{last.amount}</span>
           <span className="more">همه<ZIcon name="chevL" className="zp-chev" /></span>
         </button>

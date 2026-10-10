@@ -321,7 +321,7 @@ export default async function Automation() {
               <div className="product-card-copy">
                 <div className="product-card-title"><h2>ساخت فرآیند</h2></div>
                 <p>مراحل اجرا را تعریف کنید. هر تغییر نسخه‌بندی می‌شود و تاریخچه کامل نگه داشته می‌شود.</p>
-                <span>پیش‌نویس · منتشرشده · نسخه‌بندی‌شده</span>
+                <span>پیش‌نویس | منتشرشده | نسخه‌بندی‌شده</span>
               </div>
             </article>
             <article className="product-card">
@@ -329,7 +329,7 @@ export default async function Automation() {
               <div className="product-card-copy">
                 <div className="product-card-title"><h2>رویداد و Webhook</h2></div>
                 <p>فرآیند را با رویداد سفارش، زمان‌بندی یا درخواست HTTP از سرویس دیگری شروع کنید.</p>
-                <span>امضاشده · ایمن · قابل‌ردیابی</span>
+                <span>امضاشده | ایمن | قابل‌ردیابی</span>
               </div>
             </article>
             <article className="product-card">
@@ -337,7 +337,7 @@ export default async function Automation() {
               <div className="product-card-copy">
                 <div className="product-card-title"><h2>عامل‌های هوشمند</h2></div>
                 <p>هوش مصنوعی را در فرآیند خود داشته باشید؛ با ابزار، دانش و کنترل کامل رفتار.</p>
-                <span>کنترل‌شده · قابل‌حسابرسی</span>
+                <span>کنترل‌شده | قابل‌حسابرسی</span>
               </div>
             </article>
             <article className="product-card">
@@ -345,7 +345,7 @@ export default async function Automation() {
               <div className="product-card-copy">
                 <div className="product-card-title"><h2>شرط و انشعاب</h2></div>
                 <p>مسیر اجرا را بر اساس شرط تقسیم کنید و خطاها را با guard مدیریت کنید.</p>
-                <span>قطعی · قابل‌مشاهده</span>
+                <span>قطعی | قابل‌مشاهده</span>
               </div>
             </article>
           </div>

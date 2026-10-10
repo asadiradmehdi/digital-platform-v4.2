@@ -7,12 +7,12 @@ import { ZIcon, type IconName } from '../../components/zp/ZIcon';
 export const metadata: Metadata = { title: 'هوش مصنوعی', robots: { index: false, follow: false } };
 
 const TOOLS: { icon: IconName; title: string; text: string; brands: string }[] = [
-  { icon: 'aiArticle', title: 'نوشتن و محتوا', text: 'کپشن، مقاله، ایمیل و هر متن فارسی یا انگلیسی؛ نوشتن، بازنویسی و خلاصه.', brands: 'ChatGPT · Claude · Gemini' },
-  { icon: 'aiImage', title: 'ساخت تصویر', text: 'از یک توضیح ساده، تصویر محصول، پست و طرح تبلیغاتی بسازید.', brands: 'Midjourney · DALL·E' },
-  { icon: 'aiScript', title: 'ویدیو و سناریو', text: 'سناریو، زیرنویس و ویدیوی کوتاه برای ریلز و استوری.', brands: 'Sora · Runway' },
-  { icon: 'aiVoice', title: 'صدا و گفتار', text: 'متن را به صدای طبیعی تبدیل کنید یا فایل صوتی را به متن.', brands: 'ElevenLabs · Suno' },
-  { icon: 'bot', title: 'کدنویسی و تحلیل', text: 'کد بنویسید، خطا پیدا کنید و داده‌های کسب‌وکارتان را تحلیل کنید.', brands: 'Cursor · Claude' },
-  { icon: 'aiAssistant', title: 'دستیار خودکار', text: 'دستیاری که به سؤال مشتری‌ها جواب می‌دهد و کارهای تکراری را انجام می‌دهد.', brands: 'ChatGPT · Claude' },
+  { icon: 'aiArticle', title: 'نوشتن و محتوا', text: 'کپشن، مقاله، ایمیل و هر متن فارسی یا انگلیسی؛ نوشتن، بازنویسی و خلاصه.', brands: 'ChatGPT | Claude | Gemini' },
+  { icon: 'aiImage', title: 'ساخت تصویر', text: 'از یک توضیح ساده، تصویر محصول، پست و طرح تبلیغاتی بسازید.', brands: 'Midjourney | DALL·E' },
+  { icon: 'aiScript', title: 'ویدیو و سناریو', text: 'سناریو، زیرنویس و ویدیوی کوتاه برای ریلز و استوری.', brands: 'Sora | Runway' },
+  { icon: 'aiVoice', title: 'صدا و گفتار', text: 'متن را به صدای طبیعی تبدیل کنید یا فایل صوتی را به متن.', brands: 'ElevenLabs | Suno' },
+  { icon: 'bot', title: 'کدنویسی و تحلیل', text: 'کد بنویسید، خطا پیدا کنید و داده‌های کسب‌وکارتان را تحلیل کنید.', brands: 'Cursor | Claude' },
+  { icon: 'aiAssistant', title: 'دستیار خودکار', text: 'دستیاری که به سؤال مشتری‌ها جواب می‌دهد و کارهای تکراری را انجام می‌دهد.', brands: 'ChatGPT | Claude' },
 ];
 
 const PROMISES: { icon: IconName; title: string; text: string }[] = [

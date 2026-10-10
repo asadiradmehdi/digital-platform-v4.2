@@ -48,7 +48,7 @@ function InfoRow({ icon, label, value, badge, action }: {
 }
 
 function Profile({ notify }: { notify: (m: string) => void }) {
-  const q = useRemote(me.get);
+  const q = useRemote('me.get', me.get);
   const [rename, setRename] = useState(false);
   const [phone, setPhone] = useState(false);
   return (
@@ -94,7 +94,7 @@ function Profile({ notify }: { notify: (m: string) => void }) {
 }
 
 function Notifications({ notify }: { notify: (m: string) => void }) {
-  const q = useRemote(notificationPrefs.get);
+  const q = useRemote('notificationPrefs.get', notificationPrefs.get);
   // Switches the member changed on this screen; everything else comes from the server.
   const [local, setLocal] = useState<Record<string, boolean>>({});
 

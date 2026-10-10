@@ -126,7 +126,7 @@ export function TicketThread({ workspaceId, ticket, orderLabel }: { workspaceId:
           <div key={m.id} className={`zp-msg ${m.authorKind === 'STAFF' ? 'staff' : 'me'}`}>
             {m.authorKind === 'STAFF' && <span className="who"><Tile icon="chat" gold />پشتیبانی زُحل پی</span>}
             <div className="bb">{m.body}</div>
-            <small>{m.authorKind === 'STAFF' ? '' : 'شما · '}{formatWhen(m.createdAt)}</small>
+            <small>{m.authorKind === 'STAFF' ? '' : 'شما | '}{formatWhen(m.createdAt)}</small>
           </div>
         ))}
         {pending.map(p => (

@@ -48,7 +48,7 @@ export function Promo({ slides, height }: { slides: PromoSlide[]; height: number
                 <T w="b" size={11} color={light ? C.gold4 : C.gold1}>{s.kicker}</T>
               </View>
               <T w="dx" size={width < 380 ? 17.5 : 20} color={light ? C.accentStrong : '#fff'} numberOfLines={1} adjustsFontSizeToFit style={{ lineHeight: 30 }}>{s.title}</T>
-              <T size={12} color={light ? C.accentStrong : 'rgba(255,255,255,0.85)'} numberOfLines={2} style={{ lineHeight: 19 }}>{s.text}</T>
+              <T size={12} color={light ? C.accentStrong : 'rgba(255,255,255,0.85)'} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.85} style={{ lineHeight: 19 }}>{s.text}</T>
             </View>
             <View style={{ transform: [{ rotate: '-8deg' }] }}>
               <Tile icon={s.icon} size={Math.round(Math.min(96, height * 0.62, width * 0.24))} variant={s.goldTile ? 'gold' : 'enamel'} />

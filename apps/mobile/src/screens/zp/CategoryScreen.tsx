@@ -58,7 +58,7 @@ function ServiceGrid({ services }: { services: AppService[] }) {
 export function CategoryScreen() {
   const router = useRouter();
   const { category } = useLocalSearchParams<{ category: string }>();
-  const catalog = useRemote(appApi.catalog);
+  const catalog = useRemote('appApi.catalog', appApi.catalog);
   const cat = catalog.data?.categories.find(c => c.key === category);
   return (
     <SubScreen title={cat?.name ?? 'خدمات'}>
@@ -73,7 +73,7 @@ export function CategoryScreen() {
                 <View style={{ flex: 1, alignItems: right }}>
                   <T w="dx" size={20.5} numberOfLines={1} adjustsFontSizeToFit style={{ lineHeight: 30 }}>{cat.title ?? `خدمات ${cat.name}`}</T>
                   {items.length
-                    ? <T size={12} color={C.muted} numberOfLines={2}><T w="b" size={12} color={C.goldText}>{faNum(items.length)} سرویس فعال</T> · {cat.note ?? 'قیمت شفاف، پرداخت از کیف پول'}</T>
+                    ? <T size={12} color={C.muted} numberOfLines={2}><T w="b" size={12} color={C.goldText}>{faNum(items.length)} سرویس فعال</T> | {cat.note ?? 'قیمت شفاف، پرداخت از کیف پول'}</T>
                     : <T size={12} color={C.muted}>به‌زودی در زُحل پی</T>}
                 </View>
               </View>

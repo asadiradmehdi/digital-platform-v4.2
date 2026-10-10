@@ -47,7 +47,7 @@ export default async function Home() {
       <section className="zs-hero" aria-labelledby="home-h1">
         <Ornament id="hero-orn" w={1200} h={520} cx={180} cy={470} rot={-14} alpha={0.85} />
         <div className="copy">
-          <span className="kick">زُحل پی · خدمات رشد و اشتراک هوش مصنوعی</span>
+          <span className="kick">زُحل پی | خدمات رشد و اشتراک هوش مصنوعی</span>
           <h1 id="home-h1">خرید فالوور، لایک، ممبر و <em className="zp-gtext">اشتراک هوش مصنوعی</em></h1>
           <p><Mixed text="خدمات اینستاگرام، تلگرام، یوتیوب، تیک‌تاک، روبیکا، آپارات، بله و ایتا، و اشتراک ChatGPT، Claude و Gemini با پرداخت تومانی. قیمت هر سفارش پیش از پرداخت مشخص است و وضعیتش را لحظه‌به‌لحظه می‌بینید." /></p>
           <div className="acts">

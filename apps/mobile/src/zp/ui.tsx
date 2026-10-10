@@ -12,7 +12,10 @@ import { Fill, Tile } from './brand';
 import { Icon, type IconName } from './Icon';
 
 export function T({ w = 'm', size = 14, color = C.ink, style, ...rest }: TextProps & { w?: keyof typeof F; size?: number; color?: string; style?: StyleProp<TextStyle> }) {
-  return <Text {...rest} style={[{ fontFamily: F[w], fontSize: size, color, textAlign: tRight }, style]} />;
+  // Small print stays crisp: nothing under 11.5, and thin weights step up one notch below 13 (small Persian glyphs wash out otherwise).
+  const fs = Math.max(size, 11.5);
+  const weight: keyof typeof F = fs < 13 ? (w === 'r' ? 'm' : w === 'm' ? 'sb' : w) : w;
+  return <Text {...rest} style={[{ fontFamily: F[weight], fontSize: fs, color, textAlign: tRight, lineHeight: Math.round(fs * 1.4) }, style]} />;
 }
 
 const APressable = Animated.createAnimatedComponent(Pressable);
@@ -196,15 +199,20 @@ export function ErrorBox({ text, action }: { text: string; action?: { label: str
 /** Breathing placeholder block: the layout appears at once and fills in, with no «loading» wording. */
 export function Skel({ h = 16, w = '100%', r = 12, style }: { h?: number; w?: number | `${number}%`; r?: number; style?: StyleProp<ViewStyle> }) {
   const [v] = useState(() => new Animated.Value(0));
+  const [width, setWidth] = useState(0);
   useEffect(() => {
-    const loop = Animated.loop(Animated.sequence([
-      Animated.timing(v, { toValue: 1, duration: 750, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-      Animated.timing(v, { toValue: 0, duration: 750, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-    ]));
+    const loop = Animated.loop(Animated.timing(v, { toValue: 1, duration: 1250, easing: Easing.inOut(Easing.quad), useNativeDriver: true }));
     loop.start();
     return () => loop.stop();
   }, [v]);
-  return <Animated.View style={[{ height: h, width: w, borderRadius: r, backgroundColor: C.surface3, opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.45, 0.95] }) }, style]} />;
+  // A soft gold-white band glides across the paper-toned block (the brand's shimmer), over a gentle breathing base.
+  return (
+    <View onLayout={e => setWidth(e.nativeEvent.layout.width)} style={[{ height: h, width: w, borderRadius: r, backgroundColor: C.surface3, overflow: 'hidden' }, style]}>
+      {width > 0 ? (
+        <Animated.View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, width: width * 0.45, backgroundColor: 'rgba(255,250,235,0.75)', opacity: 0.8, transform: [{ translateX: v.interpolate({ inputRange: [0, 1], outputRange: [-width * 0.5, width] }) }, { skewX: '-18deg' }] }} />
+      ) : null}
+    </View>
+  );
 }
 
 /** Screen placeholder: a title line, a hero block and a few cards in the brand's paper tones. */

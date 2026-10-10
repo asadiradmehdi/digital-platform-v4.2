@@ -37,7 +37,7 @@ const dt = new Intl.DateTimeFormat('fa-IR', { month: 'long', day: 'numeric', hou
 const when = (iso: string) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : dt.format(d); };
 
 function Devices({ notify }: { notify: (m: string) => void }) {
-  const q = useRemote(sessions.list);
+  const q = useRemote('sessions.list', sessions.list);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,7 +60,7 @@ function Devices({ notify }: { notify: (m: string) => void }) {
                 <Tile icon={s.clientType === 'mobile' ? 'phone' : 'grid'} size={38} variant={s.current ? 'gold' : 'enamel'} />
                 <View style={{ flex: 1, alignItems: right, gap: 1 }}>
                   <T w="sb" size={13.5} numberOfLines={1}>{s.deviceName || (s.clientType === 'mobile' ? 'برنامه‌ی موبایل' : 'مرورگر')}</T>
-                  <T size={11} color={C.muted}>{s.clientType === 'mobile' ? 'برنامه‌ی موبایل' : 'مرورگر'}{when(s.lastSeenAt ?? s.createdAt) ? ` · ${when(s.lastSeenAt ?? s.createdAt)}` : ''}</T>
+                  <T size={11} color={C.muted}>{s.clientType === 'mobile' ? 'برنامه‌ی موبایل' : 'مرورگر'}{when(s.lastSeenAt ?? s.createdAt) ? ` | ${when(s.lastSeenAt ?? s.createdAt)}` : ''}</T>
                 </View>
                 {s.current ? <StatusPill label="این دستگاه" tone="ok" /> : (
                   <Press accessibilityRole="button" accessibilityLabel={`خروج ${s.deviceName}`} disabled={busy !== null} onPress={() => void run(s.id, () => sessions.revoke(s.id), 'دستگاه خارج شد')}
@@ -80,7 +80,7 @@ function Devices({ notify }: { notify: (m: string) => void }) {
 }
 
 function Activity() {
-  const q = useRemote(auditEvents.list);
+  const q = useRemote('auditEvents.list', auditEvents.list);
   return (
     <Async state={q} retry={q.retry}>
       {d => d.items.length === 0 ? (
@@ -120,8 +120,8 @@ function ActionRow({ icon, label, note, status, onPress }: { icon: IconName; lab
 
 /** Password and two-step sign-in, fully inside the app. */
 function SignInSettings({ notify }: { notify: (m: string) => void }) {
-  const profile = useRemote(me.get);
-  const mfa = useRemote(account.mfaStatus);
+  const profile = useRemote('me.get', me.get);
+  const mfa = useRemote('account.mfaStatus', account.mfaStatus);
   const [pw, setPw] = useState(false);
   const [tf, setTf] = useState(false);
   const u = profile.data?.user;

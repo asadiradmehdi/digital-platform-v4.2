@@ -70,7 +70,7 @@ export default async function BillingSettings() {
       <main className="workspace-page-content">
         <header className="page-header">
           <div>
-            <span className="eyebrow">حساب کاربری · پرداخت</span>
+            <span className="eyebrow">حساب کاربری | پرداخت</span>
             <h1>پرداخت و صورتحساب</h1>
             <p>اشتراک فعال، کیف پول و تاریخچه فاکتورها.</p>
           </div>

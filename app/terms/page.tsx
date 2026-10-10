@@ -20,7 +20,7 @@ export default function Terms() {
       description={doc.summary}
     >
       <div className="public-info-card" style={{ marginBottom: 16 }}>
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--subtle)' }}>{doc.updatedLabel}{doc.version ? ` · نسخه‌ی ${doc.version}` : ''}</p>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--subtle)' }}>{doc.updatedLabel}{doc.version ? ` | نسخه‌ی ${doc.version}` : ''}</p>
       </div>
       <div className="public-list">
         {sections.map(({ title, lines }) => (

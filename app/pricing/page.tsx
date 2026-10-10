@@ -57,7 +57,7 @@ const plans = [
     badge: 'پرفروش',
     description: 'برای تیم‌های حرفه‌ای',
     features: [
-      { label: 'هوش مصنوعی پیشرفته (GPT-4o · Claude)', available: true },
+      { label: 'هوش مصنوعی پیشرفته (GPT-4o | Claude)', available: true },
       { label: 'سفارش نامحدود', available: true },
       { label: 'گزارش و تحلیل کامل', available: true },
       { label: 'API کامل + Webhooks', available: true },

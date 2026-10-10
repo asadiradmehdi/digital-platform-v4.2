@@ -11,7 +11,7 @@ import { Async, EmptyState, IconBtn, Rise, SecHead, T } from '../../zp/ui';
 function OrderList({ workspaceId }: { workspaceId: string }) {
   const router = useRouter();
   const [page, setPage] = useState(0);
-  const orders = useRemote(() => appApi.orders(workspaceId, page), [page]);
+  const orders = useRemote('OrdersScreen.28', () => appApi.orders(workspaceId, page), [page]);
   return (
     <Async state={orders} retry={orders.retry}>
       {o => o.items.length ? (
@@ -35,7 +35,7 @@ function OrderList({ workspaceId }: { workspaceId: string }) {
 }
 
 export function OrdersScreen() {
-  const overview = useRemote(appApi.overview);
+  const overview = useRemote('appApi.overview', appApi.overview);
   const active = overview.data?.stats.activeOrders;
   return (
     <AppScreen>

@@ -24,7 +24,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
 
   return (
     <>
-      <PageHead title={`سفارش ${o.code}`} hint={`${faDate(o.createdAt)} · ${toman(o.totalToman)}`} back={{ href: '/admin/orders', label: 'همه‌ی سفارش‌ها' }}>
+      <PageHead title={`سفارش ${o.code}`} hint={`${faDate(o.createdAt)} | ${toman(o.totalToman)}`} back={{ href: '/admin/orders', label: 'همه‌ی سفارش‌ها' }}>
         <StatusTag status={o.status} />
       </PageHead>
 
@@ -68,7 +68,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                 <div key={p.id}><dt>{GATEWAY_FA[p.gateway] ?? p.gateway}{p.reference ? <small className="zpa-ltr" style={{ display: 'block' }}>{p.reference}</small> : null}</dt>
                   <dd>{toman(p.amountToman)} <span className={`zpa-tag ${p.status === 'PAID' ? 'ok' : 'warn'}`}>{PAY_FA[p.status] ?? p.status}</span>{p.refundedToman > 0 ? <small style={{ display: 'block' }}>بازگردانده: {toman(p.refundedToman)}</small> : null}</dd></div>
               ))}
-              {o.refunds.map(r => <div key={r.id}><dt>بازگشت وجه · {faDate(r.createdAt)}</dt><dd>{toman(r.amountToman)} <span className={`zpa-tag ${r.status === 'FAILED' ? 'bad' : 'ok'}`}>{PAY_FA[r.status] ?? r.status}</span></dd></div>)}
+              {o.refunds.map(r => <div key={r.id}><dt>بازگشت وجه | {faDate(r.createdAt)}</dt><dd>{toman(r.amountToman)} <span className={`zpa-tag ${r.status === 'FAILED' ? 'bad' : 'ok'}`}>{PAY_FA[r.status] ?? r.status}</span></dd></div>)}
             </dl>
           </div>
         )}
@@ -94,7 +94,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
         <div className="zpa-panel zpa-stack">
           <p className="zpa-muted" style={{ margin: 0 }}>فقط تیم می‌بیند؛ مشتری نمی‌بیند.</p>
           {o.notes.length === 0 ? <EmptyState title="یادداشتی نیست" /> : o.notes.map(n => (
-            <div key={n.id} className="zpa-msg staff" style={{ maxWidth: '100%' }}><p>{n.body}</p><small>{n.authorName ?? 'پشتیبان'} · {faDate(n.createdAt)}</small></div>
+            <div key={n.id} className="zpa-msg staff" style={{ maxWidth: '100%' }}><p>{n.body}</p><small>{n.authorName ?? 'پشتیبان'} | {faDate(n.createdAt)}</small></div>
           ))}
         </div>
       </section>

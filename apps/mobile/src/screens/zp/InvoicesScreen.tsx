@@ -36,7 +36,7 @@ function InvoiceRow({ inv, onPress }: { inv: AppInvoiceRow; onPress: () => void 
 function InvoiceList({ workspaceId }: { workspaceId: string }) {
   const router = useRouter();
   const [page, setPage] = useState(0);
-  const list = useRemote(() => invoicesApi.list(workspaceId, page), [page]);
+  const list = useRemote('InvoicesScreen.31', () => invoicesApi.list(workspaceId, page), [page]);
   return (
     <Async state={list} retry={list.retry}>
       {l => l.items.length ? (
@@ -68,7 +68,7 @@ function InvoiceList({ workspaceId }: { workspaceId: string }) {
 
 /** «فاکتورها»: invoices and top-up receipts of the member's workspace. Mirrors web /invoices. */
 export function InvoicesScreen() {
-  const overview = useRemote(appApi.overview);
+  const overview = useRemote('appApi.overview', appApi.overview);
   return (
     <SubScreen title="فاکتورها">
       <SecHead title="فاکتورها و رسیدها" />

@@ -39,7 +39,7 @@ function Doc({ doc }: { doc: AppLegalDoc }) {
 export function LegalScreen() {
   const { doc } = useLocalSearchParams<{ doc: string }>();
   const key = KEYS.includes(String(doc)) ? (String(doc) as AppLegalDoc['key']) : null;
-  const data = useRemote(() => (key ? supportApi.legal(key) : Promise.reject(new Error('not found'))), [key]);
+  const data = useRemote('LegalScreen.13', () => (key ? supportApi.legal(key) : Promise.reject(new Error('not found'))), [key]);
   const title = key === 'privacy' ? 'حریم خصوصی' : key === 'about' ? 'درباره‌ی زُحل پی' : 'قوانین و مقررات';
   return (
     <SubScreen title={title}>

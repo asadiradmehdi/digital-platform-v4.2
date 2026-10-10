@@ -46,7 +46,7 @@ export default async function ApiKeysSettings() {
       <main className="workspace-page-content">
         <header className="page-header">
           <div>
-            <span className="eyebrow">حساب کاربری · API</span>
+            <span className="eyebrow">حساب کاربری | API</span>
             <h1>API و دسترسی‌ها</h1>
             <p>برای وصل کردن سایت یا ربات خودتان به زُحل پی، کلید API بسازید. هر کلید را هر وقت خواستید باطل کنید.</p>
           </div>

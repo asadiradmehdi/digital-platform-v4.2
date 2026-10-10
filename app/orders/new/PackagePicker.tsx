@@ -197,7 +197,7 @@ export function PackagePicker({ service, workspaceId, walletToman, initialQty = 
         {!(method === 'wallet' && short) && <button type="button" className="zp-cta full zp-press" onClick={pay} disabled={busy || redirecting || !workspaceId || (method === 'wallet' && short)} tabIndex={sheet ? 0 : -1}>
           {redirecting ? 'در حال انتقال به درگاه…' : busy ? 'در حال ثبت…' : method === 'gateway' ? 'پرداخت آنلاین و ثبت سفارش' : 'پرداخت از کیف پول و ثبت سفارش'}
         </button>}
-        <div className="zp-secure"><ZIcon name="shieldS" />{method === 'gateway' ? 'پرداخت امن با درگاه بانکی · ثبت سفارش پس از تأیید بانک' : 'پرداخت امن از کیف پول'} · {service.refund}</div>
+        <div className="zp-secure"><ZIcon name="shieldS" />{method === 'gateway' ? 'پرداخت امن با درگاه بانکی | ثبت سفارش پس از تأیید بانک' : 'پرداخت امن از کیف پول'} | {service.refund}</div>
       </div>
 
       <div className={`zp-done${done ? ' on' : ''}`} role="status" aria-hidden={!done}>

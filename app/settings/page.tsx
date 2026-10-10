@@ -41,7 +41,7 @@ export default function Settings() {
       <main className="workspace-page-content">
         <div className="dash-hero">
           <div>
-            <span className="eyebrow">حساب کاربری · تنظیمات</span>
+            <span className="eyebrow">حساب کاربری | تنظیمات</span>
             <h1>تنظیمات</h1>
             <p>مدیریت پروفایل، امنیت، اعلان‌ها و دسترسی‌های فنی فضای کاری.</p>
           </div>

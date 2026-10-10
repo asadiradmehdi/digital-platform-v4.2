@@ -84,7 +84,7 @@ export function SiteShell({ children, signedIn = false, catalog = [] }: { childr
             </ul>
           </nav>
         </div>
-        <p className="copy">© {persianYear()} زُحل پی · ZOHALPAY</p>
+        <p className="copy">© {persianYear()} زُحل پی | ZOHALPAY</p>
       </footer>
     </div>
   );

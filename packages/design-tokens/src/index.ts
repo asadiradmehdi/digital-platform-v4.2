@@ -91,10 +91,10 @@ export const tokens = {
 
   typography: {
     /** UI + Persian numerals. Native apps load the same Fontsource files. */
-    fa: '"IBM Plex Sans Arabic","Vazirmatn",Tahoma,"Segoe UI",Arial,sans-serif',
+    fa: '"Vazirmatn",Tahoma,"Segoe UI",Arial,sans-serif',
     /** Display / wordmark only — Kufam renders Arabic-style digits, never use it for numbers. */
-    display: '"Kufam","IBM Plex Sans Arabic",sans-serif',
-    latin: '"IBM Plex Sans Arabic","Inter","Segoe UI",Arial,sans-serif',
+    display: '"Kufam","Vazirmatn",sans-serif',
+    latin: '"Vazirmatn","Inter","Segoe UI",Arial,sans-serif',
     /** Brand wordmark: two words, zamme on ز */
     wordmark: 'زُحل پی',
     displaySize: 64,
