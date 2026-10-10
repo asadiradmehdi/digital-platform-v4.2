@@ -2,7 +2,8 @@ import { isIP } from 'node:net';
 import { withUserTransaction } from '../core/db';
 import { writeAudit } from '../core/audit';
 import { AppError } from '../core/errors';
-import { requirePlatformAdmin, isPlatformAdmin } from '../identity/platform-admin';
+import { isPlatformAdmin } from '../identity/platform-admin';
+import { requirePermission } from './access';
 
 export type ManagedUserStatus = 'ACTIVE' | 'SUSPENDED';
 
@@ -12,7 +13,7 @@ export type ManagedUserStatus = 'ACTIVE' | 'SUSPENDED';
  * The change and its audit row commit together. Admins cannot suspend themselves or another platform admin.
  */
 export async function setUserStatus(input: { actorUserId: string; targetUserId: string; status: ManagedUserStatus; reason?: string; ip?: string }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'users.manage');
   if (input.status !== 'ACTIVE' && input.status !== 'SUSPENDED') throw new AppError('VALIDATION_ERROR', 'وضعیت نامعتبر است.');
   if (input.status === 'SUSPENDED') {
     if (input.targetUserId === input.actorUserId) throw new AppError('VALIDATION_ERROR', 'نمی‌توانید حساب خودتان را مسدود کنید.');

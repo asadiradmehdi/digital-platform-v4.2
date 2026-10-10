@@ -1,10 +1,10 @@
 // Shared guard for every /api/v1/admin/* route handler: same-origin check on browser mutations, a signed-in user,
-// the platform_admin role (server-side, every call), then the work. Errors become the standard envelope.
+// admin access (owner or active staff, server-side, every call; each function then checks its own permission), then the work. Errors become the standard envelope.
 import type { NextRequest } from 'next/server';
 import { correlationId, handleRouteError, json } from '../core/http';
 import { assertSameOrigin } from '../core/security-boundary';
 import { requireRequestUser } from '../identity/request-user';
-import { requirePlatformAdmin } from '../identity/platform-admin';
+import { requireAdminAccess } from './access';
 import { AppError } from '../core/errors';
 
 export type AdminCall = { actorUserId: string; correlation: string; body: Record<string, unknown>; idempotencyKey: string | null; request: NextRequest };
@@ -14,7 +14,7 @@ async function run(request: NextRequest, mutation: boolean, work: (c: AdminCall)
   try {
     if (mutation) assertSameOrigin(request);
     const actorUserId = await requireRequestUser(request);
-    await requirePlatformAdmin(actorUserId);
+    await requireAdminAccess(actorUserId);
     let body: Record<string, unknown> = {};
     if (mutation) {
       const raw = await request.json().catch(() => ({})) as unknown;

@@ -6,7 +6,7 @@ import { query, withTenantTransaction } from '../core/db';
 import { writeAudit } from '../core/audit';
 import { AppError } from '../core/errors';
 import { canTransitionOrder, ORDER_STATUSES, type OrderStatus } from '../core/order-state';
-import { requirePlatformAdmin } from '../identity/platform-admin';
+import { requirePermission } from './access';
 import { completeManualOrder } from '../commerce/fulfilment';
 import { refundOrder } from '../payments/refund';
 import { notifyUser } from '../notifications/inbox';
@@ -32,7 +32,7 @@ const isUuid = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{
 const isDay = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
 export async function searchOrders(actorUserId: string, f: OrderFilters): Promise<{ rows: OrderListRow[]; total: number; page: number }> {
-  await requirePlatformAdmin(actorUserId);
+  await requirePermission(actorUserId, 'orders.view');
   const status = f.status && (ORDER_STATUSES as readonly string[]).includes(f.status) ? f.status : null;
   const page = clampPage(f.page);
   const search = (f.search ?? '').trim().slice(0, 80) || null;
@@ -80,7 +80,7 @@ const CANCEL_STATES = ['CREATED', 'PAYMENT_PENDING', 'PAID', 'QUEUED'];
 const REFUND_STATES = ['PAID', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'REFUND_PENDING'];
 
 export async function getOrderDetail(actorUserId: string, orderId: string): Promise<OrderDetail> {
-  await requirePlatformAdmin(actorUserId);
+  await requirePermission(actorUserId, 'orders.view');
   const { workspaceId, ownerUserId } = await resolveOrder(orderId);
   return withTenantTransaction(workspaceId, actorUserId, async c => {
     const o = (await c.query<{ id: string; status: string; currency: string; subtotal_minor: string; discount_minor: string; total_minor: string; risk_state: string; created_at: string; updated_at: string }>(
@@ -153,7 +153,7 @@ export function cleanProofUrl(v: unknown): string | null {
 }
 
 export async function addOrderNote(input: { actorUserId: string; orderId: string; body: unknown }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'orders.manage');
   const body = cleanText(input.body, 'یادداشت', 2000, true)!;
   const { workspaceId } = await resolveOrder(input.orderId);
   return withTenantTransaction(workspaceId, input.actorUserId, async c => {
@@ -165,7 +165,7 @@ export async function addOrderNote(input: { actorUserId: string; orderId: string
 
 /** Operator status move along the state machine (never into money states or COMPLETED; those have their own actions). */
 export async function changeOrderStatus(input: { actorUserId: string; orderId: string; to: unknown; note?: unknown }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'orders.manage');
   const to = input.to as OrderStatus;
   if (typeof to !== 'string' || !MANUAL_STATUS_TARGETS.includes(to)) throw new AppError('VALIDATION_ERROR', 'این وضعیت را نمی‌توان دستی تعیین کرد. برای لغو، بازگشت وجه و تحویل از دکمه‌ی خودشان استفاده کنید.');
   const note = cleanText(input.note, 'یادداشت', 500);
@@ -185,7 +185,7 @@ export async function changeOrderStatus(input: { actorUserId: string; orderId: s
 
 /** Delivery of a team-fulfilled order with an optional note and proof link. The customer gets the status message plus the note. */
 export async function deliverOrder(input: { actorUserId: string; orderId: string; note?: unknown; proofUrl?: unknown }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'orders.manage');
   const note = cleanText(input.note, 'توضیح تحویل', 500);
   const proofUrl = cleanProofUrl(input.proofUrl);
   const { workspaceId, ownerUserId } = await resolveOrder(input.orderId);
@@ -201,7 +201,7 @@ export async function deliverOrder(input: { actorUserId: string; orderId: string
 
 /** Refund or cancel through server/payments/refund.ts (transactional, idempotent per key, ledger-correct). Amount is toman; empty = everything left. */
 export async function refundOrCancel(input: { actorUserId: string; orderId: string; mode: 'REFUND' | 'CANCEL'; amountToman?: unknown; reason: unknown; idempotencyKey: string | null }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'refunds.process');
   if (input.mode !== 'REFUND' && input.mode !== 'CANCEL') throw new AppError('VALIDATION_ERROR', 'نوع عملیات نامعتبر است.');
   if (!input.idempotencyKey) throw new AppError('VALIDATION_ERROR', 'کلید جلوگیری از تکرار (Idempotency-Key) لازم است.');
   const reason = cleanText(input.reason, 'دلیل', 300, true)!;

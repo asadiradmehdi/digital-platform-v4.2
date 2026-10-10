@@ -3,7 +3,7 @@
 import { withUserTransaction } from '../core/db';
 import { writeAudit } from '../core/audit';
 import { AppError } from '../core/errors';
-import { requirePlatformAdmin } from '../identity/platform-admin';
+import { requirePermission } from './access';
 import { wholeNumber } from './price-core';
 import { VARIANTS, type VariantKey } from '../../lib/catalog-ui';
 
@@ -20,7 +20,7 @@ export type ServiceDetailsInput = { actorUserId: string; serviceId: string; name
 
 /** Edits what customers read about one service. Only provided fields change; an empty hint/description clears it. */
 export async function updateServiceDetails(input: ServiceDetailsInput) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'catalog.edit');
   const patch: Record<string, string | number | null> = {};
   if (input.name !== undefined) patch.name = oneLine(input.name, 'نام خدمت', 80, true);
   if (input.description !== undefined) patch.description = oneLine(input.description, 'توضیح', 400);
@@ -42,7 +42,7 @@ export async function updateServiceDetails(input: ServiceDetailsInput) {
 
 /** Shows or hides a whole category for customers (products.active). Sections hidden in code stay hidden either way. */
 export async function setCategoryActive(input: { actorUserId: string; productSlug: string; active: boolean }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'catalog.edit');
   if (typeof input.active !== 'boolean' || !/^[a-z0-9-]{1,40}$/.test(String(input.productSlug))) throw new AppError('VALIDATION_ERROR', 'درخواست نامعتبر است.');
   return withUserTransaction(input.actorUserId, async client => {
     const r = await client.query<{ id: string; was: boolean }>(`SELECT id, active AS was FROM products WHERE slug=$1 AND workspace_id IS NULL FOR UPDATE`, [input.productSlug]);
@@ -63,7 +63,7 @@ const VARIANT_KEYS = Object.keys(VARIANTS);
  * routes and starts with an INACTIVE DRAFT price (the base price). Nothing is visible to customers until the draft is approved.
  */
 export async function createVariant(input: { actorUserId: string; baseServiceId: string; variant: unknown; name?: unknown }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'catalog.edit');
   if (typeof input.variant !== 'string' || !VARIANT_KEYS.includes(input.variant)) throw new AppError('VALIDATION_ERROR', 'نوع نسخه نامعتبر است.');
   const variant = input.variant as VariantKey;
   const customName = oneLine(input.name, 'نام نسخه', 80);

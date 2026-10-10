@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { correlationId, handleRouteError, json } from '../../../../../../../server/core/http';
 import { requireRequestUser } from '../../../../../../../server/identity/request-user';
-import { requirePlatformAdmin } from '../../../../../../../server/identity/platform-admin';
+import { requireAdminAccess, requirePermission } from '../../../../../../../server/admin/access';
 import { assertSameOrigin } from '../../../../../../../server/core/security-boundary';
 import { requireUuid } from '../../../../../../../server/core/validation';
 import { completeManualOrder } from '../../../../../../../server/commerce/fulfilment';
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     assertSameOrigin(request);
     const orderId = requireUuid((await params).id, 'orderId');
     const userId = await requireRequestUser(request);
-    await requirePlatformAdmin(userId);
+    await requirePermission(userId, 'orders.manage');
     const body = await request.json().catch(() => ({})) as Record<string, unknown>;
     const workspaceId = requireUuid(body.workspaceId, 'workspaceId');
     const note = typeof body.note === 'string' ? body.note.trim().slice(0, 500) || undefined : undefined;

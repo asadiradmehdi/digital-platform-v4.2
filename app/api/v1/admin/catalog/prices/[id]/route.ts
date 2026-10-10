@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { correlationId, handleRouteError, json } from '../../../../../../../server/core/http';
 import { requireRequestUser } from '../../../../../../../server/identity/request-user';
-import { requirePlatformAdmin } from '../../../../../../../server/identity/platform-admin';
+import { requireAdminAccess, requirePermission } from '../../../../../../../server/admin/access';
 import { assertSameOrigin } from '../../../../../../../server/core/security-boundary';
 import { requireUuid } from '../../../../../../../server/core/validation';
 import { AppError } from '../../../../../../../server/core/errors';
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     assertSameOrigin(request);
     const priceId = requireUuid((await params).id, 'priceId');
     const actorUserId = await requireRequestUser(request);
-    await requirePlatformAdmin(actorUserId);
+    await requireAdminAccess(actorUserId);
     const body = await request.json().catch(() => ({})) as Record<string, unknown>;
     if (body.action !== 'approve' && body.action !== 'reject') throw new AppError('VALIDATION_ERROR', 'عملیات نامعتبر است.');
     const result = body.action === 'approve' ? await approvePrice({ actorUserId, priceId }) : await rejectPrice({ actorUserId, priceId });

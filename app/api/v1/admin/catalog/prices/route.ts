@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { correlationId, handleRouteError, json } from '../../../../../../server/core/http';
 import { requireRequestUser } from '../../../../../../server/identity/request-user';
-import { requirePlatformAdmin } from '../../../../../../server/identity/platform-admin';
+import { requireAdminAccess, requirePermission } from '../../../../../../server/admin/access';
 import { assertSameOrigin } from '../../../../../../server/core/security-boundary';
 import { requireUuid } from '../../../../../../server/core/validation';
 import { createDraftPrice } from '../../../../../../server/admin/catalog';
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
   try {
     assertSameOrigin(request);
     const actorUserId = await requireRequestUser(request);
-    await requirePlatformAdmin(actorUserId);
+    await requireAdminAccess(actorUserId);
     const body = await request.json().catch(() => ({})) as Record<string, unknown>;
     const serviceId = requireUuid(body.serviceId, 'serviceId');
     const result = await createDraftPrice({ actorUserId, serviceId, unitToman: body.unitToman, min: body.min, max: body.max });

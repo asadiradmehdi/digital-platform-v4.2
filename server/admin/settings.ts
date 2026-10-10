@@ -5,7 +5,7 @@ import { withUserTransaction } from '../core/db';
 import { writeAudit } from '../core/audit';
 import { AppError } from '../core/errors';
 import { getPlatformSetting, setPlatformSetting } from '../core/platform-settings';
-import { requirePlatformAdmin } from '../identity/platform-admin';
+import { requireAnyPermission, requirePermission } from './access';
 import { enforceStepUpPolicy } from '../identity/step-up';
 import { GOOGLE_SETTINGS_KEY } from '../identity/google/config';
 import { SMS_SETTINGS_KEY, type SmsSettingsSecret, type SmsSettingsValue } from '../notifications/sms/config';
@@ -35,7 +35,7 @@ export type SettingsOverview = {
 };
 
 export async function getSettingsOverview(actorUserId: string, env: NodeJS.ProcessEnv = process.env): Promise<SettingsOverview> {
-  await requirePlatformAdmin(actorUserId);
+  await requireAnyPermission(actorUserId, ['settings.view', 'invoices.view', 'notifications.manage']);
   const [sms, google, gw, lic, inv, contacts, hours] = await Promise.all([
     getPlatformSetting<SmsSettingsValue, SmsSettingsSecret>(SMS_SETTINGS_KEY),
     getPlatformSetting<{ clientId?: string; enabled?: boolean }, { clientSecret?: string }>(GOOGLE_SETTINGS_KEY),
@@ -97,7 +97,7 @@ export type ChangeContext = { actorUserId: string; stepUpEvidenceId?: string };
 
 // ── SMS (ملی‌پیامک) ─────────────────────────────────────────────────────────────────────────────
 export async function saveSms(ctx: ChangeContext, input: Record<string, unknown>) {
-  await requirePlatformAdmin(ctx.actorUserId);
+  await requirePermission(ctx.actorUserId, 'notifications.manage');
   const current = await getPlatformSetting<SmsSettingsValue, SmsSettingsSecret>(SMS_SETTINGS_KEY);
   const patterns: Record<string, string> = { ...(current.value?.patterns as Record<string, string> | undefined) };
   const given = (input.patterns ?? {}) as Record<string, unknown>;
@@ -125,7 +125,7 @@ export async function saveSms(ctx: ChangeContext, input: Record<string, unknown>
 
 // ── Google sign-in ─────────────────────────────────────────────────────────────────────────────
 export async function saveGoogle(ctx: ChangeContext, input: Record<string, unknown>) {
-  await requirePlatformAdmin(ctx.actorUserId);
+  await requirePermission(ctx.actorUserId, 'settings.edit');
   const current = await getPlatformSetting<{ clientId?: string; enabled?: boolean }, { clientSecret?: string }>(GOOGLE_SETTINGS_KEY);
   const clientId = input.clientId === undefined ? current.value?.clientId ?? '' : text(input.clientId, 'شناسه‌ی کلاینت', 200);
   if (clientId && !/^[A-Za-z0-9._-]+\.apps\.googleusercontent\.com$/.test(clientId)) throw bad('شناسه‌ی کلاینت باید به «.apps.googleusercontent.com» ختم شود.');
@@ -141,7 +141,7 @@ export async function saveGoogle(ctx: ChangeContext, input: Record<string, unkno
 
 // ── Payment gateway ────────────────────────────────────────────────────────────────────────────
 export async function saveGateway(ctx: ChangeContext, input: Record<string, unknown>) {
-  await requirePlatformAdmin(ctx.actorUserId);
+  await requirePermission(ctx.actorUserId, 'settings.edit');
   const current = await getPlatformSetting<{ gateway?: string; enabled?: boolean }, { merchantId?: string }>(GATEWAY_SETTINGS_KEY);
   const gateway = input.gateway === undefined ? current.value?.gateway ?? '' : text(input.gateway, 'درگاه', 20);
   if (gateway && !(GATEWAYS as readonly string[]).includes(gateway)) throw bad('درگاه انتخاب‌شده پشتیبانی نمی‌شود.');
@@ -158,7 +158,7 @@ export async function saveGateway(ctx: ChangeContext, input: Record<string, unkn
 
 // ── Licences (eNamad / Samandehi) ──────────────────────────────────────────────────────────────
 export async function saveLicenses(ctx: ChangeContext, input: Record<string, unknown>) {
-  await requirePlatformAdmin(ctx.actorUserId);
+  await requirePermission(ctx.actorUserId, 'settings.edit');
   const current = (await getPlatformSetting<LicenseUrls, never>(LICENSES_SETTINGS_KEY)).value ?? {};
   const next: LicenseUrls = { ...current };
   const names = { enamad: 'لینک اینماد', samandehi: 'لینک ساماندهی', union: 'لینک اتحادیه' } as const;
@@ -175,7 +175,7 @@ export async function saveLicenses(ctx: ChangeContext, input: Record<string, unk
 
 // ── Invoice seller + VAT ───────────────────────────────────────────────────────────────────────
 export async function saveInvoice(ctx: ChangeContext, input: Record<string, unknown>) {
-  await requirePlatformAdmin(ctx.actorUserId);
+  await requirePermission(ctx.actorUserId, 'invoices.edit');
   const digits = (v: unknown, label: string, rx: RegExp, hint: string) => {
     const t = latinDigits(text(v, label, 20)).replace(/[\s-]/g, '');
     if (t !== '' && !rx.test(t)) throw bad(`${label} معتبر نیست؛ ${hint}`);

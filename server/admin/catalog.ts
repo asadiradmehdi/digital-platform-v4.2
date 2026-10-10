@@ -3,7 +3,7 @@
 import { query, withUserTransaction } from '../core/db';
 import { writeAudit } from '../core/audit';
 import { AppError } from '../core/errors';
-import { requirePlatformAdmin } from '../identity/platform-admin';
+import { requirePermission } from './access';
 import { MAX_UNIT_PRICE, PRICE_CURRENCY, swapInPrice, wholeNumber } from './price-core';
 import type { PoolClient } from 'pg';
 
@@ -21,7 +21,7 @@ export type AdminServiceRow = {
 };
 
 export async function listAdminServices(userId: string): Promise<AdminServiceRow[]> {
-  await requirePlatformAdmin(userId);
+  await requirePermission(userId, 'catalog.view');
   const r = await query<{
     id: string; name: string; slug: string; product_slug: string; product_name: string; active: boolean; fulfillment_mode: string;
     product_active?: boolean; hint?: string | null; sort_order?: number | null;
@@ -61,7 +61,7 @@ export async function listAdminServices(userId: string): Promise<AdminServiceRow
 
 /** Inserts a new inactive DRAFT price (any older open draft of the service is marked REJECTED). */
 export async function createDraftPrice(input: { actorUserId: string; serviceId: string; unitToman: unknown; min?: unknown; max?: unknown }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'catalog.edit');
   const unit = wholeNumber(input.unitToman, 'قیمت هر واحد', { min: 1, max: MAX_UNIT_PRICE })!;
   const min = wholeNumber(input.min, 'حداقل تعداد', { min: 1, max: 1_000_000_000, optional: true });
   const max = wholeNumber(input.max, 'حداکثر تعداد', { min: 1, max: 1_000_000_000, optional: true });
@@ -109,7 +109,7 @@ const ROW_SQL = `SELECT id, service_id, currency, unit_price_minor::text, approv
 
 /** Approves a draft (swaps it in as the live price) or confirms a seeded active price the owner has not reviewed. */
 export async function approvePrice(input: { actorUserId: string; priceId: string }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'catalog.approve');
   return withUserTransaction(input.actorUserId, async client => {
     const p = (await client.query<Row>(`${ROW_SQL} WHERE id=$1 FOR UPDATE`, [input.priceId])).rows[0];
     if (!p) throw new AppError('NOT_FOUND', 'قیمت پیدا نشد.');
@@ -119,7 +119,7 @@ export async function approvePrice(input: { actorUserId: string; priceId: string
 
 /** Approves every open draft (optionally only one category) in a single transaction. */
 export async function approveAllDrafts(input: { actorUserId: string; productSlug?: string | null }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'catalog.approve');
   return withUserTransaction(input.actorUserId, async client => {
     const drafts = (await client.query<Row>(
       `SELECT sp.id, sp.service_id, sp.currency, sp.unit_price_minor::text, sp.approval_status, sp.active, sp.approved_at::text
@@ -134,7 +134,7 @@ export async function approveAllDrafts(input: { actorUserId: string; productSlug
 
 /** One-tap price change: the new price goes live immediately as a new row; the old row is kept as history. */
 export async function setPriceNow(input: { actorUserId: string; serviceId: string; unitToman: unknown; min?: unknown; max?: unknown }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'catalog.approve');
   const unit = wholeNumber(input.unitToman, 'قیمت هر واحد', { min: 1, max: MAX_UNIT_PRICE })!;
   const min = wholeNumber(input.min, 'حداقل تعداد', { min: 1, max: 1_000_000_000, optional: true });
   const max = wholeNumber(input.max, 'حداکثر تعداد', { min: 1, max: 1_000_000_000, optional: true });
@@ -149,7 +149,7 @@ export async function setPriceNow(input: { actorUserId: string; serviceId: strin
 
 /** «بازگشت به قیمت قبلی»: re-inserts the previously live price as a NEW row; history is never edited. */
 export async function revertPrice(input: { actorUserId: string; serviceId: string }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'catalog.approve');
   return withUserTransaction(input.actorUserId, async client => {
     if (!(await client.query(`SELECT id FROM services WHERE id=$1 FOR UPDATE`, [input.serviceId])).rows[0]) throw new AppError('NOT_FOUND', 'خدمت پیدا نشد.');
     const cur = (await client.query<{ id: string }>(`SELECT id FROM service_prices WHERE service_id=$1 AND currency=$2 AND active=true`, [input.serviceId, PRICE_CURRENCY])).rows[0];
@@ -165,7 +165,7 @@ export async function revertPrice(input: { actorUserId: string; serviceId: strin
 }
 
 export async function rejectPrice(input: { actorUserId: string; priceId: string }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'catalog.approve');
   return withUserTransaction(input.actorUserId, async client => {
     const r = await client.query<{ service_id: string }>(
       `UPDATE service_prices SET approval_status='REJECTED' WHERE id=$1 AND approval_status='DRAFT' RETURNING service_id`, [input.priceId]);
@@ -177,7 +177,7 @@ export async function rejectPrice(input: { actorUserId: string; priceId: string 
 
 /** Shows or hides one service in the customer catalogue (services.active). */
 export async function setServiceActive(input: { actorUserId: string; serviceId: string; active: boolean }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'catalog.edit');
   if (typeof input.active !== 'boolean') throw new AppError('VALIDATION_ERROR', 'وضعیت نامعتبر است.');
   return withUserTransaction(input.actorUserId, async client => {
     const r = await client.query<{ was: boolean }>(

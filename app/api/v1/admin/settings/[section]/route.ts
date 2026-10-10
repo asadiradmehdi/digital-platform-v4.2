@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { correlationId, handleRouteError, json } from '../../../../../../server/core/http';
 import { requireRequestUser } from '../../../../../../server/identity/request-user';
-import { requirePlatformAdmin } from '../../../../../../server/identity/platform-admin';
+import { requireAdminAccess, requirePermission } from '../../../../../../server/admin/access';
 import { assertSameOrigin } from '../../../../../../server/core/security-boundary';
 import { AppError } from '../../../../../../server/core/errors';
 import { saveGateway, saveGoogle, saveInvoice, saveLicenses, saveSms, setSupportHours, upsertSupportContact } from '../../../../../../server/admin/settings';
@@ -18,9 +18,10 @@ export async function POST(request: NextRequest, { params }: Params) {
     assertSameOrigin(request);
     const { section } = await params;
     const actorUserId = await requireRequestUser(request);
-    await requirePlatformAdmin(actorUserId);
+    await requireAdminAccess(actorUserId);
     const body = await request.json().catch(() => null) as Record<string, unknown> | null;
     if (!body || typeof body !== 'object' || Array.isArray(body)) throw new AppError('VALIDATION_ERROR', 'اطلاعات ارسالی معتبر نیست.');
+    if (section === 'support-hours' || section === 'support-contact') await requirePermission(actorUserId, 'settings.edit');
     const ctx = { actorUserId, stepUpEvidenceId: typeof body.stepUpEvidenceId === 'string' ? body.stepUpEvidenceId : undefined };
     switch (section) {
       case 'sms': await saveSms(ctx, body); break;

@@ -2,7 +2,7 @@
 // cross-tenant read can never run for a caller that skipped the page/route gate. The orders, payments and
 // wallets tables are FORCE-RLS; the data comes from the system_admin_* functions (migration 0061).
 import { query } from '../core/db';
-import { requirePlatformAdmin } from '../identity/platform-admin';
+import { requirePermission } from './access';
 
 export type Period = 'today' | 'd7' | 'd30';
 export const PERIODS: Period[] = ['today', 'd7', 'd30'];
@@ -21,7 +21,7 @@ const empty = <T,>(make: () => T): Record<Period, T> => ({ today: make(), d7: ma
 const isPeriod = (p: string): p is Period => (PERIODS as string[]).includes(p);
 
 export async function getRevenueDashboard(userId: string): Promise<RevenueDashboard> {
-  await requirePlatformAdmin(userId);
+  await requirePermission(userId, 'orders.view');
   const r = await query<RevenueRow>(
     `SELECT metric, period, bucket, row_count::text AS row_count, amount_toman::text AS amount_toman FROM system_admin_revenue()`,
   );
@@ -64,7 +64,7 @@ export function clampPage(raw: unknown): number {
 }
 
 export async function listAdminOrders(userId: string, input: { status?: string | null; page?: number }): Promise<{ rows: AdminOrderRow[]; total: number; page: number }> {
-  await requirePlatformAdmin(userId);
+  await requirePermission(userId, 'orders.view');
   const status = input.status && (ORDER_STATUSES as readonly string[]).includes(input.status) ? input.status : null;
   const page = clampPage(input.page);
   const r = await query<{
@@ -88,7 +88,7 @@ export type AdminUserRow = {
 };
 
 export async function listAdminUsers(userId: string, input: { search?: string | null; page?: number }): Promise<{ rows: AdminUserRow[]; total: number; page: number }> {
-  await requirePlatformAdmin(userId);
+  await requirePermission(userId, 'users.view');
   const search = (input.search ?? '').trim().slice(0, 80) || null;
   const page = clampPage(input.page);
   const r = await query<{

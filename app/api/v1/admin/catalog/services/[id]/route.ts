@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { correlationId, handleRouteError, json } from '../../../../../../../server/core/http';
 import { requireRequestUser } from '../../../../../../../server/identity/request-user';
-import { requirePlatformAdmin } from '../../../../../../../server/identity/platform-admin';
+import { requireAdminAccess, requirePermission } from '../../../../../../../server/admin/access';
 import { assertSameOrigin } from '../../../../../../../server/core/security-boundary';
 import { requireUuid } from '../../../../../../../server/core/validation';
 import { AppError } from '../../../../../../../server/core/errors';
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     assertSameOrigin(request);
     const serviceId = requireUuid((await params).id, 'serviceId');
     const actorUserId = await requireRequestUser(request);
-    await requirePlatformAdmin(actorUserId);
+    await requireAdminAccess(actorUserId);
     const body = await request.json().catch(() => ({})) as Record<string, unknown>;
     if (body.details && typeof body.details === 'object') return json(await updateServiceDetails({ actorUserId, serviceId, ...(body.details as Record<string, unknown>) }), { correlationId: id });
     if (body.action === 'revert') return json(await revertPrice({ actorUserId, serviceId }), { correlationId: id });

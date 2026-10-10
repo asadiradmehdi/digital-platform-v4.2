@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// Owner-equivalent access derived from the (mocked) platform-admin check, so these tests keep proving "non-admins are refused".
+vi.mock('../../server/admin/access', async () => {
+  const pa = await import('../../server/identity/platform-admin');
+  const { ALL_PERMISSIONS } = await import('../../lib/admin-permissions');
+  const check = async (u: string) => { await pa.requirePlatformAdmin(u); return { userId: u, kind: 'owner' as const, permissions: new Set(ALL_PERMISSIONS), parentUserId: null }; };
+  return { requireAdminAccess: check, requirePermission: check, requireAnyPermission: check, getAdminAccess: check };
+});
 vi.mock('../../server/core/db', () => ({ query: vi.fn() }));
 vi.mock('../../server/identity/platform-admin', () => ({ requirePlatformAdmin: vi.fn() }));
 

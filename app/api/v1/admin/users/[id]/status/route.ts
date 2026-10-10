@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { correlationId, handleRouteError, json } from '../../../../../../../server/core/http';
 import { requireRequestUser } from '../../../../../../../server/identity/request-user';
-import { requirePlatformAdmin } from '../../../../../../../server/identity/platform-admin';
+import { requireAdminAccess, requirePermission } from '../../../../../../../server/admin/access';
 import { assertSameOrigin, clientFingerprint } from '../../../../../../../server/core/security-boundary';
 import { requireUuid } from '../../../../../../../server/core/validation';
 import { AppError } from '../../../../../../../server/core/errors';
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     assertSameOrigin(request);
     const targetUserId = requireUuid((await params).id, 'userId');
     const actorUserId = await requireRequestUser(request);
-    await requirePlatformAdmin(actorUserId);
+    await requireAdminAccess(actorUserId);
     const body = await request.json().catch(() => ({})) as Record<string, unknown>;
     if (body.status !== 'ACTIVE' && body.status !== 'SUSPENDED') throw new AppError('VALIDATION_ERROR', 'وضعیت باید ACTIVE یا SUSPENDED باشد.');
     const reason = typeof body.reason === 'string' ? body.reason : undefined;

@@ -9,7 +9,7 @@ import { randomUUID } from 'node:crypto';
 import { query, withUserTransaction } from '../core/db';
 import { writeAudit } from '../core/audit';
 import { AppError } from '../core/errors';
-import { requirePlatformAdmin } from '../identity/platform-admin';
+import { requirePermission } from './access';
 import { bulkNewUnit } from '../../lib/admin-pricing';
 import { serviceMeta } from '../../lib/catalog-ui';
 import { MAX_UNIT_PRICE, PRICE_CURRENCY, swapInPrice, wholeNumber } from './price-core';
@@ -98,7 +98,7 @@ function cleanEdits(raw: unknown, listed: number[]): PackageEdit[] {
 
 /** Read-only plan for the confirmation sheet: what changes, and which packages get pinned because the base price moves. */
 export async function previewPackageChanges(input: { actorUserId: string; serviceId: string; edits: unknown }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'catalog.view');
   const svc = await query<{ slug: string }>(`SELECT slug FROM services WHERE id=$1`, [input.serviceId]);
   if (!svc.rows[0]) throw new AppError('NOT_FOUND', 'خدمت پیدا نشد.');
   const meta = serviceMeta(svc.rows[0].slug);
@@ -110,7 +110,7 @@ export async function previewPackageChanges(input: { actorUserId: string; servic
 
 /** Saves package edits in one transaction (batch + audit). Replaying the same idempotencyKey returns the first result. */
 export async function savePackageChanges(input: { actorUserId: string; serviceId: string; edits: unknown; idempotencyKey?: string | null; note?: string | null }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'catalog.approve');
   const note = (input.note ?? '').replace(/\s+/g, ' ').trim().slice(0, 200) || null;
   const key = input.idempotencyKey ? String(input.idempotencyKey).slice(0, 80) : null;
   return withUserTransaction(input.actorUserId, async client => {
@@ -149,7 +149,7 @@ async function latestUndoable(client: Queryable, serviceId: string): Promise<Bat
 
 /** «بازگشت به قبل»: restores the state from before the latest change of this service as a NEW batch (history is kept). */
 export async function undoLastPriceChange(input: { actorUserId: string; serviceId: string }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'catalog.approve');
   return withUserTransaction(input.actorUserId, async client => {
     await lockService(client, input.serviceId);
     const b = await latestUndoable(client, input.serviceId);
@@ -160,7 +160,7 @@ export async function undoLastPriceChange(input: { actorUserId: string; serviceI
 
 /** Undoes a whole category-wide change: every service whose latest change is still that group's batch. */
 export async function undoPriceGroup(input: { actorUserId: string; groupId: string }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'catalog.approve');
   if (!/^[0-9a-f-]{36}$/i.test(input.groupId)) throw new AppError('VALIDATION_ERROR', 'شناسه‌ی تغییر نامعتبر است.');
   return withUserTransaction(input.actorUserId, async client => {
     const rows = await client.query<BatchRow & { service_id: string }>(
@@ -216,14 +216,14 @@ function bulkArgs(input: { productSlug: unknown; percent: unknown; roundTo?: unk
 
 /** Old→new table for a category-wide percent change (unit prices and pinned packages); nothing is written. */
 export async function previewBulk(input: { actorUserId: string; productSlug: unknown; percent: unknown; roundTo?: unknown }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'catalog.view');
   const a = bulkArgs(input);
   return { rows: await bulkPlan({ query: query as never }, a.productSlug, a.percent, a.roundTo) };
 }
 
 /** Applies the same plan in ONE transaction: each changed service gets its own undoable batch; all share a group id. */
 export async function applyBulk(input: { actorUserId: string; productSlug: unknown; percent: unknown; roundTo?: unknown }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'catalog.approve');
   const a = bulkArgs(input);
   const groupId = randomUUID();
   return withUserTransaction(input.actorUserId, async client => {
@@ -244,7 +244,7 @@ export async function applyBulk(input: { actorUserId: string; productSlug: unkno
 
 /** Records what one unit costs ZOHALPAY (toman); null clears it. History rows are kept. */
 export async function setUnitCost(input: { actorUserId: string; serviceId: string; unitCostToman: unknown; note?: string | null }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'catalog.edit');
   const cost = wholeNumber(input.unitCostToman, 'هزینه‌ی هر واحد', { min: 0, max: MAX_UNIT_PRICE, optional: true });
   const note = (input.note ?? '').replace(/\s+/g, ' ').trim().slice(0, 200) || null;
   return withUserTransaction(input.actorUserId, async client => {
@@ -279,7 +279,7 @@ export type ServicePackages = {
 };
 
 export async function getServicePackages(actorUserId: string, serviceId: string): Promise<ServicePackages> {
-  await requirePlatformAdmin(actorUserId);
+  await requirePermission(actorUserId, 'catalog.view');
   const s = await query<{ id: string; name: string; slug: string; active: boolean; fulfillment_mode: string; description: string | null; hint: string | null; sort_order: number | null; product_slug: string; product_name: string;
     provider_cost: string | null; provider_cost_currency: string | null; manual_cost: string | null }>(
     `SELECT s.id, s.name, s.slug, s.active, s.fulfillment_mode, s.description, s.hint, s.sort_order, p.slug AS product_slug, p.name AS product_name,
@@ -329,7 +329,7 @@ export type ServiceMarginRow = { serviceId: string; name: string; slug: string; 
 
 /** Services whose lowest listed-package margin is below `thresholdPct` (only where a unit cost is known). */
 export async function listLowMargin(actorUserId: string, thresholdPct: number): Promise<{ rows: ServiceMarginRow[]; withCost: number; total: number }> {
-  await requirePlatformAdmin(actorUserId);
+  await requirePermission(actorUserId, 'catalog.view');
   const r = await query<{ id: string; name: string; slug: string; product_slug: string; unit: string; manual_cost: string | null; provider_cost: string | null; provider_cost_currency: string | null; pinned: Array<{ q: string; p: string }> }>(
     `SELECT s.id, s.name, s.slug, p.slug AS product_slug, sp.unit_price_minor::text AS unit,
             (SELECT c.unit_cost_minor::text FROM service_unit_costs c WHERE c.service_id=s.id AND c.active LIMIT 1) AS manual_cost,
@@ -363,7 +363,7 @@ export type CatalogSummary = { serviceId: string; pinnedCount: number; minMargin
 
 /** Per-service flags for the catalogue list: how many packages are pinned, lowest margin. */
 export async function getCatalogSummaries(actorUserId: string): Promise<Map<string, CatalogSummary>> {
-  await requirePlatformAdmin(actorUserId);
+  await requirePermission(actorUserId, 'catalog.view');
   const r = await query<{ id: string; slug: string; unit: string; manual_cost: string | null; provider_cost: string | null; provider_cost_currency: string | null; pinned: Array<{ q: string; p: string }> }>(
     `SELECT s.id, s.slug, sp.unit_price_minor::text AS unit,
             (SELECT c.unit_cost_minor::text FROM service_unit_costs c WHERE c.service_id=s.id AND c.active LIMIT 1) AS manual_cost,

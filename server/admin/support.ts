@@ -5,7 +5,7 @@
 import { query, withTenantTransaction } from '../core/db';
 import { writeAudit } from '../core/audit';
 import { AppError } from '../core/errors';
-import { requirePlatformAdmin } from '../identity/platform-admin';
+import { getAdminAccess, requirePermission } from './access';
 import { addStaffReply } from '../support/tickets';
 import { notifyUser } from '../notifications/inbox';
 import { clampPage, PAGE_SIZE } from './console';
@@ -20,7 +20,7 @@ export type AdminTicketRow = {
 };
 
 export async function listAdminTickets(actorUserId: string, f: { status?: string | null; search?: string | null; assignee?: string | null; page?: number }) {
-  await requirePlatformAdmin(actorUserId);
+  await requirePermission(actorUserId, 'support.view');
   const status = f.status && (TICKET_FILTERS as readonly string[]).includes(f.status) ? f.status : null;
   const assignee = f.assignee === 'none' ? 'none' : isUuid(f.assignee) ? f.assignee : null;
   const search = (f.search ?? '').trim().slice(0, 80) || null;
@@ -38,12 +38,16 @@ export async function listAdminTickets(actorUserId: string, f: { status?: string
   };
 }
 
+/** People a ticket can be assigned to: the owner(s) and active staff who may handle tickets. */
 export async function listStaff(actorUserId: string): Promise<{ id: string; name: string }[]> {
-  await requirePlatformAdmin(actorUserId);
+  await requirePermission(actorUserId, 'support.view');
   const r = await query<{ id: string; name: string }>(
-    `SELECT DISTINCT u.id, COALESCE(NULLIF(u.display_name,''), u.phone, u.email, 'مدیر') AS name
-     FROM workspace_members wm JOIN member_roles mr ON mr.member_id=wm.id JOIN roles r ON r.id=mr.role_id JOIN users u ON u.id=wm.user_id
-     WHERE wm.status='ACTIVE' AND r.name='platform_admin' AND r.workspace_id IS NULL AND r.is_system=true AND u.status='ACTIVE' ORDER BY name`);
+    `SELECT u.id, COALESCE(NULLIF(u.display_name,''), u.phone, u.email, 'مدیر') AS name FROM users u
+     WHERE u.status='ACTIVE' AND (
+       EXISTS (SELECT 1 FROM workspace_members wm JOIN member_roles mr ON mr.member_id=wm.id JOIN roles r ON r.id=mr.role_id
+               WHERE wm.user_id=u.id AND wm.status='ACTIVE' AND r.name='platform_admin' AND r.workspace_id IS NULL AND r.is_system=true)
+       OR EXISTS (SELECT 1 FROM staff_members sm WHERE sm.user_id=u.id AND sm.status='ACTIVE' AND 'support.manage' = ANY(sm.permissions)))
+     ORDER BY name`);
   return r.rows;
 }
 
@@ -62,7 +66,7 @@ export type AdminTicketDetail = {
 };
 
 export async function getAdminTicket(actorUserId: string, ticketId: string): Promise<AdminTicketDetail> {
-  await requirePlatformAdmin(actorUserId);
+  await requirePermission(actorUserId, 'support.view');
   const workspaceId = await resolveTicket(ticketId);
   return withTenantTransaction(workspaceId, actorUserId, async c => {
     const t = (await c.query<{ id: string; code: string; subject: string; status: string; category: string; priority: string; created_at: string; order_id: string | null; uid: string; cname: string | null; cphone: string | null; assigned_to_user_id: string | null; aname: string | null }>(
@@ -83,7 +87,7 @@ export async function getAdminTicket(actorUserId: string, ticketId: string): Pro
 
 /** Staff reply: the thread gets the message, status becomes ANSWERED, the customer is notified. The first reply also assigns the ticket to the replier. */
 export async function replyAsStaff(input: { actorUserId: string; ticketId: string; body: unknown }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'support.manage');
   const workspaceId = await resolveTicket(input.ticketId);
   const msg = await addStaffReply({ workspaceId, staffUserId: input.actorUserId, ticketId: input.ticketId, body: input.body });
   await withTenantTransaction(workspaceId, input.actorUserId, c => c.query(
@@ -93,7 +97,7 @@ export async function replyAsStaff(input: { actorUserId: string; ticketId: strin
 
 /** Close, or reopen a ticket (OPEN). Customer is told when the ticket is closed by staff. */
 export async function setTicketStatus(input: { actorUserId: string; ticketId: string; status: unknown }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'support.manage');
   if (input.status !== 'CLOSED' && input.status !== 'OPEN') throw new AppError('VALIDATION_ERROR', 'وضعیت نامعتبر است.');
   const to = input.status;
   const workspaceId = await resolveTicket(input.ticketId);
@@ -112,10 +116,13 @@ export async function setTicketStatus(input: { actorUserId: string; ticketId: st
 
 /** Assigns the ticket to a platform admin (or clears it with null). */
 export async function assignTicket(input: { actorUserId: string; ticketId: string; assigneeId: unknown }) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'support.manage');
   const assignee = input.assigneeId === null || input.assigneeId === '' ? null : isUuid(input.assigneeId) ? input.assigneeId : undefined;
   if (assignee === undefined) throw new AppError('VALIDATION_ERROR', 'مسئول نامعتبر است.');
-  if (assignee) { try { await requirePlatformAdmin(assignee); } catch { throw new AppError('VALIDATION_ERROR', 'مسئول باید از تیم باشد.'); } }
+  if (assignee) {
+    const who = await getAdminAccess(assignee).catch(() => null);
+    if (!who || !who.permissions.has('support.manage')) throw new AppError('VALIDATION_ERROR', 'مسئول باید از تیم پشتیبانی باشد.');
+  }
   const workspaceId = await resolveTicket(input.ticketId);
   return withTenantTransaction(workspaceId, input.actorUserId, async c => {
     const t = (await c.query<{ code: string; assigned_to_user_id: string | null }>(`SELECT code, assigned_to_user_id FROM support_tickets WHERE id=$1 AND workspace_id=$2 FOR UPDATE`, [input.ticketId, workspaceId])).rows[0];

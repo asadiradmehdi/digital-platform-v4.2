@@ -4,7 +4,7 @@
 import { query, withTenantTransaction } from '../core/db';
 import { writeAudit } from '../core/audit';
 import { AppError } from '../core/errors';
-import { requirePlatformAdmin } from '../identity/platform-admin';
+import { requirePermission } from './access';
 import { debitWalletChecked, postWalletEntry, requireMainWalletAccount, walletBalanceMinor } from '../payments/wallet-ledger';
 import { notifyUser } from '../notifications/inbox';
 import { getTierLadder, tierForLadder } from '../loyalty/tier-ladder';
@@ -26,7 +26,7 @@ export type UserProfile = {
 };
 
 export async function getUserProfile(actorUserId: string, userId: string): Promise<UserProfile> {
-  await requirePlatformAdmin(actorUserId);
+  await requirePermission(actorUserId, 'users.view');
   if (!isUuid(userId)) throw new AppError('NOT_FOUND', 'کاربر پیدا نشد.');
   const u = (await query<{ id: string; display_name: string | null; email: string | null; phone: string | null; status: string; created_at: string; last_login_at: string | null; is_admin: boolean; workspace_id: string | null }>(
     `SELECT u.id, u.display_name, u.email, u.phone, u.status::text, u.created_at::text, NULL::text AS last_login_at,
@@ -79,7 +79,7 @@ export type AdjustInput = { actorUserId: string; userId: string; direction: unkn
  * same key changes nothing and returns replayed:true). A debit can never take the balance below zero.
  */
 export async function adjustWallet(input: AdjustInput) {
-  await requirePlatformAdmin(input.actorUserId);
+  await requirePermission(input.actorUserId, 'wallet.adjust');
   const direction = input.direction === 'CREDIT' || input.direction === 'DEBIT' ? input.direction : null;
   if (!direction) throw new AppError('VALIDATION_ERROR', 'نوع عملیات باید افزایش یا کاهش باشد.');
   if (!isUuid(input.userId)) throw new AppError('NOT_FOUND', 'کاربر پیدا نشد.');
