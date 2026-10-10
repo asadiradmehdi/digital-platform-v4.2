@@ -5,7 +5,7 @@ import { requireAdminAccess, requirePermission } from '../../../../../../server/
 import { assertSameOrigin } from '../../../../../../server/core/security-boundary';
 import { AppError } from '../../../../../../server/core/errors';
 import { saveLoyalty, saveReferral, saveSite } from '../../../../../../server/admin/site-settings';
-import { saveGateway, saveGoogle, saveInvoice, saveLicenses, saveSms, setSupportHours, upsertSupportContact } from '../../../../../../server/admin/settings';
+import { saveGateway, saveGoogle, saveInvoice, saveLicenses, saveSms, sendSmsTest, setSupportHours, upsertSupportContact } from '../../../../../../server/admin/settings';
 
 type Params = { params: Promise<{ section: string }> };
 
@@ -26,6 +26,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     const ctx = { actorUserId, stepUpEvidenceId: typeof body.stepUpEvidenceId === 'string' ? body.stepUpEvidenceId : undefined };
     switch (section) {
       case 'sms': await saveSms(ctx, body); break;
+      case 'sms-test': await sendSmsTest(ctx, body.phone); break;
       case 'google': await saveGoogle(ctx, body); break;
       case 'gateway': await saveGateway(ctx, body); break;
       case 'invoice': await saveInvoice(ctx, body); break;

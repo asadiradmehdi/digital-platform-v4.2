@@ -1,3 +1,4 @@
+import { SmsTest } from './SmsTest';
 import { requireCurrentUser } from '../../../../../server/identity/request-user';
 import { getAdminAccess } from '../../../../../server/admin/access';
 import { GATEWAYS, getSettingsOverview } from '../../../../../server/admin/settings';
@@ -34,6 +35,7 @@ export default async function IntegrationsPage() {
               { name: 'inboundSecret', label: 'رمز دریافت پیامک (حداقل ۲۴ نویسه)', kind: 'secret', secret: s.sms.inboundSecret },
             ]} />
         ) : null}
+        {showSms ? <SmsTest ready={smsReady} /> : null}
         {showOther ? (
           <>
             <SettingsSection section="google" title="ورود با گوگل" readOnly={!editOther}

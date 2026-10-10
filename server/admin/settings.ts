@@ -11,6 +11,9 @@ import { GOOGLE_SETTINGS_KEY } from '../identity/google/config';
 import { SMS_SETTINGS_KEY, type SmsSettingsSecret, type SmsSettingsValue } from '../notifications/sms/config';
 import { LICENSES_SETTINGS_KEY, officialLicenseUrl, type LicenseUrls } from '../content/trust';
 import { query } from '../core/db';
+import { normalizeIranMobile } from '../../packages/api-contracts/src/phone';
+import { getSmsProvider } from '../notifications/sms/config';
+import { SmsProviderError } from '../notifications/sms/types';
 
 export const GATEWAY_SETTINGS_KEY = 'payments.gateway';
 export const GATEWAYS = ['zarinpal', 'zibal', 'idpay', 'nextpay'] as const;
@@ -121,6 +124,22 @@ export async function saveSms(ctx: ChangeContext, input: Record<string, unknown>
     value: { ...(current.value ?? {}), provider: 'melipayamak', patterns, inbound: { ...(current.value?.inbound ?? {}), enabled: inboundEnabled } },
     secret,
   }, ctx.actorUserId);
+}
+
+/** Sends one real verification-pattern SMS to `phone` so the owner can prove the panel works right after saving. */
+export async function sendSmsTest(ctx: ChangeContext, phone: unknown) {
+  await requirePermission(ctx.actorUserId, 'notifications.manage');
+  const to = normalizeIranMobile(phone);
+  if (!to) throw bad('شماره موبایل معتبر نیست؛ مثل 09123456789 وارد کنید.');
+  const { provider } = await getSmsProvider();
+  if (!provider || provider.name === 'console') throw bad('پیامک هنوز کامل تنظیم نشده؛ کلید API و شناسه‌ی الگوی کد ورود را ذخیره کنید.');
+  try {
+    await provider.sendOtp(to, String(Math.floor(10000 + Math.random() * 90000)));
+  } catch (e) {
+    if (e instanceof SmsProviderError) throw bad(e.kind === 'unavailable' ? 'اتصال به پنل پیامک برقرار نشد؛ چند لحظه بعد دوباره امتحان کنید.' : 'پنل پیامک پیام را نپذیرفت؛ کلید API، شناسه‌ی الگو و اعتبار پنل را بررسی کنید.');
+    throw e;
+  }
+  await writeAudit({ actorUserId: ctx.actorUserId, action: 'admin.sms.test', entityType: 'platform_setting', metadata: { provider: provider.name } });
 }
 
 // ── Google sign-in ─────────────────────────────────────────────────────────────────────────────
