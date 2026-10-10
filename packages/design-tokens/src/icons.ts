@@ -30,6 +30,8 @@ export const ICONS = {
   "shieldS": "<path d=\"M12 3l7 3v5.5c0 4.4-3 8-7 9.5-4-1.5-7-5.1-7-9.5V6z\"/><path d=\"M9 12l2 2 4-4\"/>",
   "out": "<path class=\"d\" d=\"M4 5.5A2.5 2.5 0 0 1 6.5 3H13v18H6.5A2.5 2.5 0 0 1 4 18.5z\"/><path d=\"M13 3H6.5A2.5 2.5 0 0 0 4 5.5v13A2.5 2.5 0 0 0 6.5 21H13M16.5 8l4 4-4 4M20.5 12H10\"/>",
   "shamseh": "<path class=\"f\" transform=\"translate(1.2 1.2) scale(.9)\" d=\"M12 1l3.2 4.3 5.3-.8-.8 5.3L24 12l-4.3 3.2.8 5.3-5.3-.8L12 24l-3.2-4.3-5.3.8.8-5.3L0 12l4.3-3.2-.8-5.3 5.3.8z\"/><circle class=\"kf\" cx=\"12\" cy=\"12\" r=\"3.4\"/>",
+  "search": "<circle class=\"d\" cx=\"10.5\" cy=\"10.5\" r=\"6.5\"/><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"/><path d=\"M15.4 15.4L20.5 20.5\"/>",
+  "help": "<circle class=\"f\" cx=\"12\" cy=\"12\" r=\"9.5\"/><path class=\"k\" stroke-width=\"2.2\" d=\"M9.5 9.6a2.6 2.6 0 1 1 3.9 2.2c-.9.5-1.4 1-1.4 2\"/><circle class=\"kf\" cx=\"12\" cy=\"17\" r=\"1.25\"/>",
   "bell": "<path class=\"d\" d=\"M6 10a6 6 0 0 1 12 0v4l1.8 3H4.2L6 14z\"/><path d=\"M6 10a6 6 0 0 1 12 0v4l1.8 3H4.2L6 14zM9.8 20a2.4 2.4 0 0 0 4.4 0\"/>",
   "menu": "<path stroke-width=\"2.3\" d=\"M4 7h16M9 12h11M4 17h16\"/>",
   "close": "<path stroke-width=\"2.3\" d=\"M6 6l12 12M18 6L6 18\"/>",

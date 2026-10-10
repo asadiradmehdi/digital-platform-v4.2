@@ -10,6 +10,7 @@ import { Icon, type IconName } from './Icon';
 import { Cta, IconBtn, Press, T } from './ui';
 import { siteUrl } from '../api/app';
 import { NotificationBell } from './NotificationBell';
+import { FirstRunTour, HelpButton } from './HelpGuide';
 
 type DrawerLink = { label: string; icon: IconName; href?: Href; web?: string };
 /** Mirrors the web drawer in components/AppShell.tsx (same order, labels and glyphs). */
@@ -65,6 +66,11 @@ function Drawer({ open, onClose }: { open: boolean; onClose: () => void }) {
             </Press>
           ))}
         </ScrollView>
+        <Press accessibilityRole="search" onPress={() => { onClose(); router.navigate('/search' as Href); }} style={{ flexDirection: row, alignItems: 'center', gap: 12, paddingVertical: 7, paddingHorizontal: 8, borderRadius: 14, borderWidth: 1, borderColor: C.line }}>
+          <Tile icon="search" size={36} variant="gold" />
+          <T w="sb" size={14.4} style={{ flex: 1 }}>جستجو در همه‌ی خدمات</T>
+          <Icon name={fwd} size={16} color={C.muted} stroke={2.4} />
+        </Press>
         <Enamel radius={20} style={{ padding: 14, flexDirection: row, alignItems: 'center', gap: 12 }}>
           <Ornament w={300} h={90} cx={250} cy={80} rot={-12} color={C.gold1} alpha={0.6} girih={false} />
           <Tile icon="chat" variant="gold" size={40} />
@@ -94,17 +100,21 @@ function Body({ fixed, children }: PropsWithChildren<{ fixed?: boolean }>) {
 }
 
 export function AppScreen({ children, overlay, fixed }: PropsWithChildren<{ overlay?: ReactNode; fixed?: boolean }>) {
+  const router = useRouter();
   const [drawer, setDrawer] = useState(false);
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={{ flexDirection: row, alignItems: 'center', gap: 10, paddingHorizontal: 18, paddingTop: 8, paddingBottom: 8, minHeight: 62 }}>
         <View style={{ flex: 1, alignItems: right }}><Wordmark size={22} /></View>
+        <IconBtn icon="search" label="جستجو" onPress={() => router.navigate('/search' as Href)} />
+        <HelpButton />
         <NotificationBell />
         <IconBtn icon="menu" label="منو" onPress={() => setDrawer(true)} />
       </View>
       <Body fixed={fixed}>{children}</Body>
       {overlay}
       <Drawer open={drawer} onClose={() => setDrawer(false)} />
+      <FirstRunTour />
     </SafeAreaView>
   );
 }
