@@ -2,13 +2,13 @@
 // replies…): unread dot, loading / error / empty / list states, mark-as-read on tap. Same server
 // endpoints as the web bell. Drop-in replacement for the static Bell in Shell.tsx.
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiFetch, type NotificationSummary } from '../api/client';
 import { C, RTL, row, shadow } from './base';
 import { Tile } from './brand';
-import { IconBtn, T } from './ui';
+import { IconBtn, Skel, T } from './ui';
 
 type State = { status: 'idle' | 'loading' | 'error' | 'ready'; items: NotificationSummary[] };
 
@@ -54,6 +54,11 @@ export function NotificationBell() {
     void apiFetch(`/api/v1/notifications/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ action: 'read' }) }).catch(() => undefined);
   };
 
+  const markAll = () => {
+    setState(s => ({ ...s, items: s.items.map(i => ({ ...i, read: true })) }));
+    void apiFetch('/api/v1/notifications', { method: 'PATCH', body: JSON.stringify({ action: 'read_all' }) }).catch(() => { void load(); });
+  };
+
   const unread = state.items.filter(i => !i.read).length;
   return (
     <View>
@@ -64,7 +69,7 @@ export function NotificationBell() {
         <SafeAreaView pointerEvents="box-none" style={{ paddingHorizontal: 18, paddingTop: 66, alignItems: RTL ? 'flex-end' : 'flex-start' }}>
           <View accessibilityLiveRegion="polite" accessibilityViewIsModal style={[{ width: 300, maxHeight: 420, backgroundColor: C.surface, borderRadius: 20, padding: 14, gap: 10, borderWidth: 1, borderColor: C.line }, shadow(16, 40, 0.18)]}>
             {state.status === 'loading' && state.items.length === 0 ? (
-              <View style={{ alignItems: 'center', gap: 8, paddingVertical: 18 }}><ActivityIndicator color={C.accent} /><T size={12.5} color={C.muted}>در حال دریافت…</T></View>
+              <View accessibilityLabel="در حال دریافت اعلان‌ها" style={{ gap: 10, paddingVertical: 6 }}>{[0, 1, 2].map(k => <View key={k} style={{ gap: 6 }}><Skel h={13} w="55%" r={7} /><Skel h={11} w="90%" r={6} /></View>)}</View>
             ) : state.status === 'error' ? (
               <View accessibilityRole="alert" style={{ alignItems: 'center', gap: 8, paddingVertical: 14 }}>
                 <T w="b" size={14} style={{ textAlign: 'center' }}>اعلان‌ها دریافت نشد</T>
@@ -78,6 +83,11 @@ export function NotificationBell() {
               </View>
             ) : (
               <ScrollView contentContainerStyle={{ gap: 4 }}>
+                {unread > 0 ? (
+                  <Pressable accessibilityRole="button" onPress={markAll} hitSlop={8} style={{ alignSelf: RTL ? 'flex-start' : 'flex-end', paddingHorizontal: 6, paddingVertical: 2 }}>
+                    <T w="b" size={12} color={C.goldText}>همه را خوانده‌شده کن</T>
+                  </Pressable>
+                ) : null}
                 {state.items.slice(0, 20).map(i => (
                   <Pressable key={i.id} accessibilityRole="button" onPress={() => {
                     markRead(i.id);
