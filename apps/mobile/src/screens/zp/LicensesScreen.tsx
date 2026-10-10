@@ -1,7 +1,8 @@
 // مجوزها و نمادها: same data as app/licenses (GET /api/v1/app/trust). A licence shows «فعال» only when its
-// official verification link is configured on the server; verification opens the issuer's own site.
-import { Linking, View } from 'react-native';
-import { supportApi, siteUrl, type AppLicense } from '../../api/app';
+// official verification link is configured on the server. Everything is shown inside the app: no outside links.
+import { View } from 'react-native';
+import { useRouter, type Href } from 'expo-router';
+import { supportApi, type AppLicense } from '../../api/app';
 import { useRemote } from '../../hooks/useRemote';
 import { C, card, fwd, right, row } from '../../zp/base';
 import { Tile } from '../../zp/brand';
@@ -19,13 +20,6 @@ function LicenseCard({ l }: { l: AppLicense }) {
         <T size={12} color={C.muted} style={{ lineHeight: 21, marginTop: 4 }}>{l.text}</T>
         <View style={{ flexDirection: row, alignItems: 'center', gap: 12, marginTop: 8 }}>
           <StatusPill label={l.status === 'active' ? 'فعال' : 'در حال اخذ'} tone={l.status === 'active' ? 'ok' : 'live'} />
-          {l.verifyUrl ? (
-            <Press accessibilityRole="link" accessibilityLabel={`استعلام ${l.title}`} hitSlop={8} onPress={() => { void Linking.openURL(l.verifyUrl!); }}
-              style={{ flexDirection: row, alignItems: 'center', gap: 2 }}>
-              <T w="b" size={11.5} color={C.accent}>استعلام</T>
-              <Icon name={fwd} size={14} color={C.accent} stroke={2.4} />
-            </Press>
-          ) : null}
         </View>
       </View>
     </View>
@@ -33,8 +27,9 @@ function LicenseCard({ l }: { l: AppLicense }) {
 }
 
 function LinkRow({ icon, label, path }: { icon: IconName; label: string; path: string }) {
+  const router = useRouter();
   return (
-    <Press accessibilityRole="link" accessibilityLabel={label} onPress={() => { void Linking.openURL(siteUrl(path)); }}
+    <Press accessibilityRole="link" accessibilityLabel={label} onPress={() => router.navigate(path as Href)}
       style={[{ flexDirection: row, alignItems: 'center', gap: 12, borderRadius: 16, paddingVertical: 8, paddingHorizontal: 10 }, card]}>
       <Tile icon={icon} size={36} />
       <T w="sb" size={14} style={{ flex: 1 }}>{label}</T>
@@ -58,8 +53,8 @@ export function LicensesScreen() {
         {t => <View style={{ gap: 10 }}>{t.licenses.map(l => <LicenseCard key={l.key} l={l} />)}</View>}
       </Async>
       <View style={{ gap: 8 }}>
-        <LinkRow icon="doc" label="قوانین و مقررات" path="/terms" />
-        <LinkRow icon="shieldS" label="حریم خصوصی" path="/privacy" />
+        <LinkRow icon="doc" label="قوانین و مقررات" path="/legal/terms" />
+        <LinkRow icon="shieldS" label="حریم خصوصی" path="/legal/privacy" />
       </View>
     </SubScreen>
   );

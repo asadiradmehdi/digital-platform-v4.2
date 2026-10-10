@@ -22,8 +22,8 @@ const DRAWER: DrawerLink[] = [
   { label: 'دعوت از دوستان', icon: 'gift', href: '/invite' },
   { label: 'پشتیبانی و تیکت', icon: 'chat', href: '/support' },
   { label: 'مجوزها و نمادها', icon: 'cert', href: '/licenses' },
-  { label: 'قوانین و مقررات', icon: 'doc', web: '/terms' },
-  { label: 'درباره‌ی زُحل پی', icon: 'info', web: '/about' },
+  { label: 'قوانین و مقررات', icon: 'doc', href: '/legal/terms' as Href },
+  { label: 'درباره‌ی زُحل پی', icon: 'info', href: '/legal/about' as Href },
 ];
 
 function Drawer({ open, onClose }: { open: boolean; onClose: () => void }) {

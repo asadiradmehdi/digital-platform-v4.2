@@ -57,6 +57,7 @@ export type AppTicketMessage = { id: string; mine: boolean; body: string; when: 
 export type AppTicketDetail = AppTicketCard & { order: { id: string; code: string } | null; createdWhen: string; messages: AppTicketMessage[] };
 export type AppSupport = { workspaceId: string | null; phones: AppSupportPhone[]; hours: string; categories: AppSupportCategory[]; tickets: AppTicketCard[] };
 export type AppLicense = { key: string; title: string; issuer: string; text: string; icon: IconName; status: 'active' | 'pending'; verifyUrl: string | null };
+export type AppLegalDoc = { key: 'terms' | 'privacy' | 'about'; title: string; summary: string; version?: string; updatedLabel?: string; sections: Array<{ title: string; lines: string[] }> };
 export type AppTrust = { licenses: AppLicense[]; phones: AppSupportPhone[]; hours: string };
 
 const V = '/api/v1';
@@ -72,6 +73,7 @@ export const supportApi = {
     apiFetch<{ ticket: { id: string; status: string } }>(`${V}/support/tickets/${encodeURIComponent(id)}/close`, { method: 'POST', body: JSON.stringify({}) }),
   /** Public: licences, support numbers and hours. */
   trust: () => apiFetch<AppTrust>(`${V}/app/trust`),
+  legal: (doc: AppLegalDoc['key']) => apiFetch<{ doc: AppLegalDoc }>(`${V}/app/legal/${doc}`),
 };
 
 export const SUBJECT_MAX = 160;
