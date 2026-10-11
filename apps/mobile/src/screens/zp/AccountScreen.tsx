@@ -79,7 +79,7 @@ export function AccountScreen() {
                 <View style={{ flexDirection: row, alignItems: 'center', gap: 12 }}>
                   <Tile icon="planet" size={52} />
                   <View style={{ flex: 1, alignItems: right, gap: 2 }}>
-                    <T w="brand" size={24} color={C.accentStrong} style={{ lineHeight: 36 }}>{t.name}</T>
+                    <T w="dx" size={28} color={C.accentStrong} style={{ lineHeight: 38 }}>{t.name}</T>
                     <T w="sb" tiny size={10.5} color="#6b4710" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>سطح وفاداری شما، بر اساس مجموع خریدهای پرداخت‌شده</T>
                   </View>
                   <View style={{ backgroundColor: C.accentStrong, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 4 }}>
@@ -100,7 +100,7 @@ export function AccountScreen() {
                   </View>
                   <View style={{ flexDirection: row, justifyContent: 'space-between', alignItems: 'center' }}>
                     <T w="b" tiny size={11} color="#4a2f06" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1 }}>{t.next ? `${formatQuantityWords(t.remainingToman)} تومان خرید دیگر تا ${t.next}` : 'بالاترین سطح'}</T>
-                    <T w="brand" tiny size={11} color="#4a2f06" style={{ lineHeight: 16 }}>{faNum(Math.round(t.progress * 100))}٪</T>
+                    <T w="b" tiny size={11} color="#4a2f06" style={{ lineHeight: 16 }}>{faNum(Math.round(t.progress * 100))}٪</T>
                   </View>
                 </View>
               </Enamel>

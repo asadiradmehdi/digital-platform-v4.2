@@ -37,7 +37,7 @@ export function InviteScreen() {
                   <T w="b" size={11.5} color={C.gold1}>دعوت از دوستان</T>
                 </View>
                 <T w="dx" size={20} color="#fff" style={{ lineHeight: 34 }}>
-                  از هر خرید دوستانت <T w="dx" size={28} color={C.gold1}>{pct(d.sharePercent)}</T> سهم توست
+                  از هر خرید دوستانت <T w="b" size={28} color={C.gold1}>{pct(d.sharePercent)}</T> سهم توست
                 </T>
                 <T size={12} color="rgba(255,255,255,0.82)" style={{ lineHeight: 22 }}>
                   دوستانت رو به زُحل پی بیار؛ هر بار که خرید کنن یا کیف پولشون رو شارژ کنن، سهمت مستقیم به کیف پولت میاد.

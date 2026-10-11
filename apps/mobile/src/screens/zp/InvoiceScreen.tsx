@@ -57,7 +57,7 @@ function Document({ inv }: { inv: AppInvoice }) {
         </View>
         <View style={{ alignItems: 'center', gap: 2 }}>
           <T size={10.5} color="rgba(255,255,255,0.68)">{receipt ? 'مبلغ واریزی' : 'مبلغ پرداخت‌شده'}</T>
-          <T w="dx" size={30} color="#fff" style={{ lineHeight: 42 }}>{formatTomanNumber(t.totalToman)} <T size={12} color={C.gold1}>تومان</T></T>
+          <T w="b" size={30} color="#fff" style={{ lineHeight: 42 }}>{formatTomanNumber(t.totalToman)} <T size={12} color={C.gold1}>تومان</T></T>
           <T size={10.5} color="rgba(255,255,255,0.72)" style={{ textAlign: 'center' }} numberOfLines={2}>{t.totalWords}</T>
         </View>
         <View style={{ flexDirection: row, gap: 6 }}>

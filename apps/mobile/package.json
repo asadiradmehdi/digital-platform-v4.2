@@ -14,6 +14,7 @@
     "@digital-platform/design-tokens": "workspace:*",
     "@expo-google-fonts/ibm-plex-sans-arabic": "0.4.2",
     "@expo-google-fonts/kufam": "0.4.1",
+    "@expo-google-fonts/lalezar": "0.4.1",
     "@expo-google-fonts/vazirmatn": "0.4.1",
     "expo": "~54.0.0",
     "expo-crypto": "~15.0.7",

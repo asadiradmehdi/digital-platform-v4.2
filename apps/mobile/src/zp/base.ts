@@ -14,7 +14,8 @@ export const F = {
   b: 'Vazirmatn_700Bold',
   /** Headings use the same family as the UI (one calm type system, same as the web). */
   d: 'Vazirmatn_700Bold',
-  dx: 'Vazirmatn_700Bold',
+  /** Display face (Lalezar): big headings and the loyalty level only, so the body stays calm and readable. */
+  dx: 'Lalezar_400Regular',
   /** Logotype face, for the «زُحل پی» wordmark only. Its digits are Arabic-style. */
   brand: 'Kufam_800ExtraBold',
   /** The empty-balance «صفر» keeps the face Ali approved earlier (IBM Plex Sans Arabic bold). */
