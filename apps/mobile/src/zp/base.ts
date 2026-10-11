@@ -17,6 +17,8 @@ export const F = {
   dx: 'Vazirmatn_700Bold',
   /** Logotype face, for the «زُحل پی» wordmark only. Its digits are Arabic-style. */
   brand: 'Kufam_800ExtraBold',
+  /** The empty-balance «صفر» keeps the face Ali approved earlier (IBM Plex Sans Arabic bold). */
+  zero: 'IBMPlexSansArabic_700Bold',
 } as const;
 
 /**

@@ -6,6 +6,7 @@ import { Vazirmatn_400Regular } from '@expo-google-fonts/vazirmatn/400Regular';
 import { Vazirmatn_500Medium } from '@expo-google-fonts/vazirmatn/500Medium';
 import { Vazirmatn_600SemiBold } from '@expo-google-fonts/vazirmatn/600SemiBold';
 import { Vazirmatn_700Bold } from '@expo-google-fonts/vazirmatn/700Bold';
+import { IBMPlexSansArabic_700Bold } from '@expo-google-fonts/ibm-plex-sans-arabic/700Bold';
 import { Kufam_700Bold } from '@expo-google-fonts/kufam/700Bold';
 import { Kufam_800ExtraBold } from '@expo-google-fonts/kufam/800ExtraBold';
 import { AuthProvider, useAuth } from '../src/auth/AuthProvider';
@@ -41,7 +42,7 @@ export default function Layout() {
   // Fonts are bundled with the app (no runtime CDN); screens wait for them so text never reflows.
   const [fontsReady] = useFonts({
     Vazirmatn_400Regular, Vazirmatn_500Medium, Vazirmatn_600SemiBold, Vazirmatn_700Bold,
-    Kufam_700Bold, Kufam_800ExtraBold,
+    Kufam_700Bold, Kufam_800ExtraBold, IBMPlexSansArabic_700Bold,
   });
   if (!fontsReady) return null;
   if (process.env.EXPO_PUBLIC_APP_VARIANT === 'admin') return <AdminShell />;

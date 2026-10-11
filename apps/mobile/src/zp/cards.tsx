@@ -94,7 +94,7 @@ export function WalletStrip({ balanceToman, tierName }: { balanceToman: number |
           {tierName && !narrow ? <View style={{ backgroundColor: C.gold1, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 1 }}><T w="dx" size={9.5} color={C.accentStrong} style={{ lineHeight: 15 }}>سطح {tierName}</T></View> : null}
         </View>
         <View style={{ flexDirection: row, alignItems: 'baseline', gap: 4 }}>
-          {balanceToman == null ? <T w="b" size={17.5} color="#fff">—</T> : <CountUp w={balanceToman === 0 ? 'brand' : 'b'} size={balanceToman === 0 ? 19 : 17.5} color="#fff" value={balanceToman} format={formatTomanNumber} />}
+          {balanceToman == null ? <T w="b" size={17.5} color="#fff">—</T> : <CountUp w={balanceToman === 0 ? 'zero' : 'b'} size={balanceToman === 0 ? 20 : 17.5} color="#fff" value={balanceToman} format={formatTomanNumber} />}
           <T size={10.5} color="rgba(255,255,255,0.65)">تومان</T>
         </View>
       </View>
@@ -118,7 +118,7 @@ export function WalletCard({ balanceToman, tierName, tail }: { balanceToman: num
       <View style={{ alignItems: right, gap: 4 }}>
         <T size={11} color="rgba(255,255,255,0.7)">موجودی کیف پول</T>
         <View style={{ flexDirection: row, alignItems: 'baseline', gap: 6 }}>
-          {balanceToman == null ? <T w="b" size={32} color="#fff" style={{ lineHeight: 42 }}>—</T> : <CountUp w={balanceToman === 0 ? 'brand' : 'b'} size={32} color="#fff" style={{ lineHeight: 42 }} value={balanceToman} format={formatTomanNumber} />}
+          {balanceToman == null ? <T w="b" size={32} color="#fff" style={{ lineHeight: 42 }}>—</T> : <CountUp w={balanceToman === 0 ? 'zero' : 'b'} size={32} color="#fff" style={{ lineHeight: 42 }} value={balanceToman} format={formatTomanNumber} />}
           <T size={12.5} color="rgba(255,255,255,0.7)">تومان</T>
         </View>
       </View>
