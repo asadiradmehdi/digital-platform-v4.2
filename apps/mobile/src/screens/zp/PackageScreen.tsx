@@ -145,9 +145,9 @@ function Picker({ service, workspaceId, walletToman, reload, initialQty }: { ini
         </View>
       ) : null}
 
-      <View {...pan.panHandlers} accessibilityLabel="بسته‌ها" style={few ? { height: 280, gap: 12 } : { flex: 1, minHeight: 300, maxHeight: 560, gap: 12 }}>
+      <View {...pan.panHandlers} accessibilityLabel="بسته‌ها" style={{ gap: 12 }}>
         {Array.from({ length: few ? 2 : 3 }, (_, r) => (
-          <View key={r} style={{ flex: 1, flexDirection: row, gap: 10 }}>
+          <View key={r} style={{ height: 104, flexDirection: row, gap: 10 }}>
             {Array.from({ length: few ? 2 : 3 }, (_, c) => {
               const q = list[r * (few ? 2 : 3) + c];
               if (q == null) return <View key={c} style={{ flex: 1 }} />;
@@ -158,6 +158,7 @@ function Picker({ service, workspaceId, walletToman, reload, initialQty }: { ini
                   accessibilityLabel={`${formatQuantityWords(q)} ${service.unit}، ${formatTomanNumber(packagePrice(q))} تومان`}
                   onPress={() => setQty(q)}
                   style={[{ flex: 1, borderRadius: 20, alignItems: 'center', justifyContent: 'center', gap: 2, paddingHorizontal: 4 }, card, on && [{ borderWidth: 2, borderColor: C.gold2 }, shadow(10, 22, 0.4, '#7a5218')]]}>
+                  <View style={{ position: 'absolute', top: 0, width: on ? 34 : 22, height: 3, borderBottomLeftRadius: 3, borderBottomRightRadius: 3, backgroundColor: on ? C.gold2 : '#D9CCB2' }} />
                   {on ? (
                     <View style={{ position: 'absolute', top: 8, ...atLeft(8), width: 18, height: 18, borderRadius: 9, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
                       <Fill kind="metal" />
