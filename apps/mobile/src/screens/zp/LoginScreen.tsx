@@ -234,7 +234,7 @@ export function LoginScreen() {
           <View style={{ alignItems: 'center', paddingTop: 30, paddingBottom: 50, paddingHorizontal: 22, gap: 10, overflow: 'hidden' }}>
             <Ornament w={520} h={300} cx={260} cy={330} rot={-14} color={C.gold1} alpha={0.55} />
             <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 14, alignSelf: 'stretch' }}>
-              <OrbitRing width={250} height={78} />
+              <OrbitRing width={236} height={66} tilt={-9} />
               <Wordmark size={36} light latin />
             </View>
             <T size={14} color="rgba(255,255,255,0.82)" style={{ textAlign: 'center' }}>همه‌ی خدمات دیجیتال، یک‌جا و مطمئن</T>

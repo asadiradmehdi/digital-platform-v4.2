@@ -80,7 +80,7 @@ export function AccountScreen() {
                   <Tile icon="planet" size={52} />
                   <View style={{ flex: 1, alignItems: right, gap: 2 }}>
                     <T w="dx" size={28} color={C.accentStrong} style={{ lineHeight: 38 }}>{t.name}</T>
-                    <T w="sb" tiny size={10.5} color="#6b4710" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>سطح وفاداری شما، بر اساس مجموع خریدهای پرداخت‌شده</T>
+                    <T w="sb" tiny size={10.5} color="#6b4710" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>بر اساس مجموع خرید پرداخت‌شده شما</T>
                   </View>
                   <View style={{ backgroundColor: C.accentStrong, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 4 }}>
                     <T w="b" tiny size={10.5} color={C.gold1} style={{ lineHeight: 16 }}>{faNum(t.level)} از {faNum(t.levels)}</T>

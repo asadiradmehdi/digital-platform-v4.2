@@ -227,8 +227,11 @@ export function StatusPill({ label, tone }: { label: string; tone: 'live' | 'ok'
 export function EmptyState({ icon, title, text, action }: { icon: IconName; title: string; text: string; action?: { label: string; onPress: () => void } }) {
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 24 }}>
-      <Tile icon={icon} size={64} />
-      <T w="dx" size={18} style={{ textAlign: 'center', marginTop: 4 }}>{title}</T>
+      <View style={{ width: 150, height: 90, alignItems: 'center', justifyContent: 'center' }}>
+        <OrbitRing width={146} height={44} tilt={-12} />
+        <Tile icon={icon} size={64} />
+      </View>
+      <T w="dx" size={18} style={{ textAlign: 'center', marginTop: 0 }}>{title}</T>
       <T size={13} color={C.muted} style={{ textAlign: 'center', lineHeight: 25, maxWidth: 300 }}>{text}</T>
       {action ? <Cta label={action.label} onPress={action.onPress} /> : null}
     </View>

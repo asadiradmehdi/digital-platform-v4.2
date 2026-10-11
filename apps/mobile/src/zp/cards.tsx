@@ -36,8 +36,9 @@ export function CategoryGrid({ categories }: { categories: AppCategory[] }) {
               <Press accessibilityRole="menuitem" accessibilityLabel={c.live ? `${c.name}، ${c.hint ?? ''}` : `${c.name}، به‌زودی`}
                 onPress={() => router.navigate({ pathname: '/services/[category]', params: { category: c.key } })}
                 style={[{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 4, borderRadius: 20, opacity: c.live ? 1 : 0.82 }, card, { backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#D9CCB2', shadowOpacity: 0.16 }]}>
+                <View pointerEvents="none" style={{ position: 'absolute', top: -1.5, width: 26, height: 3, borderBottomLeftRadius: 3, borderBottomRightRadius: 3, backgroundColor: c.live ? C.gold2 : C.line }} />
                 <Tile icon={c.icon} size={tile} badge={c.live ? undefined : 'به‌زودی'} />
-                <T w="b" size={12} color={C.ink} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9} style={{ textAlign: 'center', alignSelf: 'stretch', lineHeight: 17 }}>{shortName(c.name)}</T>
+                <T w="b" size={11.5} color={C.ink} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ textAlign: 'center', alignSelf: 'stretch', lineHeight: 17 }}>{shortName(c.name)}</T>
                 {c.hint ? <T size={11} color={C.muted} numberOfLines={1} style={{ textAlign: 'center', alignSelf: 'stretch', marginTop: -3, lineHeight: 16 }}>{shortHint(c.hint)}</T> : null}
               </Press>
             </Rise>

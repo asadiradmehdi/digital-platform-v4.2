@@ -13,22 +13,28 @@ import { Async, EmptyState, Press, Rise, Star, T } from '../../zp/ui';
 
 function ServiceRow({ s, catalogName }: { s: AppService; catalogName: string }) {
   const router = useRouter();
+  // A service with variants shows its plain name and «از» price, and opens the variant step.
+  const multi = s.slug.includes('--');
+  const title = multi ? (s.short.replace(` ${s.variant.label}`, '').trim() || s.short) : s.name;
+  const price = formatTomanNumber(s.unitPriceToman * s.per);
   return (
-    <Press accessibilityRole="link" accessibilityLabel={`${s.name}، ${catalogName}، ${s.perLabel} ${formatTomanNumber(s.unitPriceToman * s.per)} تومان`}
-      onPress={() => router.navigate({ pathname: '/order/[service]', params: { service: s.slug } })}
+    <Press accessibilityRole="link" accessibilityLabel={`${title}، ${catalogName}، ${multi ? 'از ' : ''}${s.perLabel} ${price} تومان`}
+      onPress={() => (multi ? router.navigate({ pathname: '/variants/[base]', params: { base: s.base } }) : router.navigate({ pathname: '/order/[service]', params: { service: s.slug } }))}
       style={[{ flexDirection: row, alignItems: 'center', gap: 12, borderRadius: 16, paddingVertical: 8, paddingHorizontal: 10 }, card, { shadowOpacity: 0.06 }]}>
       {s.brand ? <BrandTile brand={s.brand} size={38} /> : <Tile icon={s.icon} size={38} />}
       <View style={{ flex: 1, gap: 1 }}>
-        <T w="b" size={13.5} numberOfLines={1}>{s.name}</T>
+        <T w="b" size={13.5} numberOfLines={1}>{title}</T>
         <T size={11} color={C.muted} numberOfLines={1}>{catalogName} | {s.perLabel}</T>
       </View>
       <View style={{ flexDirection: row, alignItems: 'baseline', gap: 3, flexShrink: 0 }}>
-        <T w="b" size={13} numberOfLines={1}>{formatTomanNumber(s.unitPriceToman * s.per)}</T>
+        {multi ? <T size={10.5} color={C.muted}>از</T> : null}
+        <T w="b" size={13} numberOfLines={1}>{price}</T>
         <T w="sb" size={10.5} color={C.goldText} numberOfLines={1}>تومان</T>
       </View>
     </Press>
   );
 }
+
 
 /** Search across every service; with nothing typed it lists the best sellers first. */
 export function SearchScreen() {

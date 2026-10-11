@@ -74,7 +74,7 @@ function Form({ s, initialCategory }: { s: AppSupport; initialCategory: string |
               onPress={() => { setCategory(c.key); setError(null); }}
               style={[{ width: '48.6%', height: 58, flexDirection: row, alignItems: 'center', gap: 8, borderRadius: 16, paddingHorizontal: 10 }, card, { backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#D9CCB2' }, on && { borderColor: C.gold2, borderWidth: 2, backgroundColor: '#FFF8E6' }]}>
               <Tile icon={c.icon} size={30} />
-              <T w={on ? 'b' : 'sb'} size={12.8} color={on ? C.ink : C.ink2} style={{ flex: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{c.label}</T>
+              <T w={on ? 'b' : 'sb'} size={12} color={on ? C.ink : C.ink2} style={{ flex: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{c.label}</T>
             </Press>
           );
         })}
