@@ -9,7 +9,7 @@ import { Vazirmatn_700Bold } from '@expo-google-fonts/vazirmatn/700Bold';
 import { Kufam_700Bold } from '@expo-google-fonts/kufam/700Bold';
 import { Kufam_800ExtraBold } from '@expo-google-fonts/kufam/800ExtraBold';
 import { AuthProvider, useAuth } from '../src/auth/AuthProvider';
-import { C } from '../src/zp/base';
+import { C, RTL } from '../src/zp/base';
 import { AdminShell } from '../src/AdminShell';
 import { prefetchRemote } from '../src/hooks/useRemote';
 import { appApi, supportApi } from '../src/api/app';
@@ -49,7 +49,7 @@ export default function Layout() {
     <AuthProvider>
       <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
       <SessionGate />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg }, animation: 'fade', animationDuration: 140 }}>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg }, animation: RTL ? 'slide_from_left' : 'slide_from_right', animationDuration: 230 }}>
         <Stack.Screen name="login" />
         <Stack.Screen name="auth/google" />
         <Stack.Screen name="(tabs)" />

@@ -87,9 +87,9 @@ function Body({ d, notify }: { d: AppSupport; notify: (m: string) => void }) {
       <View style={{ flexDirection: row, flexWrap: 'wrap', gap: 8 }}>
         {d.categories.map(c => (
           <Press key={c.key} accessibilityRole="button" accessibilityLabel={`تیکت درباره‌ی ${c.label}`} onPress={() => newTicket(c.key)}
-            style={[{ width: '31.5%', alignItems: 'center', gap: 6, borderRadius: 18, paddingTop: 10, paddingBottom: 9, paddingHorizontal: 4 }, card]}>
+            style={[{ width: '31.5%', height: 100, alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 18, paddingHorizontal: 4 }, card, { backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#D9CCB2', shadowOpacity: 0.14 }]}>
             <Tile icon={c.icon} size={38} />
-            <T w="b" size={11.8} color={C.ink2} style={{ textAlign: 'center', lineHeight: 17 }}>{c.label}</T>
+            <T w="b" size={12} color={C.ink2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ textAlign: 'center', alignSelf: 'stretch', lineHeight: 18 }}>{c.label}</T>
           </Press>
         ))}
       </View>

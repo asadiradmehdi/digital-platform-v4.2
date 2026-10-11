@@ -8,10 +8,10 @@ import { C, G, card, right, row } from './base';
 import { Enamel, Fill, Ornament, Tile } from './brand';
 import { Cta, CountUp, Press, Progress, Rise, Star, StatusPill, T } from './ui';
 
-/** Long category names get a short card label so every card shows the same type size. */
-const shortName = (n: string) => (n.includes('هوش مصنوعی') ? 'هوش مصنوعی' : n);
-/** Hints end in «و…» on the server; the card shows only the first two examples so nothing is cut mid-word. */
-const shortHint = (h: string) => h.replace(/\s*و\s*(…|\.\.\.)\s*$/, '').split(/[،,]|\s+و\s+/).slice(0, 2).map(x => x.trim()).filter(Boolean).join('، ');
+/** Card label: the AI category reads «اشتراک هوش مصنوعی» like the rest of the app. */
+const shortName = (n: string) => (n.includes('هوش مصنوعی') ? 'اشتراک هوش مصنوعی' : n);
+/** Hints show the first two examples and end in «و…», as they always did, so nothing is cut mid-word. */
+const shortHint = (h: string) => `${h.replace(/\s*و\s*(…|\.\.\.)\s*$/, '').split(/[،,]|\s+و\s+/).slice(0, 2).map(x => x.trim()).filter(Boolean).join('، ')} و…`;
 
 /** Service grid, three per row in priority order. Cards keep the web's compact size and type; the rows spread evenly over the height the screen leaves, so the page never scrolls. */
 export function CategoryGrid({ categories }: { categories: AppCategory[] }) {
@@ -20,23 +20,24 @@ export function CategoryGrid({ categories }: { categories: AppCategory[] }) {
   const [h, setH] = useState(0);
   const rows = Math.max(1, Math.ceil(categories.length / 3));
   const gap = 12;
-  const rowGap = 14; // breathing room between card rows: the icon shrinks before the rows are allowed to touch
-  // Same rule as the web: clamp(44px, min(13vw, 6.4vh), 56px); shrinks only when the space left is really short.
-  let tile = Math.round(Math.max(44, Math.min(width * 0.13, winH * 0.064, 56)));
-  const chrome = 12 * 2 + 8 + 17 + 13; // padding, gap, label line, hint line (hint sits 3px closer)
-  if (h > 0 && rows * (tile + chrome) + (rows - 1) * rowGap > h) tile = Math.max(30, Math.floor((h - (rows - 1) * rowGap) / rows - chrome));
+  const rowGap = 14; // every row gets an equal share of the height, so the gap between cards is always exactly this
+  const chrome = 12 * 2 + 8 + 17 + 13; // padding, gap, label line, hint line
+  const rowH = h > 0 ? (h - (rows - 1) * rowGap - 8) / rows : 0;
+  // Every card is the same size: the height the screen allows, capped so a roomy page does not stretch them.
+  const cardH = Math.round(rowH > 0 ? Math.max(92, Math.min(142, rowH)) : 120);
+  const tile = Math.round(Math.max(30, Math.min(56, width * 0.13, cardH - chrome)));
   const lines = Array.from({ length: rows }, (_, r) => categories.slice(r * 3, r * 3 + 3));
   return (
-    <View accessibilityRole="menu" accessibilityLabel="دسته‌های خدمات" onLayout={e => setH(Math.floor(e.nativeEvent.layout.height))} style={{ flex: 1, justifyContent: 'flex-start', gap: rowGap, paddingVertical: 4 }}>
+    <View accessibilityRole="menu" accessibilityLabel="دسته‌های خدمات" onLayout={e => setH(Math.floor(e.nativeEvent.layout.height))} style={{ flex: 1, gap: rowGap, paddingVertical: 4 }}>
       {lines.map((line, r) => (
-        <View key={r} style={{ flexDirection: row, gap }}>
+        <View key={r} style={{ height: cardH, flexDirection: row, gap }}>
           {line.map((c, i) => (
             <Rise key={c.key} delay={80 + (r * 3 + i) * 45} style={{ flex: 1 }}>
               <Press accessibilityRole="menuitem" accessibilityLabel={c.live ? `${c.name}، ${c.hint ?? ''}` : `${c.name}، به‌زودی`}
                 onPress={() => router.navigate({ pathname: '/services/[category]', params: { category: c.key } })}
-                style={[{ alignItems: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 4, borderRadius: 18, opacity: c.live ? 1 : 0.82 }, card, { shadowOpacity: 0.13, borderColor: '#D9CCB2' }]}>
+                style={[{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 4, borderRadius: 20, opacity: c.live ? 1 : 0.82 }, card, { backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#D9CCB2', shadowOpacity: 0.16 }]}>
                 <Tile icon={c.icon} size={tile} badge={c.live ? undefined : 'به‌زودی'} />
-                <T w="b" size={12.5} color={C.ink} numberOfLines={1} style={{ textAlign: 'center', alignSelf: 'stretch', lineHeight: 17 }}>{shortName(c.name)}</T>
+                <T w="b" size={12} color={C.ink} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9} style={{ textAlign: 'center', alignSelf: 'stretch', lineHeight: 17 }}>{shortName(c.name)}</T>
                 {c.hint ? <T size={11} color={C.muted} numberOfLines={1} style={{ textAlign: 'center', alignSelf: 'stretch', marginTop: -3, lineHeight: 16 }}>{shortHint(c.hint)}</T> : null}
               </Press>
             </Rise>

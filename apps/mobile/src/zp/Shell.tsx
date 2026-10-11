@@ -1,7 +1,7 @@
 // App chrome for the Kayvan screens: top bar (wordmark, bell, menu) with the side drawer,
 // sub-page bar (back + title), and the four-tab bottom bar.
 import { useEffect, useState, type PropsWithChildren, type ReactNode } from 'react';
-import { Animated, Dimensions, Easing, Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, Dimensions, Easing, KeyboardAvoidingView, Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, F, RTL, atRight, back, fwd, leftRadii, row, right, shadow } from './base';
@@ -89,8 +89,8 @@ function Drawer({ open, onClose }: { open: boolean; onClose: () => void }) {
 /** Screen body. `fixed` pages are a plain flex column that shares the leftover height, so they never scroll. Content glides in on mount. */
 function Body({ fixed, children }: PropsWithChildren<{ fixed?: boolean }>) {
   const [v] = useState(() => new Animated.Value(0));
-  useEffect(() => { Animated.timing(v, { toValue: 1, duration: 340, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(); }, [v]);
-  const glide = { opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] };
+  useEffect(() => { Animated.timing(v, { toValue: 1, duration: 230, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(); }, [v]);
+  const glide = { opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }, { scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.985, 1] }) }] };
   if (fixed) return <Animated.View style={[{ flex: 1, paddingHorizontal: 18, paddingTop: 4, paddingBottom: 14, gap: 14 }, glide]}>{children}</Animated.View>;
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 18, paddingTop: 4, paddingBottom: 14, gap: 14 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -112,7 +112,7 @@ export function AppScreen({ children, overlay, fixed }: PropsWithChildren<{ over
         <NotificationBell />
         <IconBtn icon="menu" label="منو" onPress={() => setDrawer(true)} />
       </View>
-      <Body fixed={fixed}>{children}</Body>
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}><Body fixed={fixed}>{children}</Body></KeyboardAvoidingView>
       {overlay}
       <Drawer open={drawer} onClose={() => setDrawer(false)} />
       <FirstRunTour />
@@ -134,7 +134,7 @@ export function SubScreen({ title, children, footer, overlay, fixed }: PropsWith
         </View>
         <View style={{ width: 42 }} />
       </View>
-      <Body fixed={fixed}>{children}</Body>
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}><Body fixed={fixed}>{children}</Body></KeyboardAvoidingView>
       {footer ? <View style={{ paddingHorizontal: 18, paddingBottom: 10 }}>{footer}</View> : null}
       {overlay}
     </SafeAreaView>

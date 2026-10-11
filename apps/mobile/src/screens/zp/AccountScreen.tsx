@@ -9,6 +9,7 @@ import { C, F, card, faNum, fwd, right, row, tRight, shadow } from '../../zp/bas
 import { Enamel, Fill, Ornament, Tile, type TileVariant } from '../../zp/brand';
 import { Icon, type IconName } from '../../zp/Icon';
 import { AppScreen } from '../../zp/Shell';
+import { RateCard } from '../../zp/RateCard';
 import { Async, ErrorBox, IconBtn, Press, Progress, T } from '../../zp/ui';
 
 function MenuRow({ icon, label, note, tag, onPress, variant, busy }: { icon: IconName; label: string; note?: string; tag?: boolean; onPress: () => void; variant?: TileVariant; busy?: boolean }) {
@@ -116,6 +117,8 @@ export function AccountScreen() {
                   </View>
                 ))}
               </View>
+
+              <RateCard />
 
               <View style={{ gap: 8 }}>
                 {rows.map(r => <MenuRow key={r.label} icon={r.icon} label={r.label} note={r.note} tag={r.tag} onPress={() => router.navigate(r.href)} />)}

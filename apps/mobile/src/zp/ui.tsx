@@ -2,11 +2,11 @@
 // bottom sheet, toast, progress track and the empty / error / loading states.
 import { useEffect, useRef, useState, type PropsWithChildren, type ReactNode } from 'react';
 import {
-  ActivityIndicator, Animated, Easing, Modal, Platform, Pressable, StyleSheet, Text, Vibration, View,
+  ActivityIndicator, Animated, Easing, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, Vibration, View,
   type StyleProp, type TextProps, type TextStyle, type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Ellipse, Path } from 'react-native-svg';
 import { atRight, C, F, G, row, right, shadow, tRight, card } from './base';
 import { Fill, Tile } from './brand';
 import { Icon, type IconName } from './Icon';
@@ -55,6 +55,27 @@ export function Rise({ delay = 0, distance = 10, style, children }: PropsWithChi
     <Animated.View style={[style, { opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [distance, 0] }) }] }]}>
       {children}
     </Animated.View>
+  );
+}
+
+/** Brand signature: a thin Saturn ring with one gold spark that circles it forever (native-driven, nearly free). */
+export function OrbitRing({ width = 230, height = 74, tilt = -14 }: { width?: number; height?: number; tilt?: number }) {
+  const [t] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    const loop = Animated.loop(Animated.timing(t, { toValue: 1, duration: 7000, easing: Easing.linear, useNativeDriver: true }));
+    loop.start();
+    return () => loop.stop();
+  }, [t]);
+  const pts = Array.from({ length: 13 }, (_, i) => i / 12);
+  const rx = width / 2, ry = height / 2;
+  const x = t.interpolate({ inputRange: pts, outputRange: pts.map(p => rx * Math.cos(p * Math.PI * 2)) });
+  const y = t.interpolate({ inputRange: pts, outputRange: pts.map(p => ry * Math.sin(p * Math.PI * 2)) });
+  return (
+    <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
+      style={{ position: 'absolute', width, height, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: `${tilt}deg` }] }}>
+      <Svg width={width + 4} height={height + 4} style={{ position: 'absolute' }}><Ellipse cx={(width + 4) / 2} cy={(height + 4) / 2} rx={rx} ry={ry} fill="none" stroke="rgba(233,196,106,0.5)" strokeWidth={1.2} /></Svg>
+      <Animated.View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.gold1, shadowColor: C.gold1, shadowOpacity: 0.9, shadowRadius: 6, elevation: 4, transform: [{ translateX: x }, { translateY: y }] }} />
+    </View>
   );
 }
 
@@ -259,7 +280,8 @@ export function Sheet({ open, onClose, title, subtitle, icon, children, dismissa
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={open} transparent animationType="slide" onRequestClose={() => dismissable && onClose()} statusBarTranslucent>
-      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+      {/* The keyboard lifts the whole sheet (padding on both platforms: a Modal window is not resized by Android) and the body scrolls, so a focused field is never hidden. */}
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1, justifyContent: 'flex-end' }}>
         <Pressable accessibilityLabel="بستن" style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(6,12,36,0.5)' }]} onPress={() => dismissable && onClose()} />
         <View accessibilityViewIsModal style={{ backgroundColor: C.surface, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingTop: 10, paddingHorizontal: 18, paddingBottom: insets.bottom + 18, gap: 14, maxHeight: '88%' }}>
           <View style={{ alignSelf: 'center', width: 40, height: 5, borderRadius: 5, backgroundColor: C.line }} />
@@ -271,9 +293,11 @@ export function Sheet({ open, onClose, title, subtitle, icon, children, dismissa
             </View>
             {dismissable ? <IconBtn icon="close" label="بستن" onPress={onClose} size={38} /> : null}
           </View>
-          {children}
+          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={{ flexShrink: 1 }} contentContainerStyle={{ gap: 14 }}>
+            {children}
+          </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

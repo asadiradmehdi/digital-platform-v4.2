@@ -39,9 +39,9 @@ function ServiceGrid({ services }: { services: AppService[] }) {
         return (
         <Press key={g.base} accessibilityRole="link" accessibilityLabel={`${g.name}، ${multi ? `${g.members.length} سرویس، از ` : ''}${s.perLabel} ${formatTomanNumber(g.fromPrice)} تومان`}
           onPress={() => (multi ? router.navigate({ pathname: '/variants/[base]', params: { base: g.base } }) : router.navigate({ pathname: '/order/[service]', params: { service: s.slug } }))}
-          style={[{ width: w, alignItems: 'center', gap: 2, borderRadius: 20, paddingTop: compact ? 9 : 12, paddingBottom: compact ? 8 : 10, paddingHorizontal: 6 }, card]}>
+          style={[{ width: w, height: compact ? 132 : 146, alignItems: 'center', justifyContent: 'center', gap: 2, borderRadius: 20, paddingHorizontal: 6 }, card, { backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#D9CCB2', shadowOpacity: 0.14 }]}>
           <View style={{ marginBottom: compact ? 3 : 5 }}>{s.brand ? <BrandTile brand={s.brand} size={tile} /> : <Tile icon={s.icon} size={tile} />}</View>
-          <T w="b" size={compact ? 12 : 12.8} numberOfLines={compact ? 1 : 2} style={{ textAlign: 'center', lineHeight: 19, minHeight: undefined }}>{g.name}</T>
+          <T w="b" size={compact ? 12 : 12.8} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={{ textAlign: 'center', alignSelf: 'stretch', lineHeight: 19 }}>{g.name}</T>
           {multi
             ? <View style={{ flexDirection: row, alignItems: 'center', gap: 2 }}><LiveDot size={6} /><T w="sb" size={10.5} color={C.turquoiseInk} numberOfLines={1}>{faNum(g.members.length)} سرویس</T></View>
             : <T size={10} color={C.muted} numberOfLines={1} style={{ textAlign: 'center' }}>{s.perLabel}</T>}
@@ -72,11 +72,16 @@ export function CategoryScreen() {
             <>
               <View style={{ flexDirection: row, alignItems: 'center', gap: 14 }}>
                 <Tile icon={cat.icon} size={64} />
-                <View style={{ flex: 1, alignItems: right }}>
-                  <T w="dx" size={20.5} numberOfLines={1} adjustsFontSizeToFit style={{ lineHeight: 30 }}>{cat.title ?? `خدمات ${cat.name}`}</T>
-                  {items.length
-                    ? <T size={12} color={C.muted} numberOfLines={2}><LiveDot size={6} /> <T w="b" size={12} color={C.turquoiseInk}>{faNum(items.length)} سرویس فعال</T> | {cat.note ?? 'قیمت شفاف، پرداخت از کیف پول'}</T>
-                    : <T size={12} color={C.muted}>به‌زودی در زُحل پی</T>}
+                <View style={{ flex: 1, alignItems: right, gap: 3 }}>
+                  <T w="dx" size={21} numberOfLines={1} adjustsFontSizeToFit style={{ lineHeight: 32 }}>{cat.title ?? `خدمات ${cat.name}`}</T>
+                  {items.length ? (
+                    <>
+                      <View style={{ flexDirection: row, alignItems: 'center', gap: 3, backgroundColor: C.turquoiseSoft, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 1 }}>
+                        <LiveDot size={6} /><T w="b" size={12} color={C.turquoiseInk}>{faNum(items.length)} سرویس فعال</T>
+                      </View>
+                      <T w="sb" size={12} color={C.muted} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{cat.note ?? 'قیمت شفاف، پرداخت از کیف پول'}</T>
+                    </>
+                  ) : <T size={12} color={C.muted}>به‌زودی در زُحل پی</T>}
                 </View>
               </View>
               {items.length ? <ServiceGrid services={items} /> : (

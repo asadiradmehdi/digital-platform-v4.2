@@ -41,8 +41,8 @@ export function TourModal({ open, onClose }: { open: boolean; onClose: () => voi
         <Enamel radius={28} style={[{ width: '100%', maxWidth: 380, padding: 22, gap: 14, alignItems: 'center' }, shadow(14, 40, 0.35, '#000')]}>
           <Ornament w={380} h={220} cx={70} cy={230} rot={-14} color={C.gold1} alpha={0.45} />
           <Tile icon={step.icon} size={64} variant="gold" />
-          <T w="dx" size={19} color="#fff" style={{ textAlign: 'center', lineHeight: 30 }} accessibilityRole="header">{step.title}</T>
-          <T size={13} color="rgba(255,255,255,0.8)" style={{ textAlign: 'center', lineHeight: 24 }}>{step.text}</T>
+          <T w="dx" size={19} color="#fff" numberOfLines={1} adjustsFontSizeToFit style={{ textAlign: 'center', lineHeight: 30, alignSelf: 'stretch' }} accessibilityRole="header">{step.title}</T>
+          <View style={{ minHeight: 100, justifyContent: 'flex-start' }}><T size={13} color="rgba(255,255,255,0.8)" style={{ textAlign: 'center', lineHeight: 24 }}>{step.text}</T></View>
           <View style={{ flexDirection: row, gap: 6 }} accessibilityLabel={`مرحله ${i + 1} از ${STEPS.length}`}>
             {STEPS.map((_, k) => <View key={k} style={{ width: k === i ? 20 : 7, height: 7, borderRadius: 4, backgroundColor: k === i ? C.gold1 : 'rgba(255,255,255,0.28)' }} />)}
           </View>

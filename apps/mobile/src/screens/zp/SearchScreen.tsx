@@ -11,7 +11,7 @@ import { bestSellers, searchServices } from '../../zp/search';
 import { SubScreen } from '../../zp/Shell';
 import { Async, EmptyState, Press, Rise, Star, T } from '../../zp/ui';
 
-function ServiceRow({ s, catalogName, hot }: { s: AppService; catalogName: string; hot?: boolean }) {
+function ServiceRow({ s, catalogName }: { s: AppService; catalogName: string }) {
   const router = useRouter();
   return (
     <Press accessibilityRole="link" accessibilityLabel={`${s.name}، ${catalogName}، ${s.perLabel} ${formatTomanNumber(s.unitPriceToman * s.per)} تومان`}
@@ -20,11 +20,11 @@ function ServiceRow({ s, catalogName, hot }: { s: AppService; catalogName: strin
       {s.brand ? <BrandTile brand={s.brand} size={38} /> : <Tile icon={s.icon} size={38} />}
       <View style={{ flex: 1, gap: 1 }}>
         <T w="b" size={13.5} numberOfLines={1}>{s.name}</T>
-        <T size={11} color={C.muted} numberOfLines={1}>{catalogName} · {s.perLabel}</T>
+        <T size={11} color={C.muted} numberOfLines={1}>{catalogName} | {s.perLabel}</T>
       </View>
-      <View style={{ alignItems: 'flex-end' }}>
-        <T w="b" size={13}>{formatTomanNumber(s.unitPriceToman * s.per)}</T>
-        <T w="sb" size={9.5} color={C.goldText}>{hot ? 'پرفروش' : 'تومان'}</T>
+      <View style={{ flexDirection: row, alignItems: 'baseline', gap: 3, flexShrink: 0 }}>
+        <T w="b" size={13} numberOfLines={1}>{formatTomanNumber(s.unitPriceToman * s.per)}</T>
+        <T w="sb" size={10.5} color={C.goldText} numberOfLines={1}>تومان</T>
       </View>
     </Press>
   );
@@ -57,7 +57,7 @@ export function SearchScreen() {
                 <Star size={11} />
                 <T w="b" size={12} color={C.goldText}>{typed ? 'نتیجه‌ها' : 'پرفروش‌ترین‌ها'}</T>
               </View>
-              {list.map((s, i) => <Rise key={s.slug} delay={Math.min(i, 8) * 45}><ServiceRow s={s} catalogName={name(s.category)} hot={!typed && i < 3} /></Rise>)}
+              {list.map((s, i) => <Rise key={s.slug} delay={Math.min(i, 8) * 45}><ServiceRow s={s} catalogName={name(s.category)} /></Rise>)}
             </View>
           );
         }}

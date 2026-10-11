@@ -2,7 +2,7 @@
 // number opens a new account), Google second (only when the server has it configured), email + password
 // third, and the second-factor step when the account has TOTP enabled.
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Linking, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -16,7 +16,7 @@ import { BrandMark, Fill, Ornament, Wordmark } from '../../zp/brand';
 import { Icon } from '../../zp/Icon';
 import { CodeBoxes } from '../../zp/CodeBoxes';
 import { Field } from '../../zp/Field';
-import { Cta, ErrorBox, Press, T } from '../../zp/ui';
+import { Cta, ErrorBox, OrbitRing, Press, T } from '../../zp/ui';
 
 type Step = 'phone' | 'code' | 'password' | 'register' | 'mfa' | 'forgot' | 'reset';
 
@@ -229,11 +229,14 @@ export function LoginScreen() {
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: C.accentStrong }}>
       <Fill kind="enamel" />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
           <View style={{ alignItems: 'center', paddingTop: 30, paddingBottom: 50, paddingHorizontal: 22, gap: 10, overflow: 'hidden' }}>
             <Ornament w={520} h={300} cx={260} cy={330} rot={-14} color={C.gold1} alpha={0.55} />
-            <Wordmark size={34} light latin />
+            <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 14, alignSelf: 'stretch' }}>
+              <OrbitRing width={250} height={78} />
+              <Wordmark size={36} light latin />
+            </View>
             <T size={14} color="rgba(255,255,255,0.82)" style={{ textAlign: 'center' }}>همه‌ی خدمات دیجیتال، یک‌جا و مطمئن</T>
             <View style={{ flexDirection: row, flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginTop: 4 }}>
               {([['shieldS', 'پرداخت امن'], ['clock', 'تحویل سریع'], ['chat', 'پشتیبانی واقعی']] as const).map(([icon, label]) => (
