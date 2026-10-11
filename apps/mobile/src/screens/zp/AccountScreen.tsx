@@ -10,7 +10,7 @@ import { Enamel, Fill, Ornament, Tile, type TileVariant } from '../../zp/brand';
 import { Icon, type IconName } from '../../zp/Icon';
 import { AppScreen } from '../../zp/Shell';
 import { RateCard } from '../../zp/RateCard';
-import { Async, ErrorBox, IconBtn, Press, Progress, T } from '../../zp/ui';
+import { Async, ErrorBox, IconBtn, Press, Progress, Signature, T } from '../../zp/ui';
 
 function MenuRow({ icon, label, note, tag, onPress, variant, busy }: { icon: IconName; label: string; note?: string; tag?: boolean; onPress: () => void; variant?: TileVariant; busy?: boolean }) {
   return (
@@ -125,6 +125,7 @@ export function AccountScreen() {
                 <MenuRow icon="out" label={leaving ? 'در حال خروج…' : 'خروج از حساب'} variant="danger" busy={leaving} onPress={logout} />
                 {error ? <ErrorBox text={error} /> : null}
               </View>
+              <Signature />
             </>
           );
         }}

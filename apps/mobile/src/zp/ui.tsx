@@ -79,6 +79,16 @@ export function OrbitRing({ width = 230, height = 74, tilt = -14 }: { width?: nu
   );
 }
 
+/** Quiet brand signature for the foot of a long page: a hairline Saturn ring and the wordmark. */
+export function Signature() {
+  return (
+    <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ alignItems: 'center', justifyContent: 'center', height: 64, marginTop: 6 }}>
+      <OrbitRing width={110} height={34} />
+      <T w="dx" size={13} color={C.goldText} style={{ textAlign: 'center' }}>زُحل پی</T>
+    </View>
+  );
+}
+
 /** Small blinking green lamp (brand turquoise) marking a service as live; native-driven, loops softly. */
 export function LiveDot({ size = 7 }: { size?: number }) {
   const [v] = useState(() => new Animated.Value(0));
@@ -257,6 +267,7 @@ export function Skel({ h = 16, w = '100%', r = 12, style }: { h?: number; w?: nu
 export function Loading({ label = 'در حال آماده‌سازی' }: { label?: string }) {
   return (
     <View accessible accessibilityLabel={label} accessibilityRole="progressbar" style={{ gap: 14 }}>
+      <View style={{ height: 34, alignItems: 'center', justifyContent: 'center' }}><OrbitRing width={96} height={30} tilt={-14} /></View>
       <Skel h={104} r={22} />
       <Skel h={20} w="42%" />
       {[0, 1, 2].map(i => <Skel key={i} h={72} r={18} />)}
