@@ -70,7 +70,10 @@ async function MemberCategory({ catKey, workspaceId }: { catKey: string; workspa
           <Tile icon={cat.icon} />
           <div>
             <h1>{cat.title ?? `خدمات ${cat.name}`}</h1>
-            <p>{items.length ? <><b>{new Intl.NumberFormat('fa-IR').format(items.length)} سرویس فعال</b> | {cat.note ?? 'قیمت شفاف، پرداخت از کیف پول'}</> : 'به‌زودی در زُحل پی'}</p>
+            {items.length ? <>
+              <p className="zp-hero-live"><i className="zp-live" aria-hidden />{new Intl.NumberFormat('fa-IR').format(items.length)} سرویس فعال</p>
+              <p>{cat.note ?? 'قیمت شفاف، پرداخت از کیف پول'}</p>
+            </> : <p>به‌زودی در زُحل پی</p>}
           </div>
         </div>
         {cards.length ? <ServiceGrid cards={cards} /> : (

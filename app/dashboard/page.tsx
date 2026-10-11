@@ -41,7 +41,7 @@ export default async function Dashboard() {
           <Tile icon="wallet" className="ghost" />
           <div className="t">
             <span>موجودی شما <em>سطح {tier}</em></span>
-            <b>{wallet ? formatTomanNumber(toToman(wallet.balanceMinor, wallet.currency)) : '—'}<small>تومان</small></b>
+            <b className={wallet && toToman(wallet.balanceMinor, wallet.currency) === 0 ? 'is-zero' : undefined}>{wallet ? formatTomanNumber(toToman(wallet.balanceMinor, wallet.currency)) : '—'}<small>تومان</small></b>
           </div>
           <Link href="/wallet" className="zp-cta zp-press">افزایش موجودی</Link>
         </div>

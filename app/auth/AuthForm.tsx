@@ -201,7 +201,7 @@ export default function AuthForm({ initialMode = 'login', invite = null, otpEnab
         <Ornament id="auth-orn" />
         <Link href="/" className="auth-mark zp-root" aria-label="زُحل پی، صفحه‌ی اصلی">
           <BrandMark size={64} id="auth-bm" />
-          <b>زُحل <span className="zp-gtext">پی</span></b>
+          <span className="auth-wm"><svg className="orb" viewBox="0 0 236 66" aria-hidden="true"><g transform="rotate(-9 118 33)"><ellipse cx="118" cy="33" rx="112" ry="22" fill="none" stroke="#D4A24C" strokeOpacity=".7" strokeWidth="1.6" /><g className="orb-dot"><circle cx="230" cy="33" r="3.4" fill="#F2D390" /></g></g></svg><b>زُحل <span className="zp-gtext">پی</span></b></span>
           <small>ZOHALPAY</small>
         </Link>
         <p className="auth-tag">همه‌ی خدمات دیجیتال، یک‌جا و مطمئن</p>

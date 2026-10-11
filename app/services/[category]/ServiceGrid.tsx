@@ -24,10 +24,10 @@ export function ServiceGrid({ cards }: { cards: ServiceCard[] }) {
     <nav className={`zp-sgrid${groups.length > 9 ? ' compact' : ''}${groups.length % 3 === 0 && groups.length % 4 !== 0 ? ' thirds' : ''}`} aria-label="سرویس‌ها">
       {groups.map(({ first: c, count, name, from }, i) => (
         <Link key={c.base} href={count > 1 ? `/choose/${encodeURIComponent(c.base)}` : `/orders/new?service=${c.slug}`} className="zp-scard zp-press" style={{ '--i': i } as React.CSSProperties}
-          aria-label={`${name}، ${count > 1 ? `${fa(count)} نوع، از ` : ''}${c.perLabel} ${fa(from)} تومان`}>
+          aria-label={`${name}، ${count > 1 ? `${fa(count)} سرویس، از ` : ''}${c.perLabel} ${fa(from)} تومان`}>
           {c.brand ? <BrandTile brand={c.brand} /> : <Tile icon={c.icon} />}
           <b>{name}</b>
-          <small>{count > 1 ? `${fa(count)} نوع` : c.perLabel}</small>
+          <small>{count > 1 ? <span className="zp-live-s"><i className="zp-live" aria-hidden />{fa(count)} سرویس</span> : c.perLabel}</small>
           <span className="p">{count > 1 ? <em>از </em> : null}{fa(from)}<i>تومان</i></span>
         </Link>
       ))}

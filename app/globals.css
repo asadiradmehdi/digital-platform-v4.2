@@ -87,6 +87,9 @@
   --font-fa:      "Vazirmatn",Tahoma,"Segoe UI",Arial,sans-serif;
   /* One type family across the product: headings are Vazirmatn bold. Kufam is the logotype only. */
   --font-display: "Vazirmatn",Tahoma,sans-serif;
+  /* dx = Lalezar for big Persian headings (never digits); zero = IBM Plex Sans Arabic bold for the empty-balance «صفر» */
+  --font-dx:      "Lalezar","Vazirmatn",Tahoma,sans-serif;
+  --font-zero:    "IBM Plex Sans Arabic","Vazirmatn",Tahoma,sans-serif;
   --font-brand:   "Kufam","Vazirmatn",sans-serif;
   --font-latin:   "Vazirmatn","Inter","Segoe UI",Arial,sans-serif;
 

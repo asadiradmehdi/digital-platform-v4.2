@@ -11,7 +11,7 @@ export function CategoryGrid({ live }: { live: Set<string> }) {
         return (
           <Link key={c.key} href={`/services/${c.key}`} className={`zp-svc zp-press${soon ? ' is-soon' : ''}`} style={{ '--i': i } as React.CSSProperties}>
             <Tile icon={c.icon}>{soon && <span className="soon">به‌زودی</span>}</Tile>
-            <b style={c.name.length > 12 ? { fontSize: '10.6px' } : undefined}>{c.name}</b>
+            <b style={c.name.length > 12 ? { fontSize: '9.7px' } : undefined}>{c.name}</b>
             <small>{c.hint}</small>
           </Link>
         );

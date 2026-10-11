@@ -717,3 +717,70 @@
 
 /* ── Brand atmosphere (same glow as the app's Ambient): gold top-right, faint lapis bottom-left ───────── */
 .zp-root{background:radial-gradient(110% 55% at 100% 0,rgba(233,196,106,.2),transparent 62%),radial-gradient(80% 45% at 0 100%,rgba(33,72,166,.05),transparent 70%),var(--bg);background-attachment:fixed}
+
+/* ── Parity with the mobile app (2026-10-11): display face, zero, equal separated cards ── */
+.is-zero{font-family:var(--font-zero);font-weight:700}
+.zp-wallet .t b.is-zero{font-size:20px}
+.zp-card .bl b.is-zero{font-size:clamp(30px,8.4vw,36px)}
+.zp-hero h1,.zp-slide .tx b,.zp-shh h3,.zp-empty h3,.zp-done h2,.zp-tiercard .h b,.zp-sup .h b,.zp-card .hd b{font-family:var(--font-dx);font-weight:400;letter-spacing:0}
+.zp-hero h1{font-size:23px}.zp-slide .tx b{font-size:clamp(19px,5.4vw,24px)}.zp-shh h3{font-size:19.5px}.zp-done h2{font-size:25px}.zp-tiercard .h b{font-size:20px}.zp-sup .h b{font-size:19px}.zp-card .hd b{font-size:17px}
+.zp-grid{gap:14px 12px;align-content:start;flex:none;grid-auto-rows:clamp(104px,15.5vh,128px)}
+.zp-svc{position:relative;align-content:center;padding:12px 6px 10px;border-radius:20px;border:1.5px solid #D9CCB2;background:#fff;gap:5px}
+.zp-svc::before{content:"";position:absolute;top:0;left:50%;width:26px;height:3px;margin-left:-13px;border-radius:0 0 3px 3px;background:var(--gold-2)}
+.zp-svc b{font-size:12.5px}
+.zp-svc small{font-size:11px;margin-top:0}
+.zp-live{display:inline-block;width:8px;height:8px;border-radius:50%;background:#1fb768;margin-inline-end:6px;box-shadow:0 0 0 0 rgba(31,183,104,.55);animation:zpLamp 1.6s ease-out infinite}
+@keyframes zpLamp{0%{box-shadow:0 0 0 0 rgba(31,183,104,.55)}70%{box-shadow:0 0 0 7px rgba(31,183,104,0)}100%{box-shadow:0 0 0 0 rgba(31,183,104,0)}}
+@media (prefers-reduced-motion:reduce){.zp-live{animation:none}}
+.zp-hero-live{display:flex;align-items:center;font-weight:700;color:var(--turquoise-ink,#0e7a74)}
+.zp-sgrid{gap:12px}
+.zp-scard{position:relative;height:146px;align-content:center;border:1.5px solid #D9CCB2;background:#fff;box-shadow:0 3px 14px var(--zp-shadow)}
+.zp-sgrid.compact .zp-scard{height:132px}
+.zp-scard::before{content:"";position:absolute;top:0;left:50%;width:26px;height:3px;margin-left:-13px;border-radius:0 0 3px 3px;background:var(--gold-2)}
+.zp-live-s{display:inline-flex;align-items:center;color:var(--turquoise-ink,#0e7a74);font-weight:600}
+.zp-live-s .zp-live{width:6px;height:6px;margin-inline-end:4px}
+@media (min-width:1000px){.zp-scard,.zp-sgrid.compact .zp-scard{height:176px}}
+/* support topics + new-ticket topics: one size, clear borders */
+.zp-qcat{gap:12px}
+.zp-qcat a{position:relative;height:100px;align-content:center;border:1.5px solid #D9CCB2;background:#fff;font-size:12px}
+.zp-qcat a::before{content:"";position:absolute;top:0;left:50%;width:22px;height:3px;margin-left:-11px;border-radius:0 0 3px 3px;background:var(--gold-2)}
+.zp-chips{gap:10px}
+.zp-chips button{height:58px;border:1.5px solid #D9CCB2;background:#fff;font-size:12.5px;box-shadow:0 2px 10px var(--zp-shadow)}
+.zp-chips button[aria-pressed="true"]{border-color:var(--gold-2);box-shadow:0 8px 18px -12px rgba(122,82,24,.6),inset 0 0 0 1px var(--gold-2)}
+/* richer level card */
+.zp-tiercard{padding:18px 18px 16px;gap:14px}
+.zp-tiercard .h .zp-tile{--s:50px}
+.zp-tiercard .h b{font-size:27px;line-height:1.3}
+.zp-tiercard .h span{font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zp-tiercard .zp-prog.tall{height:12px;border-radius:12px}
+.zp-tiercard .zp-prog.tall i{border-radius:12px}
+.zp-tiercard .zp-prog.tall::after{background:repeating-linear-gradient(270deg,transparent 0 calc(100%/var(--n,4) - 2px),rgba(255,248,230,.75) calc(100%/var(--n,4) - 2px) calc(100%/var(--n,4)))}
+.zp-tiercard .zp-pm span{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;white-space:nowrap}
+.zp-tiercard .zp-pm span strong{font-weight:700}
+/* account rows: one line each */
+.zp-mrow{height:56px;border:1.5px solid #D9CCB2;background:#fff}
+.zp-mrow .lb{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13.5px}
+.zp-mrow small{white-space:nowrap;font-size:11px}
+.zp-stats span{font-size:11px;white-space:nowrap}
+.zp-tiercard .zp-pm{flex-direction:column;align-items:stretch;gap:8px}
+/* امضای ریچی: orbit ring around the wordmark */
+.auth-wm{position:relative;display:grid;place-items:center;padding:6px 26px}
+.auth-wm .orb{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.auth-wm .orb-dot{transform-origin:118px 33px;animation:zpOrbit 9s linear infinite}
+@keyframes zpOrbit{to{transform:rotate(360deg)}}
+.auth-mark b{margin-top:0}
+@media (prefers-reduced-motion:reduce){.auth-wm .orb-dot{animation:none}}
+.zp-load{display:grid;justify-items:center;align-content:center;gap:22px;min-height:60vh;padding:24px 16px}
+.zp-load-orb{width:132px;height:auto}
+.zp-load-orb .d{transform-origin:60px 30px;animation:zpOrbit 1.6s linear infinite}
+.zp-load-rows{display:grid;gap:10px;width:min(360px,100%)}
+.zp-load-rows i{height:56px;border-radius:18px;background:linear-gradient(100deg,var(--surface-2) 30%,#fff 50%,var(--surface-2) 70%);background-size:220% 100%;animation:zpShim 1.3s linear infinite}
+@keyframes zpShim{from{background-position:120% 0}to{background-position:-120% 0}}
+@media (prefers-reduced-motion:reduce){.zp-load-orb .d,.zp-load-rows i{animation:none}}
+.zp-tiercard .zp-prog.tall{flex:none;height:12px}
+.zp-svc small{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.4;font-size:10.6px;padding-inline:2px}
+.zp-svc small{white-space:nowrap;display:block;-webkit-line-clamp:unset;font-size:10px;overflow:hidden;text-overflow:clip}
+.zp-search-box input,.zp-search-box input:focus{box-shadow:none!important;outline:none!important}
+.auth-mark.zp-root{background:none}
+.auth-mark>svg ellipse:first-of-type{stroke:#F2D390}
+.zp-svc b{text-overflow:clip}

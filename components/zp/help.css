@@ -32,3 +32,10 @@
 /* Drawer search entry (above the support card) */
 .zp-drawer .zp-dsearch{display:flex;align-items:center;gap:12px;padding:7px 8px;border-radius:14px;font-weight:600;font-size:14.4px;box-shadow:inset 0 0 0 1px var(--line)}
 .zp-drawer .zp-dsearch .lb{flex:1}
+/* every step the same size, so the card never jumps */
+.zp-tour-card{height:min(380px,86vh);align-content:center;grid-template-rows:auto auto 1fr auto auto}
+.zp-tour-card h2{font-family:var(--font-dx);font-weight:400;font-size:23px;line-height:1.5}
+.zp-tour-card p{align-self:start;min-height:100px}
+.zp-srow .pr{display:flex;align-items:baseline;gap:4px;white-space:nowrap;flex:none}
+.zp-srow .pr b{font-size:13.5px}
+.zp-srow .pr small{font-size:10.5px}

@@ -3,3 +3,5 @@
 import '@fontsource/kufam/arabic-700.css';
 import '@fontsource/kufam/arabic-800.css';
 import '@fontsource-variable/vazirmatn';
+import '@fontsource/lalezar/arabic-400.css';
+import '@fontsource/ibm-plex-sans-arabic/arabic-700.css';

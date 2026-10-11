@@ -45,13 +45,13 @@ export default async function Account() {
         <div className="zp-tiercard">
           <Ornament id="tier-orn" w={400} h={130} cx={60} cy={140} rot={12} color="#7a5218" alpha={0.5} />
           <div className="h">
-            <Tile icon="shamseh" />
+            <Tile icon="planet" gold />
             <div><b>سطح {t.tier.name}</b><span>بر اساس مجموع خریدهای پرداخت‌شده شما</span></div>
             <em>سطح {fa(t.level)} از {fa(t.levels)}</em>
           </div>
           <div className="zp-pm">
-            <div className="zp-prog"><i style={{ transform: `scaleX(${t.progress})` }} /></div>
-            <span>{t.next ? `${formatQuantityWords(t.remainingToman)} تومان خرید دیگر تا سطح ${t.next.name}` : 'بالاترین سطح'}</span>
+            <div className="zp-prog tall" style={{ ["--n" as string]: t.levels }}><i style={{ transform: `scaleX(${Math.max(0.06, Math.min(1, t.progress))})` }} /></div>
+            <span>{t.next ? `${formatQuantityWords(t.remainingToman)} تومان خرید دیگر تا سطح ${t.next.name}` : 'بالاترین سطح'}<strong>{fa(Math.round(t.progress * 100))}٪</strong></span>
           </div>
         </div>
 

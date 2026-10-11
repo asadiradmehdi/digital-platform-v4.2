@@ -14,7 +14,7 @@ export function WalletCard({ balanceToman, tierName, short, tail }: { balanceTom
       <div className="hd"><b>زُحل <span className="zp-gtext">پی</span></b><span className="chip" /></div>
       <div className="bl">
         <span>موجودی کیف پول</span>
-        <b>{balanceToman == null ? '—' : formatTomanNumber(balanceToman)}<small>تومان</small></b>
+        <b className={balanceToman === 0 ? 'is-zero' : undefined}>{balanceToman == null ? '—' : formatTomanNumber(balanceToman)}<small>تومان</small></b>
       </div>
       <div className="ft">
         <span className="zp-tier">سطح {tierName}</span>
