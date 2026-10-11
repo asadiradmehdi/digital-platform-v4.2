@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { ZIcon, type IconName } from './ZIcon';
 import { Tile } from './brand';
@@ -49,13 +50,14 @@ function Tour({ onClose }: { onClose: () => void }) {
 export function HelpMenu() {
   const [open, setOpen] = useState(false);
   const [tour, setTour] = useState(false);
+  const onAdmin = (usePathname() ?? '').startsWith('/admin');
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let seen = true;
     try { seen = Boolean(window.localStorage.getItem(TOUR_KEY)); } catch { /* private mode: skip the tour */ }
-    if (!seen) { const t = setTimeout(() => setTour(true), 600); return () => clearTimeout(t); }
-  }, []);
+    if (!seen && !onAdmin) { const t = setTimeout(() => setTour(true), 600); return () => clearTimeout(t); }
+  }, [onAdmin]);
   const closeTour = () => { setTour(false); try { window.localStorage.setItem(TOUR_KEY, '1'); } catch { /* ignore */ } };
 
   useEffect(() => {

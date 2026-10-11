@@ -76,7 +76,7 @@ export function AdminTabs({ badges = {}, permissions, owner }: { badges?: NavBad
           {MORE.map(s => (
             <li key={s.href}><Link href={s.href} onClick={() => setMore(false)} aria-current={active(s.href) ? 'page' : undefined}><ZIcon name={s.icon} />{s.label}</Link></li>
           ))}
-          {owner ? <li><Link href="/admin" onClick={() => setMore(false)}><ZIcon name="info" />وضعیت فنی و تحویل دستی (نسخه‌ی قدیمی)</Link></li> : null}
+          {owner ? <li><Link href="/admin/system" onClick={() => setMore(false)}><ZIcon name="info" />وضعیت فنی</Link></li> : null}
           <li><Link href="/dashboard" onClick={() => setMore(false)}><ZIcon name="out" />رفتن به سایت مشتری</Link></li>
         </ul>
       </Sheet>

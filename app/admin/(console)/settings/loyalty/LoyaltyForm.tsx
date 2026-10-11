@@ -30,7 +30,7 @@ export function LoyaltyForm({ initial, defaults, canEdit }: { initial: { name: s
         {err ? <small className="zpa-err">{err}</small> : null}
         <button type="button" className="zpa-btn ghost" disabled={busy || mins.join() === defaults.join()} onClick={() => save({ reset: true }, defaults)}>برگرداندن به مقدارهای پیش‌فرض</button>
       </fieldset>
-      <p className="zpa-muted" style={{ fontSize: 12 }}>پله‌ها در سرور با <span className="zpa-ltr">getTierLadder()</span> خوانده می‌شوند. صفحه‌های مشتری که هنوز از فهرست ثابت می‌خوانند، پس از به‌روزرسانی خودشان همین مقدارها را نشان می‌دهند.</p>
+      <p className="zpa-muted" style={{ fontSize: 12 }}>سطح‌ها همین‌جا تنظیم می‌شوند و در سایت و برنامه‌ی مشتری یکسان نمایش داده می‌شوند. تغییر فقط روی نمایش سطح اثر دارد و تخفیفی ایجاد نمی‌کند.</p>
       <SaveBar show={dirty && canEdit} summary="تغییرات ذخیره نشده" busy={busy} disabled={Boolean(err)} onSave={() => save({ thresholds: mins }, mins)} onDiscard={() => setMins(saved)} />
     </>
   );

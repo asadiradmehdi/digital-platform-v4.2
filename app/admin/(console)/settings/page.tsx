@@ -19,6 +19,7 @@ export default async function SettingsHub() {
     { href: '/admin/settings/loyalty', title: 'سطح‌های وفاداری', hint: 'میماس تا اسد؛ مبلغ لازم برای هر سطح', any: ['settings.view'] },
     { href: '/admin/settings/support', title: 'تماس و ساعت پشتیبانی', hint: 'شماره‌ها و ساعت پاسخ‌گویی', any: ['settings.view'] },
     { href: '/admin/settings/billing', title: 'فاکتور و مالیات', hint: 'مشخصات فروشنده، مالیات ارزش افزوده', any: ['invoices.view'], status: s.invoice.vatEnabled ? ['مالیات روشن', 'ok'] : ['مالیات خاموش', ''] },
+    { href: '/admin/settings/broadcast', title: 'پیام همگانی', hint: 'اعلان یکجا برای همه‌ی کاربران', any: ['notifications.manage'] },
     { href: '/admin/settings/integrations', title: 'اتصال‌ها', hint: 'پیامک، ورود با گوگل، درگاه پرداخت، اینماد و ساماندهی', any: ['settings.view', 'notifications.manage'], status: smsReady ? ['پیامک فعال', 'ok'] : ['پیامک ناقص', 'warn'] },
   ];
   const items = all.filter(i => has(...i.any));

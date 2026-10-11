@@ -5,6 +5,7 @@ import { requireAdminAccess, requirePermission } from '../../../../../../server/
 import { assertSameOrigin } from '../../../../../../server/core/security-boundary';
 import { AppError } from '../../../../../../server/core/errors';
 import { saveLoyalty, saveReferral, saveSite } from '../../../../../../server/admin/site-settings';
+import { sendBroadcast } from '../../../../../../server/admin/broadcast';
 import { saveGateway, saveGoogle, saveInvoice, saveLicenses, saveSms, sendSmsTest, setSupportHours, upsertSupportContact } from '../../../../../../server/admin/settings';
 
 type Params = { params: Promise<{ section: string }> };
@@ -24,6 +25,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     if (!body || typeof body !== 'object' || Array.isArray(body)) throw new AppError('VALIDATION_ERROR', 'اطلاعات ارسالی معتبر نیست.');
     if (section === 'support-hours' || section === 'support-contact') await requirePermission(actorUserId, 'settings.edit');
     const ctx = { actorUserId, stepUpEvidenceId: typeof body.stepUpEvidenceId === 'string' ? body.stepUpEvidenceId : undefined };
+    let result: { ok: true; sent: number; failed: number } | undefined;
     switch (section) {
       case 'sms': await saveSms(ctx, body); break;
       case 'sms-test': await sendSmsTest(ctx, body.phone); break;
@@ -41,9 +43,10 @@ export async function POST(request: NextRequest, { params }: Params) {
           sortOrder: typeof body.sortOrder === 'number' ? body.sortOrder : undefined, active: typeof body.active === 'boolean' ? body.active : undefined,
         }, actorUserId);
         break;
+      case 'broadcast': result = { ok: true, ...(await sendBroadcast(actorUserId, body)) }; break;
       default: throw new AppError('NOT_FOUND', 'بخش تنظیمات پیدا نشد.');
     }
-    return json({ ok: true }, { correlationId: id });
+    return json(result ?? { ok: true }, { correlationId: id });
   } catch (e) {
     return handleRouteError(e, id);
   }

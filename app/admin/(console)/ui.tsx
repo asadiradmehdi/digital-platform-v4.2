@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { categoryMeta, isHiddenCategory } from '../../../lib/catalog-ui';
 
 export const fa = (n: number) => new Intl.NumberFormat('fa-IR').format(n);
-export const toman = (n: number) => `${fa(n)} تومان`;
+export const toman = (n: number) => (Math.round(n) === 0 ? 'صفر تومان' : `${fa(n)} تومان`);
 export const faDate = (iso: string) =>
   new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Tehran' }).format(new Date(iso));
 

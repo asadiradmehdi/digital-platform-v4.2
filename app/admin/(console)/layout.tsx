@@ -38,9 +38,9 @@ export default async function AdminConsoleLayout({ children }: { children: React
         <aside className="zpa-side">
           <div className="zpa-brand"><div><b>زُحل پی</b><small>برنامه مدیریت</small></div></div>
           <AdminNav badges={badges} permissions={perms} owner={owner} />
-          {owner ? <div className="zpa-foot"><Link href="/admin">وضعیت فنی و ارائه‌دهندگان</Link></div> : null}
+          {owner ? <div className="zpa-foot"><Link href="/admin/system">وضعیت فنی</Link></div> : null}
         </aside>
-        <main className="zpa-main">{children}</main>
+        <main className="zpa-main"><header className="zpa-mtop"><span className="mk" aria-hidden /><b>زُحل <i>پی</i></b><small>برنامه مدیریت</small></header>{children}</main>
         <AdminTabs badges={badges} permissions={perms} owner={owner} />
       </div>
     </ToastProvider>

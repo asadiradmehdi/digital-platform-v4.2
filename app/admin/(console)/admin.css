@@ -257,3 +257,18 @@ a.zpa-item:active{transform:scale(.985);background:var(--surface-3)}
   .zpa-tabs .zp-ico{transition:transform .2s var(--spring,var(--ease)),filter .2s}
 }
 @media (prefers-reduced-motion:reduce){.zpa-main>*,.zpa-list>li,.zpa-bar i,.zpa-btn::after{animation:none!important}}
+
+/* ── parity with the customer app: display face, framed cards, fixed number-unit overlap, phone header ── */
+.zpa-numwrap .zpa-suffix{inset-inline-start:auto;left:14px}
+.zpa-numwrap:has(.zpa-suffix) input{padding-inline-start:14px;padding-left:68px}
+.zpa-head h1{font-family:var(--font-dx);font-weight:400;font-size:27px;letter-spacing:0}
+.zpa-panel,.zpa-list,.zpa-tablewrap{box-shadow:var(--shadow-sm),inset 0 0 0 1.5px #D9CCB2}
+.zpa-mtop{display:none}
+@media (max-width:860px){
+  .zpa-head h1{font-size:24px}
+  .zpa-mtop{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 16px 8px;position:sticky;top:0;z-index:20;background:var(--bg);margin:-16px -16px 8px}
+  .zpa-mtop .mk{width:26px;height:14px;border-radius:50%;border:2.5px solid #D4A24C;transform:rotate(-14deg)}
+  .zpa-mtop b{font-family:var(--font-brand);font-weight:800;font-size:19px;color:var(--ink)}
+  .zpa-mtop b i{font-style:normal;background:var(--metal);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .zpa-mtop small{margin-inline-start:auto;font-size:11px;color:var(--muted);font-weight:600}
+}
